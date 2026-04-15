@@ -76,7 +76,7 @@ export function EmpresaFormFields({ form, setForm }: EmpresaFormFieldsProps) {
           description="Informações básicas da empresa para identificação e contato."
         />
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="space-y-2">
             <Label>CNPJ</Label>
             <Input
@@ -87,7 +87,7 @@ export function EmpresaFormFields({ form, setForm }: EmpresaFormFieldsProps) {
               required
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 md:col-span-2">
             <Label>Razão Social</Label>
             <Input
               value={form.razao_social}
@@ -97,14 +97,15 @@ export function EmpresaFormFields({ form, setForm }: EmpresaFormFieldsProps) {
           </div>
         </div>
 
+        <div className="space-y-2">
+          <Label>Nome Fantasia</Label>
+          <Input
+            value={form.nome_fantasia}
+            onChange={(e) => setForm({ ...form, nome_fantasia: e.target.value })}
+          />
+        </div>
+
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label>Nome Fantasia</Label>
-            <Input
-              value={form.nome_fantasia}
-              onChange={(e) => setForm({ ...form, nome_fantasia: e.target.value })}
-            />
-          </div>
           <div className="space-y-2">
             <Label>Email</Label>
             <Input
@@ -113,6 +114,22 @@ export function EmpresaFormFields({ form, setForm }: EmpresaFormFieldsProps) {
               onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
           </div>
+          <div className="space-y-2">
+            <Label>Telefone</Label>
+            <Input
+              value={form.telefone}
+              onChange={(e) => setForm({ ...form, telefone: e.target.value })}
+              placeholder="(00) 00000-0000"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Endereço</Label>
+          <Input
+            value={form.endereco}
+            onChange={(e) => setForm({ ...form, endereco: e.target.value })}
+          />
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
