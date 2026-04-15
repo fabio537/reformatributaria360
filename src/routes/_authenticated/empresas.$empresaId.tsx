@@ -133,7 +133,7 @@ function EmpresaDetalhePage() {
     return <p className="text-sm text-muted-foreground p-4">Carregando...</p>;
   }
 
-  const isStaff = auth.isAdmin() || auth.role === "funcionario";
+  const isStaff = auth.isStaff();
 
   return (
     <div className="space-y-6">
