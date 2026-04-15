@@ -197,7 +197,7 @@ function EmpresaDetalhePage() {
                   </div>
                   <div className="space-y-1">
                     <Label>Faturamento Anual (R$)</Label>
-                    <Input type="number" step="0.01" value={form.faturamento_anual} onChange={(e) => setForm({ ...form, faturamento_anual: e.target.value })} />
+                    <Input type="number" step="0.01" value={form.faturamento_anual} onChange={(e) => setForm({ ...form, faturamento_anual: e.target.value })} className="input-numeric" />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
