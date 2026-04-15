@@ -327,7 +327,7 @@ function SimuladorPage() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="ano" />
                     <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                    <Tooltip formatter={(v: any, name: string) => name === "Variação (%)" ? `${v}%` : formatBRL(Number(v))} />
+                    <Tooltip formatter={(v: any, name: any) => String(name) === "Variação (%)" ? `${v}%` : formatBRL(Number(v))} />
                     <Legend />
                     <Area type="monotone" dataKey="Carga Atual" fill="var(--color-chart-5)" stroke="var(--color-chart-5)" fillOpacity={0.3} stackId="1" />
                     <Area type="monotone" dataKey="Carga IBS/CBS" fill="var(--color-chart-1)" stroke="var(--color-chart-1)" fillOpacity={0.3} stackId="1" />
