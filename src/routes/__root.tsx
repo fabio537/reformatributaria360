@@ -1,5 +1,5 @@
 import { Outlet, Link, createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
-import type { AuthState } from "@/hooks/useAuth";
+import { useAuth, type AuthState } from "@/hooks/useAuth";
 
 import appCss from "../styles.css?url";
 
@@ -63,5 +63,15 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  const auth = useAuth();
+
+  if (auth.isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
   return <Outlet />;
 }
