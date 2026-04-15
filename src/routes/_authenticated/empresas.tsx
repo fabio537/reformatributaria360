@@ -1,0 +1,224 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Plus, Search } from "lucide-react";
+
+export const Route = createFileRoute("/_authenticated/empresas")({
+  head: () => ({
+    meta: [
+      { title: "Empresas — Reforma Tributária" },
+      { name: "description", content: "Gestão de empresas clientes." },
+    ],
+  }),
+  component: EmpresasPage,
+});
+
+const regimeLabels: Record<string, string> = {
+  simples_nacional: "Simples Nacional",
+  lucro_presumido: "Lucro Presumido",
+  lucro_real: "Lucro Real",
+};
+
+function EmpresasPage() {
+  const auth = useAuth();
+  const [empresas, setEmpresas] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [form, setForm] = useState({
+    cnpj: "",
+    razao_social: "",
+    nome_fantasia: "",
+    regime_tributario: "simples_nacional" as string,
+    cnae_principal: "",
+    email: "",
+    telefone: "",
+  });
+
+  const fetchEmpresas = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("empresas")
+      .select("*")
+      .order("razao_social");
+    setEmpresas(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchEmpresas();
+  }, []);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { error } = await supabase.from("empresas").insert(form as any);
+    if (!error) {
+      setDialogOpen(false);
+      setForm({ cnpj: "", razao_social: "", nome_fantasia: "", regime_tributario: "simples_nacional", cnae_principal: "", email: "", telefone: "" });
+      fetchEmpresas();
+    }
+  };
+
+  const filtered = empresas.filter(
+    (e) =>
+      e.razao_social?.toLowerCase().includes(search.toLowerCase()) ||
+      e.cnpj?.includes(search)
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Empresas</h1>
+          <p className="text-muted-foreground mt-1">Gerencie as empresas clientes</p>
+        </div>
+        {auth.isAdmin() && (
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Empresa
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Cadastrar Empresa</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleCreate} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>CNPJ</Label>
+                    <Input
+                      value={form.cnpj}
+                      onChange={(e) => setForm({ ...form, cnpj: e.target.value })}
+                      placeholder="00.000.000/0000-00"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Regime Tributário</Label>
+                    <Select
+                      value={form.regime_tributario}
+                      onValueChange={(v) => setForm({ ...form, regime_tributario: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="simples_nacional">Simples Nacional</SelectItem>
+                        <SelectItem value="lucro_presumido">Lucro Presumido</SelectItem>
+                        <SelectItem value="lucro_real">Lucro Real</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Razão Social</Label>
+                  <Input
+                    value={form.razao_social}
+                    onChange={(e) => setForm({ ...form, razao_social: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Nome Fantasia</Label>
+                  <Input
+                    value={form.nome_fantasia}
+                    onChange={(e) => setForm({ ...form, nome_fantasia: e.target.value })}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>CNAE Principal</Label>
+                    <Input
+                      value={form.cnae_principal}
+                      onChange={(e) => setForm({ ...form, cnae_principal: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Email</Label>
+                    <Input
+                      type="email"
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <Button type="submit" className="w-full">Cadastrar</Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por razão social ou CNPJ..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="max-w-sm"
+            />
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Carregando...</p>
+          ) : filtered.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhuma empresa encontrada.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Razão Social</TableHead>
+                  <TableHead>CNPJ</TableHead>
+                  <TableHead>Regime</TableHead>
+                  <TableHead>CNAE</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((empresa) => (
+                  <TableRow key={empresa.id}>
+                    <TableCell className="font-medium">{empresa.razao_social}</TableCell>
+                    <TableCell>{empresa.cnpj}</TableCell>
+                    <TableCell>{regimeLabels[empresa.regime_tributario] || empresa.regime_tributario}</TableCell>
+                    <TableCell>{empresa.cnae_principal || "—"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
