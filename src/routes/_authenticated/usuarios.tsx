@@ -19,12 +19,6 @@ export const Route = createFileRoute("/_authenticated/usuarios")({
       { name: "description", content: "Gestão de usuários e permissões." },
     ],
   }),
-  beforeLoad: ({ context }) => {
-    const auth = (context as any).auth;
-    if (!auth?.isAdmin()) {
-      throw redirect({ to: "/dashboard" });
-    }
-  },
   component: UsuariosPage,
 });
 
