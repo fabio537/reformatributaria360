@@ -151,7 +151,7 @@ export function ProdutosTab({ empresaId }: { empresaId: string }) {
               <TableRow key={p.id}>
                 <TableCell className="font-medium">{p.descricao}</TableCell>
                 <TableCell>{p.ncm}</TableCell>
-                <TableCell>
+                <TableCell className="tabular-nums text-right whitespace-nowrap">
                   {p.valor_mensal?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                 </TableCell>
                 <TableCell>{regimeDifLabels[p.regime_diferenciado] || p.regime_diferenciado}</TableCell>
@@ -186,11 +186,11 @@ export function ProdutosTab({ empresaId }: { empresaId: string }) {
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label>Valor Mensal (R$)</Label>
-                <Input type="number" step="0.01" value={form.valor_mensal} onChange={(e) => setForm({ ...form, valor_mensal: e.target.value })} />
+                <Input type="number" step="0.01" value={form.valor_mensal} onChange={(e) => setForm({ ...form, valor_mensal: e.target.value })} className="input-numeric" />
               </div>
               <div className="space-y-1">
                 <Label>Qtd. Mensal</Label>
-                <Input type="number" value={form.quantidade_mensal} onChange={(e) => setForm({ ...form, quantidade_mensal: e.target.value })} />
+                <Input type="number" value={form.quantidade_mensal} onChange={(e) => setForm({ ...form, quantidade_mensal: e.target.value })} className="input-numeric" />
               </div>
               <div className="space-y-1">
                 <Label>Unidade</Label>
@@ -200,19 +200,19 @@ export function ProdutosTab({ empresaId }: { empresaId: string }) {
             <div className="grid grid-cols-4 gap-3">
               <div className="space-y-1">
                 <Label>ICMS %</Label>
-                <Input type="number" step="0.01" value={form.aliquota_icms} onChange={(e) => setForm({ ...form, aliquota_icms: e.target.value })} />
+                <Input type="number" step="0.01" value={form.aliquota_icms} onChange={(e) => setForm({ ...form, aliquota_icms: e.target.value })} className="input-numeric" />
               </div>
               <div className="space-y-1">
                 <Label>PIS %</Label>
-                <Input type="number" step="0.01" value={form.aliquota_pis} onChange={(e) => setForm({ ...form, aliquota_pis: e.target.value })} />
+                <Input type="number" step="0.01" value={form.aliquota_pis} onChange={(e) => setForm({ ...form, aliquota_pis: e.target.value })} className="input-numeric" />
               </div>
               <div className="space-y-1">
                 <Label>COFINS %</Label>
-                <Input type="number" step="0.01" value={form.aliquota_cofins} onChange={(e) => setForm({ ...form, aliquota_cofins: e.target.value })} />
+                <Input type="number" step="0.01" value={form.aliquota_cofins} onChange={(e) => setForm({ ...form, aliquota_cofins: e.target.value })} className="input-numeric" />
               </div>
               <div className="space-y-1">
                 <Label>IPI %</Label>
-                <Input type="number" step="0.01" value={form.aliquota_ipi} onChange={(e) => setForm({ ...form, aliquota_ipi: e.target.value })} />
+                <Input type="number" step="0.01" value={form.aliquota_ipi} onChange={(e) => setForm({ ...form, aliquota_ipi: e.target.value })} className="input-numeric" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">

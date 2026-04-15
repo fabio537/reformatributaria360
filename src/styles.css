@@ -111,3 +111,19 @@
     font-family: 'DM Sans', system-ui, sans-serif;
   }
 }
+
+@layer components {
+  .input-numeric {
+    font-variant-numeric: tabular-nums;
+    min-width: 5rem;
+    width: auto;
+    text-align: right;
+  }
+  
+  td .input-numeric,
+  .table-numeric {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    white-space: nowrap;
+  }
+}
