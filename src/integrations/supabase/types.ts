@@ -62,6 +62,7 @@ export type Database = {
           fornecedor: string
           id: string
           ncm: string | null
+          regime_diferenciado_fornecedor: string
           updated_at: string
           valor_mensal: number | null
         }
@@ -76,6 +77,7 @@ export type Database = {
           fornecedor: string
           id?: string
           ncm?: string | null
+          regime_diferenciado_fornecedor?: string
           updated_at?: string
           valor_mensal?: number | null
         }
@@ -90,6 +92,7 @@ export type Database = {
           fornecedor?: string
           id?: string
           ncm?: string | null
+          regime_diferenciado_fornecedor?: string
           updated_at?: string
           valor_mensal?: number | null
         }
@@ -239,14 +242,17 @@ export type Database = {
           aliquota_cofins: number | null
           aliquota_icms: number | null
           aliquota_ipi: number | null
+          aliquota_is: number | null
           aliquota_pis: number | null
           created_at: string
           descricao: string
+          destino_operacao: string
           empresa_id: string
           id: string
           ncm: string
           quantidade_mensal: number | null
           regime_diferenciado: string | null
+          sujeito_imposto_seletivo: boolean
           tipo_operacao: string | null
           unidade: string | null
           updated_at: string
@@ -256,14 +262,17 @@ export type Database = {
           aliquota_cofins?: number | null
           aliquota_icms?: number | null
           aliquota_ipi?: number | null
+          aliquota_is?: number | null
           aliquota_pis?: number | null
           created_at?: string
           descricao: string
+          destino_operacao?: string
           empresa_id: string
           id?: string
           ncm: string
           quantidade_mensal?: number | null
           regime_diferenciado?: string | null
+          sujeito_imposto_seletivo?: boolean
           tipo_operacao?: string | null
           unidade?: string | null
           updated_at?: string
@@ -273,14 +282,17 @@ export type Database = {
           aliquota_cofins?: number | null
           aliquota_icms?: number | null
           aliquota_ipi?: number | null
+          aliquota_is?: number | null
           aliquota_pis?: number | null
           created_at?: string
           descricao?: string
+          destino_operacao?: string
           empresa_id?: string
           id?: string
           ncm?: string
           quantidade_mensal?: number | null
           regime_diferenciado?: string | null
+          sujeito_imposto_seletivo?: boolean
           tipo_operacao?: string | null
           unidade?: string | null
           updated_at?: string
