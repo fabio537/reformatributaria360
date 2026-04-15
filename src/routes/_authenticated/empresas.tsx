@@ -1,9 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, ExternalLink } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/empresas")({
   head: () => ({
@@ -201,8 +201,11 @@ function EmpresasPage() {
                 <TableRow>
                   <TableHead>Razão Social</TableHead>
                   <TableHead>CNPJ</TableHead>
+                  <TableHead>UF</TableHead>
                   <TableHead>Regime</TableHead>
+                  <TableHead>Faturamento Anual</TableHead>
                   <TableHead>CNAE</TableHead>
+                  <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -210,8 +213,21 @@ function EmpresasPage() {
                   <TableRow key={empresa.id}>
                     <TableCell className="font-medium">{empresa.razao_social}</TableCell>
                     <TableCell>{empresa.cnpj}</TableCell>
+                    <TableCell>{(empresa as any).uf || "—"}</TableCell>
                     <TableCell>{regimeLabels[empresa.regime_tributario] || empresa.regime_tributario}</TableCell>
+                    <TableCell>
+                      {(empresa as any).faturamento_anual
+                        ? Number((empresa as any).faturamento_anual).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+                        : "—"}
+                    </TableCell>
                     <TableCell>{empresa.cnae_principal || "—"}</TableCell>
+                    <TableCell>
+                      <Link to="/empresas/$empresaId" params={{ empresaId: empresa.id }}>
+                        <Button variant="ghost" size="icon">
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

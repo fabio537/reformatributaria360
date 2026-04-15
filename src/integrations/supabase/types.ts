@@ -141,11 +141,17 @@ export type Database = {
           created_at: string
           email: string | null
           endereco: string | null
+          faturamento_anual: number | null
           id: string
+          inscricao_estadual: string | null
+          inscricao_municipal: string | null
+          municipio: string | null
           nome_fantasia: string | null
+          optante_simples_mei: boolean | null
           razao_social: string
           regime_tributario: Database["public"]["Enums"]["regime_tributario"]
           telefone: string | null
+          uf: string | null
           updated_at: string
         }
         Insert: {
@@ -156,11 +162,17 @@ export type Database = {
           created_at?: string
           email?: string | null
           endereco?: string | null
+          faturamento_anual?: number | null
           id?: string
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          municipio?: string | null
           nome_fantasia?: string | null
+          optante_simples_mei?: boolean | null
           razao_social: string
           regime_tributario?: Database["public"]["Enums"]["regime_tributario"]
           telefone?: string | null
+          uf?: string | null
           updated_at?: string
         }
         Update: {
@@ -171,11 +183,17 @@ export type Database = {
           created_at?: string
           email?: string | null
           endereco?: string | null
+          faturamento_anual?: number | null
           id?: string
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          municipio?: string | null
           nome_fantasia?: string | null
+          optante_simples_mei?: boolean | null
           razao_social?: string
           regime_tributario?: Database["public"]["Enums"]["regime_tributario"]
           telefone?: string | null
+          uf?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -227,6 +245,10 @@ export type Database = {
           empresa_id: string
           id: string
           ncm: string
+          quantidade_mensal: number | null
+          regime_diferenciado: string | null
+          tipo_operacao: string | null
+          unidade: string | null
           updated_at: string
           valor_mensal: number | null
         }
@@ -240,6 +262,10 @@ export type Database = {
           empresa_id: string
           id?: string
           ncm: string
+          quantidade_mensal?: number | null
+          regime_diferenciado?: string | null
+          tipo_operacao?: string | null
+          unidade?: string | null
           updated_at?: string
           valor_mensal?: number | null
         }
@@ -253,6 +279,10 @@ export type Database = {
           empresa_id?: string
           id?: string
           ncm?: string
+          quantidade_mensal?: number | null
+          regime_diferenciado?: string | null
+          tipo_operacao?: string | null
+          unidade?: string | null
           updated_at?: string
           valor_mensal?: number | null
         }
@@ -303,6 +333,8 @@ export type Database = {
           descricao: string
           empresa_id: string
           id: string
+          regime_diferenciado: string | null
+          tipo_servico: string | null
           updated_at: string
           valor_mensal: number | null
         }
@@ -315,6 +347,8 @@ export type Database = {
           descricao: string
           empresa_id: string
           id?: string
+          regime_diferenciado?: string | null
+          tipo_servico?: string | null
           updated_at?: string
           valor_mensal?: number | null
         }
@@ -327,6 +361,8 @@ export type Database = {
           descricao?: string
           empresa_id?: string
           id?: string
+          regime_diferenciado?: string | null
+          tipo_servico?: string | null
           updated_at?: string
           valor_mensal?: number | null
         }
