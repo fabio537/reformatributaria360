@@ -150,40 +150,42 @@ export function ProdutosTab({ empresaId }: { empresaId: string }) {
       ) : items.length === 0 ? (
         <p className="text-sm text-muted-foreground">Nenhum produto cadastrado.</p>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Descrição</TableHead>
-              <TableHead>NCM</TableHead>
-              <TableHead>Valor Mensal</TableHead>
-              <TableHead>Regime</TableHead>
-              <TableHead>Operação</TableHead>
-              <TableHead>Destino</TableHead>
-              <TableHead>IS</TableHead>
-              <TableHead className="w-10"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((p) => (
-              <TableRow key={p.id}>
-                <TableCell className="font-medium">{p.descricao}</TableCell>
-                <TableCell>{p.ncm}</TableCell>
-                <TableCell className="tabular-nums text-right whitespace-nowrap">
-                  {p.valor_mensal?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                </TableCell>
-                <TableCell>{regimeDifLabels[p.regime_diferenciado] || p.regime_diferenciado}</TableCell>
-                <TableCell>{tipoOpLabels[p.tipo_operacao] || p.tipo_operacao}</TableCell>
-                <TableCell>{destinoLabels[p.destino_operacao] || p.destino_operacao}</TableCell>
-                <TableCell>{p.sujeito_imposto_seletivo ? `${p.aliquota_is}%` : "—"}</TableCell>
-                <TableCell>
-                  <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="min-w-[150px]">Descrição</TableHead>
+                <TableHead className="min-w-[90px]">NCM</TableHead>
+                <TableHead className="min-w-[120px] text-right">Valor Mensal</TableHead>
+                <TableHead className="min-w-[100px]">Regime</TableHead>
+                <TableHead className="min-w-[100px]">Operação</TableHead>
+                <TableHead className="min-w-[120px]">Destino</TableHead>
+                <TableHead className="min-w-[60px]">IS</TableHead>
+                <TableHead className="w-10"></TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {items.map((p) => (
+                <TableRow key={p.id}>
+                  <TableCell className="font-medium">{p.descricao}</TableCell>
+                  <TableCell>{p.ncm}</TableCell>
+                  <TableCell className="tabular-nums text-right whitespace-nowrap">
+                    {p.valor_mensal?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                  </TableCell>
+                  <TableCell>{regimeDifLabels[p.regime_diferenciado] || p.regime_diferenciado}</TableCell>
+                  <TableCell>{tipoOpLabels[p.tipo_operacao] || p.tipo_operacao}</TableCell>
+                  <TableCell>{destinoLabels[p.destino_operacao] || p.destino_operacao}</TableCell>
+                  <TableCell>{p.sujeito_imposto_seletivo ? `${p.aliquota_is}%` : "—"}</TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
