@@ -12,3 +12,22 @@ export function formatCnpj(value: string): string {
 export function stripCnpj(value: string): string {
   return value.replace(/\D/g, "").slice(0, 14);
 }
+
+/** Format a numeric string/number as Brazilian currency display: 1.234.567,89 */
+export function formatCurrency(value: string | number): string {
+  const num = typeof value === "string" ? parseFloat(value) : value;
+  if (isNaN(num) || num === 0) return "";
+  return num.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+/** Parse a Brazilian-formatted currency string back to a plain numeric string */
+export function parseCurrency(formatted: string): string {
+  const cleaned = formatted.replace(/\./g, "").replace(",", ".");
+  const numeric = cleaned.replace(/[^\d.\-]/g, "");
+  const num = parseFloat(numeric);
+  if (isNaN(num)) return "";
+  return String(num);
+}

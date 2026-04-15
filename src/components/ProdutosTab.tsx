@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/CurrencyInput";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -207,7 +208,7 @@ export function ProdutosTab({ empresaId }: { empresaId: string }) {
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label>Valor Mensal (R$)</Label>
-                <Input type="number" step="0.01" value={form.valor_mensal} onChange={(e) => setForm({ ...form, valor_mensal: e.target.value })} className="input-numeric" />
+                <CurrencyInput value={form.valor_mensal} onValueChange={(v) => setForm({ ...form, valor_mensal: v })} />
               </div>
               <div className="space-y-1">
                 <Label>Qtd. Mensal</Label>
