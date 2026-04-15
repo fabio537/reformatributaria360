@@ -123,42 +123,44 @@ export function CreditosTab({ empresaId }: { empresaId: string }) {
       ) : items.length === 0 ? (
         <p className="text-sm text-muted-foreground">Nenhum crédito cadastrado.</p>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Fornecedor</TableHead>
-              <TableHead>Descrição</TableHead>
-              <TableHead>NCM</TableHead>
-              <TableHead>Valor Mensal</TableHead>
-              <TableHead>Regime Fornec.</TableHead>
-              <TableHead>ICMS</TableHead>
-              <TableHead>PIS</TableHead>
-              <TableHead>COFINS</TableHead>
-              <TableHead className="w-10"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((c) => (
-              <TableRow key={c.id}>
-                <TableCell className="font-medium">{c.fornecedor}</TableCell>
-                <TableCell>{c.descricao || "—"}</TableCell>
-                <TableCell>{c.ncm || "—"}</TableCell>
-                <TableCell className="tabular-nums text-right whitespace-nowrap">
-                  {c.valor_mensal?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                </TableCell>
-                <TableCell>{regimeFornecedorLabels[c.regime_diferenciado_fornecedor] || "Padrão"}</TableCell>
-                <TableCell className="tabular-nums text-right whitespace-nowrap">{c.aliquota_icms}%</TableCell>
-                <TableCell className="tabular-nums text-right whitespace-nowrap">{c.aliquota_pis}%</TableCell>
-                <TableCell className="tabular-nums text-right whitespace-nowrap">{c.aliquota_cofins}%</TableCell>
-                <TableCell>
-                  <Button variant="ghost" size="icon" onClick={() => handleDelete(c.id)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="min-w-[130px]">Fornecedor</TableHead>
+                <TableHead className="min-w-[120px]">Descrição</TableHead>
+                <TableHead className="min-w-[80px]">NCM</TableHead>
+                <TableHead className="min-w-[120px] text-right">Valor Mensal</TableHead>
+                <TableHead className="min-w-[120px]">Regime Fornec.</TableHead>
+                <TableHead className="min-w-[60px] text-right">ICMS</TableHead>
+                <TableHead className="min-w-[60px] text-right">PIS</TableHead>
+                <TableHead className="min-w-[70px] text-right">COFINS</TableHead>
+                <TableHead className="w-10"></TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {items.map((c) => (
+                <TableRow key={c.id}>
+                  <TableCell className="font-medium">{c.fornecedor}</TableCell>
+                  <TableCell>{c.descricao || "—"}</TableCell>
+                  <TableCell>{c.ncm || "—"}</TableCell>
+                  <TableCell className="tabular-nums text-right whitespace-nowrap">
+                    {c.valor_mensal?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                  </TableCell>
+                  <TableCell>{regimeFornecedorLabels[c.regime_diferenciado_fornecedor] || "Padrão"}</TableCell>
+                  <TableCell className="tabular-nums text-right whitespace-nowrap">{c.aliquota_icms}%</TableCell>
+                  <TableCell className="tabular-nums text-right whitespace-nowrap">{c.aliquota_pis}%</TableCell>
+                  <TableCell className="tabular-nums text-right whitespace-nowrap">{c.aliquota_cofins}%</TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(c.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
