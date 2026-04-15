@@ -215,7 +215,7 @@ function EmpresasPage() {
                     <TableCell>{empresa.cnpj}</TableCell>
                     <TableCell>{(empresa as any).uf || "—"}</TableCell>
                     <TableCell>{regimeLabels[empresa.regime_tributario] || empresa.regime_tributario}</TableCell>
-                    <TableCell>
+                    <TableCell className="tabular-nums text-right whitespace-nowrap">
                       {(empresa as any).faturamento_anual
                         ? Number((empresa as any).faturamento_anual).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
                         : "—"}
