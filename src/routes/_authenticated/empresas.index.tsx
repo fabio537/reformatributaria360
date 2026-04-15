@@ -253,8 +253,9 @@ function EmpresasPage() {
                           </Button>
                         )}
                         <Link to="/empresas/$empresaId" params={{ empresaId: empresa.id }}>
-                          <Button variant="ghost" size="icon" title="Ver detalhes">
-                            <ExternalLink className="h-4 w-4" />
+                          <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            Detalhes
                           </Button>
                         </Link>
                       </div>
