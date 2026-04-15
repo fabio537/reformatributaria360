@@ -55,11 +55,21 @@ function EmpresasPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingEmpresa, setEditingEmpresa] = useState<any>(null);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    cnpj: string;
+    razao_social: string;
+    nome_fantasia: string;
+    regime_tributario: "simples_nacional" | "lucro_presumido" | "lucro_real";
+    cnae_principal: string;
+    email: string;
+    telefone: string;
+    uf: string;
+    faturamento_anual: string;
+  }>({
     cnpj: "",
     razao_social: "",
     nome_fantasia: "",
-    regime_tributario: "simples_nacional" as string,
+    regime_tributario: "simples_nacional",
     cnae_principal: "",
     email: "",
     telefone: "",
