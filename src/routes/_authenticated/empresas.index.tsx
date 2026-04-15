@@ -6,7 +6,6 @@ import { formatCnpj } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -23,12 +22,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  EmpresaFormFields,
+  getEmptyEmpresaForm,
+  type EmpresaFormValues,
+} from "@/components/EmpresaFormFields";
 import { Plus, Search, ExternalLink, Pencil } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/empresas/")({
@@ -55,27 +52,7 @@ function EmpresasPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingEmpresa, setEditingEmpresa] = useState<any>(null);
-  const [form, setForm] = useState<{
-    cnpj: string;
-    razao_social: string;
-    nome_fantasia: string;
-    regime_tributario: "simples_nacional" | "lucro_presumido" | "lucro_real";
-    cnae_principal: string;
-    email: string;
-    telefone: string;
-    uf: string;
-    faturamento_anual: string;
-  }>({
-    cnpj: "",
-    razao_social: "",
-    nome_fantasia: "",
-    regime_tributario: "simples_nacional",
-    cnae_principal: "",
-    email: "",
-    telefone: "",
-    uf: "",
-    faturamento_anual: "",
-  });
+  const [form, setForm] = useState<EmpresaFormValues>(getEmptyEmpresaForm());
 
   const fetchEmpresas = async () => {
     setLoading(true);
@@ -93,10 +70,25 @@ function EmpresasPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { error } = await supabase.from("empresas").insert(form as any);
+    const { error } = await supabase.from("empresas").insert({
+      cnpj: form.cnpj,
+      razao_social: form.razao_social,
+      nome_fantasia: form.nome_fantasia || null,
+      regime_tributario: form.regime_tributario,
+      cnae_principal: form.cnae_principal || null,
+      email: form.email || null,
+      telefone: form.telefone || null,
+      endereco: form.endereco || null,
+      inscricao_estadual: form.inscricao_estadual || null,
+      inscricao_municipal: form.inscricao_municipal || null,
+      uf: form.uf || null,
+      municipio: form.municipio || null,
+      faturamento_anual: form.faturamento_anual ? Number(form.faturamento_anual) : 0,
+      optante_simples_mei: form.optante_simples_mei,
+    } as any);
     if (!error) {
       setDialogOpen(false);
-      setForm({ cnpj: "", razao_social: "", nome_fantasia: "", regime_tributario: "simples_nacional", cnae_principal: "", email: "", telefone: "", uf: "", faturamento_anual: "" });
+      setForm(getEmptyEmpresaForm());
       fetchEmpresas();
     }
   };
@@ -111,8 +103,13 @@ function EmpresasPage() {
       cnae_principal: empresa.cnae_principal || "",
       email: empresa.email || "",
       telefone: empresa.telefone || "",
+      endereco: empresa.endereco || "",
+      inscricao_estadual: empresa.inscricao_estadual || "",
+      inscricao_municipal: empresa.inscricao_municipal || "",
       uf: empresa.uf || "",
+      municipio: empresa.municipio || "",
       faturamento_anual: empresa.faturamento_anual ? String(empresa.faturamento_anual) : "",
+      optante_simples_mei: empresa.optante_simples_mei || false,
     });
     setEditDialogOpen(true);
   };
@@ -131,15 +128,20 @@ function EmpresasPage() {
         cnae_principal: form.cnae_principal,
         email: form.email,
         telefone: form.telefone,
+        endereco: form.endereco || null,
+        inscricao_estadual: form.inscricao_estadual || null,
+        inscricao_municipal: form.inscricao_municipal || null,
         uf: form.uf,
+        municipio: form.municipio || null,
         faturamento_anual: form.faturamento_anual ? Number(form.faturamento_anual) : null,
+        optante_simples_mei: form.optante_simples_mei,
       })
       .eq("id", editingEmpresa.id);
       
     if (!error) {
       setEditDialogOpen(false);
       setEditingEmpresa(null);
-      setForm({ cnpj: "", razao_social: "", nome_fantasia: "", regime_tributario: "simples_nacional", cnae_principal: "", email: "", telefone: "", uf: "", faturamento_anual: "" });
+      setForm(getEmptyEmpresaForm());
       fetchEmpresas();
     }
   };
@@ -172,94 +174,7 @@ function EmpresasPage() {
                 <DialogTitle>Cadastrar Empresa</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleCreate} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>CNPJ</Label>
-                    <Input
-                      value={formatCnpj(form.cnpj)}
-                      onChange={(e) => setForm({ ...form, cnpj: e.target.value.replace(/\D/g, "").slice(0, 14) })}
-                      placeholder="00.000.000/0000-00"
-                      className="input-cnpj"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Regime Tributário</Label>
-                    <Select
-                      value={form.regime_tributario}
-                      onValueChange={(v) => setForm({ ...form, regime_tributario: v as "simples_nacional" | "lucro_presumido" | "lucro_real" })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="simples_nacional">Simples Nacional</SelectItem>
-                        <SelectItem value="lucro_presumido">Lucro Presumido</SelectItem>
-                        <SelectItem value="lucro_real">Lucro Real</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Razão Social</Label>
-                  <Input
-                    value={form.razao_social}
-                    onChange={(e) => setForm({ ...form, razao_social: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Nome Fantasia</Label>
-                  <Input
-                    value={form.nome_fantasia}
-                    onChange={(e) => setForm({ ...form, nome_fantasia: e.target.value })}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>UF</Label>
-                    <Input
-                      value={form.uf}
-                      onChange={(e) => setForm({ ...form, uf: e.target.value.toUpperCase().slice(0, 2) })}
-                      placeholder="SP"
-                      maxLength={2}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Faturamento Anual (R$)</Label>
-                    <Input
-                      type="number"
-                      value={form.faturamento_anual}
-                      onChange={(e) => setForm({ ...form, faturamento_anual: e.target.value })}
-                      placeholder="0,00"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>CNAE Principal</Label>
-                    <Input
-                      value={form.cnae_principal}
-                      onChange={(e) => setForm({ ...form, cnae_principal: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Email</Label>
-                    <Input
-                      type="email"
-                      value={form.email}
-                      onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Telefone</Label>
-                  <Input
-                    value={form.telefone}
-                    onChange={(e) => setForm({ ...form, telefone: e.target.value })}
-                    placeholder="(00) 00000-0000"
-                  />
-                </div>
+                <EmpresaFormFields form={form} setForm={setForm} />
                 <Button type="submit" className="w-full">Cadastrar</Button>
               </form>
             </DialogContent>
@@ -274,94 +189,7 @@ function EmpresasPage() {
             <DialogTitle>Editar Empresa</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleUpdate} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>CNPJ</Label>
-                <Input
-                  value={formatCnpj(form.cnpj)}
-                  onChange={(e) => setForm({ ...form, cnpj: e.target.value.replace(/\D/g, "").slice(0, 14) })}
-                  placeholder="00.000.000/0000-00"
-                  className="input-cnpj"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Regime Tributário</Label>
-                <Select
-                  value={form.regime_tributario}
-                  onValueChange={(v) => setForm({ ...form, regime_tributario: v as "simples_nacional" | "lucro_presumido" | "lucro_real" })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="simples_nacional">Simples Nacional</SelectItem>
-                    <SelectItem value="lucro_presumido">Lucro Presumido</SelectItem>
-                    <SelectItem value="lucro_real">Lucro Real</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Razão Social</Label>
-              <Input
-                value={form.razao_social}
-                onChange={(e) => setForm({ ...form, razao_social: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Nome Fantasia</Label>
-              <Input
-                value={form.nome_fantasia}
-                onChange={(e) => setForm({ ...form, nome_fantasia: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>UF</Label>
-                <Input
-                  value={form.uf}
-                  onChange={(e) => setForm({ ...form, uf: e.target.value.toUpperCase().slice(0, 2) })}
-                  placeholder="SP"
-                  maxLength={2}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Faturamento Anual (R$)</Label>
-                <Input
-                  type="number"
-                  value={form.faturamento_anual}
-                  onChange={(e) => setForm({ ...form, faturamento_anual: e.target.value })}
-                  placeholder="0,00"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>CNAE Principal</Label>
-                <Input
-                  value={form.cnae_principal}
-                  onChange={(e) => setForm({ ...form, cnae_principal: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Email</Label>
-                <Input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Telefone</Label>
-              <Input
-                value={form.telefone}
-                onChange={(e) => setForm({ ...form, telefone: e.target.value })}
-                placeholder="(00) 00000-0000"
-              />
-            </div>
+            <EmpresaFormFields form={form} setForm={setForm} />
             <Button type="submit" className="w-full">Salvar Alterações</Button>
           </form>
         </DialogContent>
