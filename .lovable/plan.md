@@ -1,69 +1,60 @@
 
-# Plataforma de Suporte à Reforma Tributária
 
-## Visão Geral
-App web para escritório contábil apoiar clientes nas decisões sobre a reforma tributária brasileira, com simulação de cenários, base legal, e busca de atualizações.
+# Cadastro Completo de Empresa com Produtos, Serviços e Importação
 
-## 1. Autenticação e Controle de Acesso
-- Login com email/senha via Supabase Auth
-- 3 perfis de acesso usando tabela `user_roles`:
-  - **Admin**: acesso total — cadastro de empresas, usuários, configurações
-  - **Funcionário**: inserção de dados, análise, simulações de todas as empresas
-  - **Cliente**: visualização apenas dos dados da sua própria empresa
-- Rotas protegidas com layout `_authenticated` e guards por role
+## Resumo
 
-## 2. Banco de Dados (Supabase/Lovable Cloud)
-- **profiles**: dados do usuário (nome, telefone)
-- **user_roles**: perfis de acesso (admin, funcionario, cliente)
-- **empresas**: CNPJ, razão social, regime tributário (Simples, Lucro Presumido, Lucro Real), CNAE principal/secundários
-- **empresa_usuarios**: vínculo empresa ↔ usuário (para clientes verem só sua empresa)
-- **produtos**: NCM/TIPI, descrição, alíquotas atuais (IPI, PIS, COFINS, ICMS)
-- **servicos**: código de serviço, descrição, alíquotas ISS
-- **creditos_aquisicao**: composição de créditos por empresa (fornecedor, NCM, valores)
-- **simulacoes**: cenários salvos com parâmetros e resultados
-- **artigos_legais**: base legal categorizada (artigos, leis, notas técnicas)
-- **fontes_atualizacao**: links curados + conteúdo buscado por IA
-- RLS em todas as tabelas — cliente vê apenas sua empresa
+Transformar a página de Empresas em uma experiência completa de cadastro e gestão, com página de detalhe por empresa contendo abas para dados gerais, produtos (NCM/TIPI), serviços, créditos de aquisição, e funcionalidade de importação via XLS/CSV.
 
-## 3. Cadastro de Empresas e Dados
-- CRUD de empresas (admin cria, funcionário edita dados)
-- Cadastro de produtos (NCM/TIPI) e serviços por empresa
-- Cadastro de composição de créditos de aquisição
-- **Importação**: upload de CSV/Excel do sistema Domínio
-- **Manual**: formulários para funcionários inserirem dados
-- Validação de CNPJ, NCM e campos obrigatórios
+## Alterações no Banco de Dados
 
-## 4. Simulador Tributário
-- **Cenário atual vs IBS/CBS**: comparativo da carga tributária atual (PIS/COFINS/ICMS/ISS/IPI) com o novo modelo unificado
-- **Fases da transição (2026-2033)**: simulação ano a ano com alíquotas progressivas conforme cronograma da reforma
-- Considera: regime tributário, CNAE, produtos (TIPI), serviços, créditos
-- Dashboard visual com gráficos comparativos (barras/linhas)
-- Exportação dos resultados em PDF/Excel
-- Histórico de simulações salvas por empresa
+Migração SQL para adicionar campos relevantes à simulação:
 
-## 5. Base Legal e Conteúdo
-- Biblioteca de artigos sobre a reforma tributária
-- Categorização por tema (IBS, CBS, transição, créditos, etc.)
-- Busca e filtros por palavras-chave
-- Admin e funcionários podem adicionar/editar artigos
+- **Tabela `empresas`**: adicionar `inscricao_estadual`, `inscricao_municipal`, `uf`, `municipio`, `faturamento_anual`, `optante_simples_mei` (boolean)
+- **Tabela `produtos`**: adicionar `regime_diferenciado` (text, default 'padrao' — valores: padrao, reducao_30, reducao_60, aliquota_zero), `unidade`, `quantidade_mensal`, `tipo_operacao` (text: fabricacao, revenda, importacao)
+- **Tabela `servicos`**: adicionar `regime_diferenciado` (text, default 'padrao'), `tipo_servico` (text)
 
-## 6. Fontes de Atualização (IA + Curadoria)
-- Links curados manualmente pelo admin (RFB, portais tributários)
-- Busca automática com IA: resumo de notícias e atualizações sobre a reforma
-- Feed de atualizações na página inicial do app
+## Nova Rota: Detalhe da Empresa
 
-## 7. Páginas e Navegação
-- **Login** → tela de autenticação
-- **Dashboard** → visão geral com alertas, últimas simulações, atualizações
-- **Empresas** → listagem e cadastro (admin/funcionário)
-- **Empresa Detalhe** → dados, produtos, serviços, créditos, simulações
-- **Simulador** → formulário de simulação + resultados visuais
-- **Base Legal** → biblioteca de artigos e legislação
-- **Atualizações** → feed de notícias e fontes externas
-- **Usuários** → gestão de usuários e permissões (admin)
+Criar `src/routes/_authenticated/empresas.$empresaId.tsx` — página de detalhe com abas (Tabs):
 
-## 8. Design
-- Interface limpa e profissional, tema claro
-- Sidebar com navegação principal
-- Componentes shadcn/ui (tabelas, cards, formulários, gráficos)
-- Responsivo para desktop e tablet
+1. **Dados Gerais** — formulário de edição dos dados da empresa (todos os campos, incluindo novos)
+2. **Produtos** — tabela CRUD de produtos com formulário inline/dialog + botão de importação XLS/CSV
+3. **Serviços** — tabela CRUD de serviços com formulário inline/dialog + botão de importação XLS/CSV
+4. **Créditos de Aquisição** — tabela CRUD de créditos (fornecedor, NCM, alíquotas, valor) + importação
+5. **Simulações** — lista de simulações já realizadas para essa empresa
+
+## Importação de Dados (XLS/CSV)
+
+Componente reutilizável `src/components/ImportDialog.tsx`:
+
+- Aceita arquivos `.xlsx`, `.xls`, `.csv`
+- Usa a lib `xlsx` (SheetJS) para parsing no browser (já funciona no Worker)
+- Mostra preview dos dados mapeados antes de confirmar
+- Mapeamento de colunas configurável (o usuário associa colunas do arquivo aos campos do sistema)
+- Insere os dados na tabela correspondente via Supabase client
+- Modelos de planilha para download (templates em branco com cabeçalhos corretos)
+
+## Atualização da Lista de Empresas
+
+- Cada linha da tabela vira um link clicável para a página de detalhe (`/empresas/:empresaId`)
+- Adicionar coluna "UF" e "Faturamento" na listagem
+- Botão de edição e exclusão (admin)
+
+## Arquivos Afetados
+
+| Arquivo | Ação |
+|---------|------|
+| Migração SQL | Novos campos em empresas, produtos, servicos |
+| `src/routes/_authenticated/empresas.tsx` | Atualizar listagem com links e novas colunas |
+| `src/routes/_authenticated/empresas.$empresaId.tsx` | **Novo** — detalhe com abas |
+| `src/components/ImportDialog.tsx` | **Novo** — importação XLS/CSV reutilizável |
+| `src/components/ProdutosTab.tsx` | **Novo** — CRUD de produtos |
+| `src/components/ServicosTab.tsx` | **Novo** — CRUD de serviços |
+| `src/components/CreditosTab.tsx` | **Novo** — CRUD de créditos |
+| `package.json` | Adicionar dependência `xlsx` |
+
+## Dependência Nova
+
+- **xlsx** (SheetJS): parsing de arquivos Excel/CSV no browser, sem necessidade de servidor
+
