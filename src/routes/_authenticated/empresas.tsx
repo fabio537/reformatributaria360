@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { formatCnpj } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -116,9 +117,10 @@ function EmpresasPage() {
                   <div className="space-y-2">
                     <Label>CNPJ</Label>
                     <Input
-                      value={form.cnpj}
-                      onChange={(e) => setForm({ ...form, cnpj: e.target.value })}
+                      value={formatCnpj(form.cnpj)}
+                      onChange={(e) => setForm({ ...form, cnpj: e.target.value.replace(/\D/g, "").slice(0, 14) })}
                       placeholder="00.000.000/0000-00"
+                      className="input-cnpj"
                       required
                     />
                   </div>
@@ -212,7 +214,7 @@ function EmpresasPage() {
                 {filtered.map((empresa) => (
                   <TableRow key={empresa.id}>
                     <TableCell className="font-medium">{empresa.razao_social}</TableCell>
-                    <TableCell>{empresa.cnpj}</TableCell>
+                    <TableCell className="input-cnpj">{formatCnpj(empresa.cnpj)}</TableCell>
                     <TableCell>{(empresa as any).uf || "—"}</TableCell>
                     <TableCell>{regimeLabels[empresa.regime_tributario] || empresa.regime_tributario}</TableCell>
                     <TableCell className="tabular-nums text-right whitespace-nowrap">
