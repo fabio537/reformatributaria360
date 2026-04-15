@@ -107,7 +107,7 @@ function EmpresasPage() {
       cnpj: empresa.cnpj || "",
       razao_social: empresa.razao_social || "",
       nome_fantasia: empresa.nome_fantasia || "",
-      regime_tributario: empresa.regime_tributario || "simples_nacional",
+      regime_tributario: (empresa.regime_tributario as "simples_nacional" | "lucro_presumido" | "lucro_real") || "simples_nacional",
       cnae_principal: empresa.cnae_principal || "",
       email: empresa.email || "",
       telefone: empresa.telefone || "",
