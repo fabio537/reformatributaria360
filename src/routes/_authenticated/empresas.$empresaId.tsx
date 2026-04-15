@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { formatCnpj } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -145,7 +146,7 @@ function EmpresaDetalhePage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold">{form.razao_social || "Empresa"}</h1>
-          <p className="text-sm text-muted-foreground">{form.cnpj}</p>
+          <p className="text-sm text-muted-foreground">{formatCnpj(form.cnpj)}</p>
         </div>
       </div>
 
@@ -168,7 +169,7 @@ function EmpresaDetalhePage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-1">
                     <Label>CNPJ</Label>
-                    <Input value={form.cnpj} onChange={(e) => setForm({ ...form, cnpj: e.target.value })} required />
+                    <Input value={formatCnpj(form.cnpj)} onChange={(e) => setForm({ ...form, cnpj: e.target.value.replace(/\D/g, "").slice(0, 14) })} className="input-cnpj" required />
                   </div>
                   <div className="space-y-1">
                     <Label>Razão Social</Label>

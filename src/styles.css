@@ -119,6 +119,13 @@
     width: auto;
     text-align: right;
   }
+
+  .input-cnpj {
+    font-variant-numeric: tabular-nums;
+    min-width: 12rem;
+    width: auto;
+    letter-spacing: 0.02em;
+  }
   
   td .input-numeric,
   .table-numeric {
