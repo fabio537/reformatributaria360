@@ -17,6 +17,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -86,6 +87,7 @@ function EmpresasPage() {
       faturamento_anual: form.faturamento_anual ? Number(form.faturamento_anual) : 0,
       optante_simples_mei: form.optante_simples_mei,
     } as any);
+
     if (!error) {
       setDialogOpen(false);
       setForm(getEmptyEmpresaForm());
@@ -117,27 +119,27 @@ function EmpresasPage() {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingEmpresa) return;
-    
+
     const { error } = await supabase
       .from("empresas")
       .update({
         cnpj: form.cnpj,
         razao_social: form.razao_social,
-        nome_fantasia: form.nome_fantasia,
+        nome_fantasia: form.nome_fantasia || null,
         regime_tributario: form.regime_tributario,
-        cnae_principal: form.cnae_principal,
-        email: form.email,
-        telefone: form.telefone,
+        cnae_principal: form.cnae_principal || null,
+        email: form.email || null,
+        telefone: form.telefone || null,
         endereco: form.endereco || null,
         inscricao_estadual: form.inscricao_estadual || null,
         inscricao_municipal: form.inscricao_municipal || null,
-        uf: form.uf,
+        uf: form.uf || null,
         municipio: form.municipio || null,
-        faturamento_anual: form.faturamento_anual ? Number(form.faturamento_anual) : null,
+        faturamento_anual: form.faturamento_anual ? Number(form.faturamento_anual) : 0,
         optante_simples_mei: form.optante_simples_mei,
       })
       .eq("id", editingEmpresa.id);
-      
+
     if (!error) {
       setEditDialogOpen(false);
       setEditingEmpresa(null);
@@ -159,19 +161,22 @@ function EmpresasPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Empresas</h1>
-          <p className="text-muted-foreground mt-1">Gerencie as empresas clientes</p>
+          <p className="mt-1 text-muted-foreground">Gerencie as empresas clientes</p>
         </div>
         {auth.isAdmin() && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="mr-2 h-4 w-4" />
                 Nova Empresa
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Cadastrar Empresa</DialogTitle>
+                <DialogDescription>
+                  Role até o fim: os campos de simulação ficam na seção “Dados para simulação”.
+                </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleCreate} className="space-y-4">
                 <EmpresaFormFields form={form} setForm={setForm} />
@@ -182,11 +187,13 @@ function EmpresasPage() {
         )}
       </div>
 
-      {/* Dialog de Edição */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Empresa</DialogTitle>
+            <DialogDescription>
+              Os campos de simulação estão na segunda seção do formulário e agora ficam visíveis com rolagem.
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleUpdate} className="space-y-4">
             <EmpresaFormFields form={form} setForm={setForm} />
@@ -230,11 +237,11 @@ function EmpresasPage() {
                   <TableRow key={empresa.id}>
                     <TableCell className="font-medium">{empresa.razao_social}</TableCell>
                     <TableCell className="input-cnpj">{formatCnpj(empresa.cnpj)}</TableCell>
-                    <TableCell>{(empresa as any).uf || "—"}</TableCell>
+                    <TableCell>{empresa.uf || "—"}</TableCell>
                     <TableCell>{regimeLabels[empresa.regime_tributario] || empresa.regime_tributario}</TableCell>
-                    <TableCell className="tabular-nums text-right whitespace-nowrap">
-                      {(empresa as any).faturamento_anual
-                        ? Number((empresa as any).faturamento_anual).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+                    <TableCell className="whitespace-nowrap text-right tabular-nums">
+                      {empresa.faturamento_anual
+                        ? Number(empresa.faturamento_anual).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
                         : "—"}
                     </TableCell>
                     <TableCell>{empresa.cnae_principal || "—"}</TableCell>
