@@ -1,11 +1,8 @@
-import { Outlet, Link, createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
-import { useAuth, type AuthState } from "@/hooks/useAuth";
+import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { useAuth } from "@/hooks/useAuth";
+import { AuthProvider } from "@/hooks/AuthContext";
 
 import appCss from "../styles.css?url";
-
-interface RouterContext {
-  auth: AuthState;
-}
 
 function NotFoundComponent() {
   return (
@@ -29,7 +26,7 @@ function NotFoundComponent() {
   );
 }
 
-export const Route = createRootRouteWithContext<RouterContext>()({
+export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -63,6 +60,14 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  return (
+    <AuthProvider>
+      <RootInner />
+    </AuthProvider>
+  );
+}
+
+function RootInner() {
   const auth = useAuth();
 
   if (auth.isLoading) {
