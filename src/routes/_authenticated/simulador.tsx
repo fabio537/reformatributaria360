@@ -145,7 +145,7 @@ function SimuladorPage() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="ano" />
                   <YAxis tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`} />
-                  <Tooltip formatter={(v: number) => `R$ ${v.toLocaleString("pt-BR")}`} />
+                  <Tooltip formatter={(v: any) => `R$ ${Number(v).toLocaleString("pt-BR")}`} />
                   <Legend />
                   <Bar dataKey="Sistema Atual" fill="var(--color-chart-5)" stackId="a" />
                   <Bar dataKey="IBS/CBS" fill="var(--color-chart-1)" stackId="a" />
