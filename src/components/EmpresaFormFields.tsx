@@ -132,22 +132,12 @@ export function EmpresaFormFields({ form, setForm }: EmpresaFormFieldsProps) {
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label>Telefone</Label>
-            <Input
-              value={form.telefone}
-              onChange={(e) => setForm({ ...form, telefone: e.target.value })}
-              placeholder="(00) 00000-0000"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Endereço</Label>
-            <Input
-              value={form.endereco}
-              onChange={(e) => setForm({ ...form, endereco: e.target.value })}
-            />
-          </div>
+        <div className="space-y-2">
+          <Label>Endereço</Label>
+          <Input
+            value={form.endereco}
+            onChange={(e) => setForm({ ...form, endereco: e.target.value })}
+          />
         </div>
       </section>
 
