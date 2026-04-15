@@ -1,5 +1,6 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,22 +13,24 @@ export const Route = createFileRoute("/login")({
       { name: "description", content: "Acesse a plataforma de suporte à reforma tributária." },
     ],
   }),
-  beforeLoad: ({ context }) => {
-    if ((context as any).auth?.isAuthenticated) {
-      throw redirect({ to: "/dashboard" });
-    }
-  },
   component: LoginPage,
 });
 
 function LoginPage() {
-  const { auth } = Route.useRouteContext() as any;
+  const auth = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [nome, setNome] = useState("");
+
+  useEffect(() => {
+    if (auth.isAuthenticated) {
+      navigate({ to: "/dashboard" });
+    }
+  }, [auth.isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,66 +70,27 @@ function LoginPage() {
             {mode === "signup" && (
               <div className="space-y-2">
                 <Label htmlFor="nome">Nome</Label>
-                <Input
-                  id="nome"
-                  value={nome}
-                  onChange={(e) => setNome(e.target.value)}
-                  placeholder="Seu nome completo"
-                  required
-                />
+                <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Seu nome completo" required />
               </div>
             )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu@email.com"
-                required
-              />
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                minLength={6}
-              />
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} />
             </div>
-            {error && (
-              <p className="text-sm text-destructive">{error}</p>
-            )}
+            {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Carregando..." : mode === "login" ? "Entrar" : "Criar Conta"}
             </Button>
           </form>
           <div className="mt-4 text-center text-sm text-muted-foreground">
             {mode === "login" ? (
-              <>
-                Não tem conta?{" "}
-                <button
-                  onClick={() => setMode("signup")}
-                  className="text-primary underline-offset-4 hover:underline"
-                >
-                  Criar conta
-                </button>
-              </>
+              <>Não tem conta?{" "}<button onClick={() => setMode("signup")} className="text-primary underline-offset-4 hover:underline">Criar conta</button></>
             ) : (
-              <>
-                Já tem conta?{" "}
-                <button
-                  onClick={() => setMode("login")}
-                  className="text-primary underline-offset-4 hover:underline"
-                >
-                  Fazer login
-                </button>
-              </>
+              <>Já tem conta?{" "}<button onClick={() => setMode("login")} className="text-primary underline-offset-4 hover:underline">Fazer login</button></>
             )}
           </div>
         </CardContent>
