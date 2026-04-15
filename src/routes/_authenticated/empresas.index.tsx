@@ -187,7 +187,7 @@ function EmpresasPage() {
                     <Label>Regime Tributário</Label>
                     <Select
                       value={form.regime_tributario}
-                      onValueChange={(v) => setForm({ ...form, regime_tributario: v })}
+                      onValueChange={(v) => setForm({ ...form, regime_tributario: v as "simples_nacional" | "lucro_presumido" | "lucro_real" })}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -289,7 +289,7 @@ function EmpresasPage() {
                 <Label>Regime Tributário</Label>
                 <Select
                   value={form.regime_tributario}
-                  onValueChange={(v) => setForm({ ...form, regime_tributario: v })}
+                  onValueChange={(v) => setForm({ ...form, regime_tributario: v as "simples_nacional" | "lucro_presumido" | "lucro_real" })}
                 >
                   <SelectTrigger>
                     <SelectValue />
