@@ -131,14 +131,6 @@ export function EmpresaFormFields({ form, setForm }: EmpresaFormFieldsProps) {
             onChange={(e) => setForm({ ...form, endereco: e.target.value })}
           />
         </div>
-
-        <div className="space-y-2">
-          <Label>Endereço</Label>
-          <Input
-            value={form.endereco}
-            onChange={(e) => setForm({ ...form, endereco: e.target.value })}
-          />
-        </div>
       </section>
 
       <section className="space-y-4">
