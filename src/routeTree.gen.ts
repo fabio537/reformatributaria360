@@ -18,6 +18,7 @@ import { Route as AuthenticatedEmpresasRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedBaseLegalRouteImport } from './routes/_authenticated/base-legal'
 import { Route as AuthenticatedAtualizacoesRouteImport } from './routes/_authenticated/atualizacoes'
+import { Route as AuthenticatedEmpresasEmpresaIdRouteImport } from './routes/_authenticated/empresas.$empresaId'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -64,6 +65,12 @@ const AuthenticatedAtualizacoesRoute =
     path: '/atualizacoes',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedEmpresasEmpresaIdRoute =
+  AuthenticatedEmpresasEmpresaIdRouteImport.update({
+    id: '/$empresaId',
+    path: '/$empresaId',
+    getParentRoute: () => AuthenticatedEmpresasRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -71,9 +78,10 @@ export interface FileRoutesByFullPath {
   '/atualizacoes': typeof AuthenticatedAtualizacoesRoute
   '/base-legal': typeof AuthenticatedBaseLegalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/empresas': typeof AuthenticatedEmpresasRoute
+  '/empresas': typeof AuthenticatedEmpresasRouteWithChildren
   '/simulador': typeof AuthenticatedSimuladorRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/empresas/$empresaId': typeof AuthenticatedEmpresasEmpresaIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -81,9 +89,10 @@ export interface FileRoutesByTo {
   '/atualizacoes': typeof AuthenticatedAtualizacoesRoute
   '/base-legal': typeof AuthenticatedBaseLegalRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/empresas': typeof AuthenticatedEmpresasRoute
+  '/empresas': typeof AuthenticatedEmpresasRouteWithChildren
   '/simulador': typeof AuthenticatedSimuladorRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/empresas/$empresaId': typeof AuthenticatedEmpresasEmpresaIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -93,9 +102,10 @@ export interface FileRoutesById {
   '/_authenticated/atualizacoes': typeof AuthenticatedAtualizacoesRoute
   '/_authenticated/base-legal': typeof AuthenticatedBaseLegalRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/empresas': typeof AuthenticatedEmpresasRoute
+  '/_authenticated/empresas': typeof AuthenticatedEmpresasRouteWithChildren
   '/_authenticated/simulador': typeof AuthenticatedSimuladorRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
+  '/_authenticated/empresas/$empresaId': typeof AuthenticatedEmpresasEmpresaIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -108,6 +118,7 @@ export interface FileRouteTypes {
     | '/empresas'
     | '/simulador'
     | '/usuarios'
+    | '/empresas/$empresaId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -118,6 +129,7 @@ export interface FileRouteTypes {
     | '/empresas'
     | '/simulador'
     | '/usuarios'
+    | '/empresas/$empresaId'
   id:
     | '__root__'
     | '/'
@@ -129,6 +141,7 @@ export interface FileRouteTypes {
     | '/_authenticated/empresas'
     | '/_authenticated/simulador'
     | '/_authenticated/usuarios'
+    | '/_authenticated/empresas/$empresaId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -202,14 +215,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAtualizacoesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/empresas/$empresaId': {
+      id: '/_authenticated/empresas/$empresaId'
+      path: '/$empresaId'
+      fullPath: '/empresas/$empresaId'
+      preLoaderRoute: typeof AuthenticatedEmpresasEmpresaIdRouteImport
+      parentRoute: typeof AuthenticatedEmpresasRoute
+    }
   }
 }
+
+interface AuthenticatedEmpresasRouteChildren {
+  AuthenticatedEmpresasEmpresaIdRoute: typeof AuthenticatedEmpresasEmpresaIdRoute
+}
+
+const AuthenticatedEmpresasRouteChildren: AuthenticatedEmpresasRouteChildren = {
+  AuthenticatedEmpresasEmpresaIdRoute: AuthenticatedEmpresasEmpresaIdRoute,
+}
+
+const AuthenticatedEmpresasRouteWithChildren =
+  AuthenticatedEmpresasRoute._addFileChildren(
+    AuthenticatedEmpresasRouteChildren,
+  )
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAtualizacoesRoute: typeof AuthenticatedAtualizacoesRoute
   AuthenticatedBaseLegalRoute: typeof AuthenticatedBaseLegalRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedEmpresasRoute: typeof AuthenticatedEmpresasRoute
+  AuthenticatedEmpresasRoute: typeof AuthenticatedEmpresasRouteWithChildren
   AuthenticatedSimuladorRoute: typeof AuthenticatedSimuladorRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
 }
@@ -218,7 +251,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAtualizacoesRoute: AuthenticatedAtualizacoesRoute,
   AuthenticatedBaseLegalRoute: AuthenticatedBaseLegalRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedEmpresasRoute: AuthenticatedEmpresasRoute,
+  AuthenticatedEmpresasRoute: AuthenticatedEmpresasRouteWithChildren,
   AuthenticatedSimuladorRoute: AuthenticatedSimuladorRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
 }
