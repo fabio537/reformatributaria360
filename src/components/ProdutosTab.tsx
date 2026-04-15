@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -41,6 +42,11 @@ const tipoOpLabels: Record<string, string> = {
   importacao: "Importação",
 };
 
+const destinoLabels: Record<string, string> = {
+  mercado_interno: "Mercado Interno",
+  exportacao: "Exportação",
+};
+
 const importFields = [
   { key: "descricao", label: "Descrição", required: true },
   { key: "ncm", label: "NCM", required: true },
@@ -53,6 +59,9 @@ const importFields = [
   { key: "aliquota_ipi", label: "Alíquota IPI" },
   { key: "regime_diferenciado", label: "Regime Diferenciado" },
   { key: "tipo_operacao", label: "Tipo Operação" },
+  { key: "destino_operacao", label: "Destino (mercado_interno/exportacao)" },
+  { key: "sujeito_imposto_seletivo", label: "Sujeito IS (true/false)" },
+  { key: "aliquota_is", label: "Alíquota IS %" },
 ];
 
 const emptyForm = {
@@ -67,6 +76,9 @@ const emptyForm = {
   aliquota_ipi: "",
   regime_diferenciado: "padrao",
   tipo_operacao: "revenda",
+  destino_operacao: "mercado_interno",
+  sujeito_imposto_seletivo: false,
+  aliquota_is: "",
 };
 
 export function ProdutosTab({ empresaId }: { empresaId: string }) {
@@ -76,7 +88,7 @@ export function ProdutosTab({ empresaId }: { empresaId: string }) {
   const [importOpen, setImportOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
 
-  const fetch = async () => {
+  const fetchItems = async () => {
     setLoading(true);
     const { data } = await supabase
       .from("produtos")
@@ -87,7 +99,7 @@ export function ProdutosTab({ empresaId }: { empresaId: string }) {
     setLoading(false);
   };
 
-  useEffect(() => { fetch(); }, [empresaId]);
+  useEffect(() => { fetchItems(); }, [empresaId]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,19 +116,22 @@ export function ProdutosTab({ empresaId }: { empresaId: string }) {
       aliquota_ipi: Number(form.aliquota_ipi) || 0,
       regime_diferenciado: form.regime_diferenciado,
       tipo_operacao: form.tipo_operacao,
+      destino_operacao: form.destino_operacao,
+      sujeito_imposto_seletivo: form.sujeito_imposto_seletivo,
+      aliquota_is: Number(form.aliquota_is) || 0,
     };
     const { error } = await supabase.from("produtos").insert(payload as any);
     if (error) { toast.error(error.message); return; }
     toast.success("Produto adicionado!");
     setDialogOpen(false);
     setForm(emptyForm);
-    fetch();
+    fetchItems();
   };
 
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from("produtos").delete().eq("id", id);
     if (error) toast.error(error.message);
-    else fetch();
+    else fetchItems();
   };
 
   return (
@@ -143,6 +158,8 @@ export function ProdutosTab({ empresaId }: { empresaId: string }) {
               <TableHead>Valor Mensal</TableHead>
               <TableHead>Regime</TableHead>
               <TableHead>Operação</TableHead>
+              <TableHead>Destino</TableHead>
+              <TableHead>IS</TableHead>
               <TableHead className="w-10"></TableHead>
             </TableRow>
           </TableHeader>
@@ -156,6 +173,8 @@ export function ProdutosTab({ empresaId }: { empresaId: string }) {
                 </TableCell>
                 <TableCell>{regimeDifLabels[p.regime_diferenciado] || p.regime_diferenciado}</TableCell>
                 <TableCell>{tipoOpLabels[p.tipo_operacao] || p.tipo_operacao}</TableCell>
+                <TableCell>{destinoLabels[p.destino_operacao] || p.destino_operacao}</TableCell>
+                <TableCell>{p.sujeito_imposto_seletivo ? `${p.aliquota_is}%` : "—"}</TableCell>
                 <TableCell>
                   <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)}>
                     <Trash2 className="h-4 w-4 text-destructive" />
@@ -168,7 +187,7 @@ export function ProdutosTab({ empresaId }: { empresaId: string }) {
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Novo Produto</DialogTitle>
           </DialogHeader>
@@ -215,7 +234,7 @@ export function ProdutosTab({ empresaId }: { empresaId: string }) {
                 <Input type="number" step="0.01" value={form.aliquota_ipi} onChange={(e) => setForm({ ...form, aliquota_ipi: e.target.value })} className="input-numeric" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label>Regime Diferenciado</Label>
                 <Select value={form.regime_diferenciado} onValueChange={(v) => setForm({ ...form, regime_diferenciado: v })}>
@@ -239,6 +258,34 @@ export function ProdutosTab({ empresaId }: { empresaId: string }) {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-1">
+                <Label>Destino</Label>
+                <Select value={form.destino_operacao} onValueChange={(v) => setForm({ ...form, destino_operacao: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mercado_interno">Mercado Interno</SelectItem>
+                    <SelectItem value="exportacao">Exportação</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="border rounded-lg p-3 space-y-2 bg-muted/30">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="is"
+                  checked={form.sujeito_imposto_seletivo}
+                  onCheckedChange={(v) => setForm({ ...form, sujeito_imposto_seletivo: !!v })}
+                />
+                <Label htmlFor="is" className="cursor-pointer">
+                  Sujeito ao Imposto Seletivo (IS) — tabaco, bebidas alcoólicas, etc.
+                </Label>
+              </div>
+              {form.sujeito_imposto_seletivo && (
+                <div className="space-y-1 max-w-[200px]">
+                  <Label>Alíquota IS %</Label>
+                  <Input type="number" step="0.01" value={form.aliquota_is} onChange={(e) => setForm({ ...form, aliquota_is: e.target.value })} className="input-numeric" />
+                </div>
+              )}
             </div>
             <Button type="submit" className="w-full">Cadastrar</Button>
           </form>
@@ -251,7 +298,7 @@ export function ProdutosTab({ empresaId }: { empresaId: string }) {
         tableName="produtos"
         fields={importFields}
         extraData={{ empresa_id: empresaId }}
-        onSuccess={fetch}
+        onSuccess={fetchItems}
         templateFileName="produtos_template"
       />
     </div>

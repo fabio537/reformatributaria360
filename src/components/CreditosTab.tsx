@@ -4,6 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -21,6 +28,13 @@ import { Plus, Upload, Trash2 } from "lucide-react";
 import { ImportDialog } from "./ImportDialog";
 import { toast } from "sonner";
 
+const regimeFornecedorLabels: Record<string, string> = {
+  padrao: "Padrão (100%)",
+  reducao_30: "Redução 30%",
+  reducao_60: "Redução 60%",
+  aliquota_zero: "Alíquota Zero",
+};
+
 const importFields = [
   { key: "fornecedor", label: "Fornecedor", required: true },
   { key: "descricao", label: "Descrição" },
@@ -30,6 +44,7 @@ const importFields = [
   { key: "aliquota_pis", label: "Alíquota PIS" },
   { key: "aliquota_cofins", label: "Alíquota COFINS" },
   { key: "aliquota_ipi", label: "Alíquota IPI" },
+  { key: "regime_diferenciado_fornecedor", label: "Regime do Fornecedor" },
 ];
 
 const emptyForm = {
@@ -41,6 +56,7 @@ const emptyForm = {
   aliquota_pis: "",
   aliquota_cofins: "",
   aliquota_ipi: "",
+  regime_diferenciado_fornecedor: "padrao",
 };
 
 export function CreditosTab({ empresaId }: { empresaId: string }) {
@@ -75,6 +91,7 @@ export function CreditosTab({ empresaId }: { empresaId: string }) {
       aliquota_pis: Number(form.aliquota_pis) || 0,
       aliquota_cofins: Number(form.aliquota_cofins) || 0,
       aliquota_ipi: Number(form.aliquota_ipi) || 0,
+      regime_diferenciado_fornecedor: form.regime_diferenciado_fornecedor,
     };
     const { error } = await supabase.from("creditos_aquisicao").insert(payload as any);
     if (error) { toast.error(error.message); return; }
@@ -113,6 +130,7 @@ export function CreditosTab({ empresaId }: { empresaId: string }) {
               <TableHead>Descrição</TableHead>
               <TableHead>NCM</TableHead>
               <TableHead>Valor Mensal</TableHead>
+              <TableHead>Regime Fornec.</TableHead>
               <TableHead>ICMS</TableHead>
               <TableHead>PIS</TableHead>
               <TableHead>COFINS</TableHead>
@@ -128,6 +146,7 @@ export function CreditosTab({ empresaId }: { empresaId: string }) {
                 <TableCell className="tabular-nums text-right whitespace-nowrap">
                   {c.valor_mensal?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                 </TableCell>
+                <TableCell>{regimeFornecedorLabels[c.regime_diferenciado_fornecedor] || "Padrão"}</TableCell>
                 <TableCell className="tabular-nums text-right whitespace-nowrap">{c.aliquota_icms}%</TableCell>
                 <TableCell className="tabular-nums text-right whitespace-nowrap">{c.aliquota_pis}%</TableCell>
                 <TableCell className="tabular-nums text-right whitespace-nowrap">{c.aliquota_cofins}%</TableCell>
@@ -167,6 +186,18 @@ export function CreditosTab({ empresaId }: { empresaId: string }) {
                 <Label>Valor Mensal (R$)</Label>
                 <Input type="number" step="0.01" value={form.valor_mensal} onChange={(e) => setForm({ ...form, valor_mensal: e.target.value })} className="input-numeric" />
               </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Regime do Fornecedor (IBS/CBS pago na etapa anterior)</Label>
+              <Select value={form.regime_diferenciado_fornecedor} onValueChange={(v) => setForm({ ...form, regime_diferenciado_fornecedor: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="padrao">Padrão (100% — 26,5%)</SelectItem>
+                  <SelectItem value="reducao_30">Redução 30% (18,55%)</SelectItem>
+                  <SelectItem value="reducao_60">Redução 60% (10,6%)</SelectItem>
+                  <SelectItem value="aliquota_zero">Alíquota Zero (0%)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-4 gap-3">
               <div className="space-y-1">
