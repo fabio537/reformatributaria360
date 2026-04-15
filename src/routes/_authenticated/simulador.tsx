@@ -231,12 +231,14 @@ function SimuladorPage() {
 
   const dadosGrafico = resultado?.anos.map((a) => ({
     ano: a.ano,
+    "DAS": Math.round(a.tributos_atuais_bruto.das),
     "PIS/COFINS": Math.round(a.tributos_atuais_bruto.pis + a.tributos_atuais_bruto.cofins),
     "IPI": Math.round(a.tributos_atuais_bruto.ipi),
     "ICMS": Math.round(a.tributos_atuais_bruto.icms),
     "ISS": Math.round(a.tributos_atuais_bruto.iss),
     "CBS": Math.round(a.ibs_cbs_bruto.cbs),
     "IBS": Math.round(a.ibs_cbs_bruto.ibs),
+    "IS": Math.round(a.ibs_cbs_bruto.is),
   })) || [];
 
   const dadosCargaLiquida = resultado?.anos.map((a) => ({
