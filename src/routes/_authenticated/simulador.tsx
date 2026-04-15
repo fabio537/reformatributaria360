@@ -1,6 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -13,11 +14,30 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  LineChart, Line, AreaChart, Area,
+  AreaChart, Area,
 } from "recharts";
 import {
   executarSimulacao,
+  ALIQUOTA_CBS_REF,
+  ALIQUOTA_IBS_REF,
+  ALIQUOTA_TOTAL_REF,
+  CRONOGRAMA_TRANSICAO,
+  FATOR_REGIME,
   type SimulacaoInput,
   type ResultadoSimulacao,
   type ProdutoInput,
@@ -26,7 +46,7 @@ import {
   type EmpresaInput,
   type RegimeDiferenciado,
 } from "@/lib/tax-engine";
-import { AlertTriangle, TrendingDown, TrendingUp, Info, Calculator } from "lucide-react";
+import { AlertTriangle, TrendingDown, TrendingUp, Info, Calculator, BookOpen, Package, Briefcase, Receipt, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/simulador")({
@@ -43,11 +63,45 @@ function formatBRL(value: number): string {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
+function formatPct(value: number): string {
+  return `${(value * 100).toFixed(1)}%`;
+}
+
+const regimeLabels: Record<string, string> = {
+  padrao: "Padrão (100%)",
+  reducao_30: "Redução 30% (70%)",
+  reducao_60: "Redução 60% (40%)",
+  aliquota_zero: "Alíquota Zero",
+  imune: "Imune",
+};
+
+const regimeTributarioLabels: Record<string, string> = {
+  simples_nacional: "Simples Nacional",
+  lucro_presumido: "Lucro Presumido",
+  lucro_real: "Lucro Real",
+};
+
+interface EmpresaResumo {
+  razao_social: string;
+  regime_tributario: string;
+  faturamento_anual: number;
+  uf: string | null;
+  optante_simples_mei: boolean;
+  totalProdutos: number;
+  totalServicos: number;
+  totalCreditos: number;
+  faturamentoProdutos: number;
+  faturamentoServicos: number;
+  valorCreditos: number;
+}
+
 function SimuladorPage() {
+  const auth = useAuth();
   const [empresas, setEmpresas] = useState<any[]>([]);
   const [empresaId, setEmpresaId] = useState("");
   const [loading, setLoading] = useState(false);
   const [resultado, setResultado] = useState<ResultadoSimulacao | null>(null);
+  const [resumoEmpresa, setResumoEmpresa] = useState<EmpresaResumo | null>(null);
 
   useEffect(() => {
     supabase.from("empresas").select("id, razao_social, cnpj").order("razao_social").then(({ data }) => {
@@ -55,12 +109,42 @@ function SimuladorPage() {
     });
   }, []);
 
+  // Buscar resumo quando empresa é selecionada
+  useEffect(() => {
+    if (!empresaId) {
+      setResumoEmpresa(null);
+      return;
+    }
+    (async () => {
+      const [{ data: empresa }, { data: produtos }, { data: servicos }, { data: creditos }] = await Promise.all([
+        supabase.from("empresas").select("*").eq("id", empresaId).single(),
+        supabase.from("produtos").select("id, valor_mensal").eq("empresa_id", empresaId),
+        supabase.from("servicos").select("id, valor_mensal").eq("empresa_id", empresaId),
+        supabase.from("creditos_aquisicao").select("id, valor_mensal").eq("empresa_id", empresaId),
+      ]);
+      if (empresa) {
+        setResumoEmpresa({
+          razao_social: empresa.razao_social,
+          regime_tributario: empresa.regime_tributario,
+          faturamento_anual: Number(empresa.faturamento_anual) || 0,
+          uf: empresa.uf,
+          optante_simples_mei: empresa.optante_simples_mei || false,
+          totalProdutos: produtos?.length || 0,
+          totalServicos: servicos?.length || 0,
+          totalCreditos: creditos?.length || 0,
+          faturamentoProdutos: (produtos || []).reduce((s, p) => s + (Number(p.valor_mensal) || 0), 0),
+          faturamentoServicos: (servicos || []).reduce((s, p) => s + (Number(p.valor_mensal) || 0), 0),
+          valorCreditos: (creditos || []).reduce((s, p) => s + (Number(p.valor_mensal) || 0), 0),
+        });
+      }
+    })();
+  }, [empresaId]);
+
   const simular = async () => {
     if (!empresaId) return;
     setLoading(true);
 
     try {
-      // Buscar todos os dados da empresa em paralelo
       const [{ data: empresa }, { data: produtos }, { data: servicos }, { data: creditos }] = await Promise.all([
         supabase.from("empresas").select("*").eq("id", empresaId).single(),
         supabase.from("produtos").select("*").eq("empresa_id", empresaId),
@@ -73,7 +157,6 @@ function SimuladorPage() {
         return;
       }
 
-      // Montar input para o motor de cálculo
       const empresaInput: EmpresaInput = {
         razao_social: empresa.razao_social,
         cnpj: empresa.cnpj,
@@ -142,7 +225,6 @@ function SimuladorPage() {
     }
   };
 
-  // Dados para o gráfico de barras empilhadas
   const dadosGrafico = resultado?.anos.map((a) => ({
     ano: a.ano,
     "PIS/COFINS": Math.round(a.tributos_atuais_bruto.pis + a.tributos_atuais_bruto.cofins),
@@ -153,7 +235,6 @@ function SimuladorPage() {
     "IBS": Math.round(a.ibs_cbs_bruto.ibs),
   })) || [];
 
-  // Dados para gráfico de carga líquida
   const dadosCargaLiquida = resultado?.anos.map((a) => ({
     ano: a.ano,
     "Carga Atual": Math.round(a.carga_atual_liquida),
@@ -171,7 +252,95 @@ function SimuladorPage() {
         </p>
       </div>
 
-      {/* Seleção de empresa */}
+      {/* ─── Parâmetros Base do Motor de Cálculo ──────────────── */}
+      <Accordion type="single" collapsible defaultValue="parametros">
+        <AccordionItem value="parametros">
+          <AccordionTrigger className="text-base font-semibold">
+            <span className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4" />
+              Parâmetros Base do Motor de Cálculo
+            </span>
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className="grid gap-4 md:grid-cols-3 pt-2">
+              {/* Alíquotas de Referência */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Alíquotas de Referência (LC 214/2025)</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">CBS (federal)</span>
+                    <Badge variant="secondary" className="tabular-nums">{formatPct(ALIQUOTA_CBS_REF)}</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">IBS (estadual/municipal)</span>
+                    <Badge variant="secondary" className="tabular-nums">{formatPct(ALIQUOTA_IBS_REF)}</Badge>
+                  </div>
+                  <div className="flex justify-between items-center border-t pt-2">
+                    <span className="text-sm font-medium">Total Referência</span>
+                    <Badge className="tabular-nums">{formatPct(ALIQUOTA_TOTAL_REF)}</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Regimes Diferenciados */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Regimes Diferenciados</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {(Object.entries(FATOR_REGIME) as [RegimeDiferenciado, number][]).map(([regime, fator]) => (
+                    <div key={regime} className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">{regimeLabels[regime]}</span>
+                      <Badge variant="outline" className="tabular-nums">
+                        {fator === 0 ? "0%" : `${(ALIQUOTA_TOTAL_REF * fator * 100).toFixed(1)}%`}
+                      </Badge>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              {/* Cronograma de Transição */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Cronograma de Transição (EC 132/2023)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="h-8 text-xs px-1">Ano</TableHead>
+                        <TableHead className="h-8 text-xs px-1">CBS</TableHead>
+                        <TableHead className="h-8 text-xs px-1">IBS</TableHead>
+                        <TableHead className="h-8 text-xs px-1">Red. Atuais</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {CRONOGRAMA_TRANSICAO.map((t) => (
+                        <TableRow key={t.ano}>
+                          <TableCell className="py-1 px-1 text-xs font-medium">{t.ano}</TableCell>
+                          <TableCell className="py-1 px-1 text-xs tabular-nums">
+                            {t.cbs_teste ? "0,9% (teste)" : formatPct(t.cbs_pct)}
+                          </TableCell>
+                          <TableCell className="py-1 px-1 text-xs tabular-nums">{formatPct(t.ibs_pct)}</TableCell>
+                          <TableCell className="py-1 px-1 text-xs tabular-nums">{formatPct(t.reducao_atual)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
+            <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
+              <Info className="h-3 w-3" />
+              Valores fixos conforme legislação vigente. Não editáveis.
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
+      {/* ─── Seleção de empresa ──────────────── */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -180,7 +349,7 @@ function SimuladorPage() {
           </CardTitle>
           <CardDescription>Selecione a empresa com produtos, serviços e créditos cadastrados</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="flex items-end gap-4">
             <div className="space-y-2 flex-1 max-w-sm">
               <Label>Empresa</Label>
@@ -201,6 +370,79 @@ function SimuladorPage() {
               {loading ? "Calculando…" : "Simular"}
             </Button>
           </div>
+
+          {/* Resumo dos dados cadastrados da empresa */}
+          {resumoEmpresa && (
+            <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold">Dados Base da Empresa</h3>
+                <Link to="/empresas/$empresaId" params={{ empresaId }}>
+                  <Button variant="outline" size="sm">
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    Editar Dados
+                  </Button>
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div>
+                  <span className="text-xs text-muted-foreground">Regime</span>
+                  <p className="text-sm font-medium">{regimeTributarioLabels[resumoEmpresa.regime_tributario] || resumoEmpresa.regime_tributario}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">Faturamento Anual</span>
+                  <p className="text-sm font-medium tabular-nums">{formatBRL(resumoEmpresa.faturamento_anual)}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">UF</span>
+                  <p className="text-sm font-medium">{resumoEmpresa.uf || "—"}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">Simples/MEI</span>
+                  <p className="text-sm font-medium">{resumoEmpresa.optante_simples_mei ? "Sim" : "Não"}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 border-t pt-3">
+                <div className="flex items-center gap-2">
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">{resumoEmpresa.totalProdutos} produto(s)</p>
+                    <p className="text-xs text-muted-foreground tabular-nums">
+                      {formatBRL(resumoEmpresa.faturamentoProdutos)}/mês
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Briefcase className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">{resumoEmpresa.totalServicos} serviço(s)</p>
+                    <p className="text-xs text-muted-foreground tabular-nums">
+                      {formatBRL(resumoEmpresa.faturamentoServicos)}/mês
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Receipt className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">{resumoEmpresa.totalCreditos} crédito(s)</p>
+                    <p className="text-xs text-muted-foreground tabular-nums">
+                      {formatBRL(resumoEmpresa.valorCreditos)}/mês
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {(resumoEmpresa.totalProdutos === 0 && resumoEmpresa.totalServicos === 0) && (
+                <div className="flex items-center gap-2 text-amber-600 bg-amber-500/10 rounded-md p-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  <p className="text-xs">
+                    Nenhum produto ou serviço cadastrado. <Link to="/empresas/$empresaId" params={{ empresaId }} className="underline font-medium">Cadastre os dados</Link> para obter uma simulação precisa.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -280,7 +522,7 @@ function SimuladorPage() {
               </CardHeader>
               <CardContent>
                 <Badge variant="outline" className="mb-1">
-                  {resultado.regime_tributario.replace("_", " ")}
+                  {regimeTributarioLabels[resultado.regime_tributario] || resultado.regime_tributario}
                 </Badge>
                 <div className="text-sm tabular-nums">{formatBRL(resultado.faturamento_anual)}/ano</div>
               </CardContent>
