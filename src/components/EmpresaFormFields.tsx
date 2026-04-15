@@ -1,4 +1,5 @@
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/CurrencyInput";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -165,13 +166,9 @@ export function EmpresaFormFields({ form, setForm }: EmpresaFormFieldsProps) {
           </div>
           <div className="space-y-2">
             <Label>Faturamento Anual (R$)</Label>
-            <Input
-              type="number"
-              step="0.01"
+            <CurrencyInput
               value={form.faturamento_anual}
-              onChange={(e) => setForm({ ...form, faturamento_anual: e.target.value })}
-              placeholder="0,00"
-              className="input-numeric"
+              onValueChange={(v) => setForm({ ...form, faturamento_anual: v })}
             />
           </div>
         </div>
