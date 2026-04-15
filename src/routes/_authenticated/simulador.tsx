@@ -174,6 +174,9 @@ function SimuladorPage() {
         quantidade_mensal: Number(p.quantidade_mensal) || 0,
         regime_diferenciado: (p.regime_diferenciado || "padrao") as RegimeDiferenciado,
         tipo_operacao: p.tipo_operacao || "revenda",
+        destino_operacao: p.destino_operacao || "mercado_interno",
+        sujeito_imposto_seletivo: p.sujeito_imposto_seletivo || false,
+        aliquota_is: Number(p.aliquota_is) || 0,
         aliquota_ipi: Number(p.aliquota_ipi) || 0,
         aliquota_pis: Number(p.aliquota_pis) || 0,
         aliquota_cofins: Number(p.aliquota_cofins) || 0,
@@ -196,6 +199,7 @@ function SimuladorPage() {
         descricao: c.descricao,
         ncm: c.ncm,
         valor_mensal: Number(c.valor_mensal) || 0,
+        regime_diferenciado_fornecedor: (c.regime_diferenciado_fornecedor || "padrao") as RegimeDiferenciado,
         aliquota_ipi: Number(c.aliquota_ipi) || 0,
         aliquota_pis: Number(c.aliquota_pis) || 0,
         aliquota_cofins: Number(c.aliquota_cofins) || 0,
@@ -227,12 +231,14 @@ function SimuladorPage() {
 
   const dadosGrafico = resultado?.anos.map((a) => ({
     ano: a.ano,
+    "DAS": Math.round(a.tributos_atuais_bruto.das),
     "PIS/COFINS": Math.round(a.tributos_atuais_bruto.pis + a.tributos_atuais_bruto.cofins),
     "IPI": Math.round(a.tributos_atuais_bruto.ipi),
     "ICMS": Math.round(a.tributos_atuais_bruto.icms),
     "ISS": Math.round(a.tributos_atuais_bruto.iss),
     "CBS": Math.round(a.ibs_cbs_bruto.cbs),
     "IBS": Math.round(a.ibs_cbs_bruto.ibs),
+    "IS": Math.round(a.ibs_cbs_bruto.is),
   })) || [];
 
   const dadosCargaLiquida = resultado?.anos.map((a) => ({
