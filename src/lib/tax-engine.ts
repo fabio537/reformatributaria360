@@ -323,8 +323,9 @@ function calcularTributosAtuaisProdutos(
   produtos: ProdutoInput[],
   regime: string,
   faturamentoAnual: number,
-): Omit<DetalheTributoAtual, "iss" | "total"> & { faturamento: number } {
+): Omit<DetalheTributoAtual, "iss" | "total"> & { faturamento: number; ipi_zfm: number; ipi_nao_zfm: number } {
   let pis = 0, cofins = 0, ipi = 0, icms = 0, das = 0, faturamento = 0;
+  let ipi_zfm = 0, ipi_nao_zfm = 0;
 
   for (const p of produtos) {
     faturamento += p.valor_mensal;
@@ -338,12 +339,21 @@ function calcularTributosAtuaisProdutos(
       const v = p.valor_mensal;
       pis += v * (p.aliquota_pis / 100);
       cofins += v * (p.aliquota_cofins / 100);
-      ipi += v * (p.aliquota_ipi / 100);
+      const ipiProduto = v * (p.aliquota_ipi / 100);
+      ipi += ipiProduto;
       icms += v * (p.aliquota_icms / 100);
+
+      // Separar IPI por ZFM: produtos com NCM de ZFM mantêm IPI após 2027
+      const { isZfm } = verificarNcmZfm(p.ncm);
+      if (isZfm) {
+        ipi_zfm += ipiProduto;
+      } else {
+        ipi_nao_zfm += ipiProduto;
+      }
     }
   }
 
-  return { pis, cofins, ipi, icms, das, faturamento };
+  return { pis, cofins, ipi, icms, das, faturamento, ipi_zfm, ipi_nao_zfm };
 }
 
 /**
