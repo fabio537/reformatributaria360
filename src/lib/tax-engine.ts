@@ -583,8 +583,8 @@ function formatarBRL(v: number): string {
 }
 
 function faseTransicao(t: TransicaoAno): string {
-  if (t.cbs_teste && t.ibs_teste) return "Fase teste (CBS 0,9% + IBS 0,1%)";
-  if (!t.cbs_teste && t.ibs_teste) return "CBS integral, IBS teste (0,1%)";
+  if (t.sem_incidencia_real) return "Teste sem incidência real (CBS 0,9% + IBS 0,1% compensáveis)";
+  if (!t.cbs_teste && t.ibs_teste) return "CBS integral, IBS teste (0,1%). IPI zerado.";
   if (t.ibs_pct < 1.0) return `Transição (IBS ${(t.ibs_pct * 100).toFixed(0)}%, ICMS/ISS ${(t.icms_iss_fator * 100).toFixed(0)}%)`;
   return "Sistema novo integral";
 }
