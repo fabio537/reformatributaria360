@@ -27,7 +27,9 @@ import {
   getEmptyEmpresaForm,
   type EmpresaFormValues,
 } from "@/components/EmpresaFormFields";
-import { Plus, Search, ExternalLink, Pencil } from "lucide-react";
+import { Plus, Search, ExternalLink, Pencil, FileDown } from "lucide-react";
+import { toast } from "sonner";
+import type { ResultadoSimulacao } from "@/lib/tax-engine";
 
 export const Route = createFileRoute("/_authenticated/empresas/")({
   head: () => ({
@@ -48,7 +50,9 @@ const regimeLabels: Record<string, string> = {
 function EmpresasPage() {
   const auth = useAuth();
   const [empresas, setEmpresas] = useState<any[]>([]);
+  const [ultimaSimulacao, setUltimaSimulacao] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -62,6 +66,19 @@ function EmpresasPage() {
       .select("*")
       .order("razao_social");
     setEmpresas(data || []);
+
+    // Buscar última simulação de cada empresa
+    const { data: sims } = await supabase
+      .from("simulacoes")
+      .select("id, empresa_id, nome, created_at, resultados")
+      .order("created_at", { ascending: false });
+
+    const map: Record<string, any> = {};
+    sims?.forEach((s) => {
+      if (!map[s.empresa_id]) map[s.empresa_id] = s;
+    });
+    setUltimaSimulacao(map);
+
     setLoading(false);
   };
 
@@ -148,6 +165,21 @@ function EmpresasPage() {
     }
   };
 
+  const handleDownloadRelatorio = async (empresaId: string) => {
+    const sim = ultimaSimulacao[empresaId];
+    if (!sim?.resultados) return;
+    setDownloading(empresaId);
+    try {
+      const { gerarRelatorioPDF } = await import("@/lib/relatorio-pdf");
+      await gerarRelatorioPDF(sim.resultados as ResultadoSimulacao);
+      toast.success("Relatório baixado!");
+    } catch {
+      toast.error("Erro ao gerar relatório");
+    } finally {
+      setDownloading(null);
+    }
+  };
+
   const canEdit = auth.isAdmin() || auth.isStaff();
 
   const filtered = empresas.filter(
@@ -229,6 +261,7 @@ function EmpresasPage() {
                   <TableHead>Regime</TableHead>
                   <TableHead>Faturamento Anual</TableHead>
                   <TableHead>CNAE</TableHead>
+                  <TableHead>Simulação</TableHead>
                   <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -245,6 +278,23 @@ function EmpresasPage() {
                         : "—"}
                     </TableCell>
                     <TableCell>{empresa.cnae_principal || "—"}</TableCell>
+                    <TableCell>
+                      {ultimaSimulacao[empresa.id] ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1.5 text-xs"
+                          disabled={downloading === empresa.id}
+                          onClick={() => handleDownloadRelatorio(empresa.id)}
+                          title={`Baixar relatório: ${ultimaSimulacao[empresa.id].nome}`}
+                        >
+                          <FileDown className="h-3.5 w-3.5" />
+                          {downloading === empresa.id ? "Gerando…" : "PDF"}
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         {canEdit && (
