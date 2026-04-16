@@ -27,7 +27,9 @@ import {
   getEmptyEmpresaForm,
   type EmpresaFormValues,
 } from "@/components/EmpresaFormFields";
-import { Plus, Search, ExternalLink, Pencil } from "lucide-react";
+import { Plus, Search, ExternalLink, Pencil, FileDown } from "lucide-react";
+import { toast } from "sonner";
+import type { ResultadoSimulacao } from "@/lib/tax-engine";
 
 export const Route = createFileRoute("/_authenticated/empresas/")({
   head: () => ({
