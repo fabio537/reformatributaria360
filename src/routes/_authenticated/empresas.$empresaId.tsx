@@ -10,6 +10,7 @@ import { ArrowLeft, Save } from "lucide-react";
 import { ProdutosTab } from "@/components/ProdutosTab";
 import { ServicosTab } from "@/components/ServicosTab";
 import { CreditosTab } from "@/components/CreditosTab";
+import { ChecklistReformaTab } from "@/components/ChecklistReformaTab";
 import {
   EmpresaFormFields,
   getEmptyEmpresaForm,
@@ -135,6 +136,7 @@ function EmpresaDetalhePage() {
           <TabsTrigger value="produtos">Produtos</TabsTrigger>
           <TabsTrigger value="servicos">Serviços</TabsTrigger>
           <TabsTrigger value="creditos">Créditos</TabsTrigger>
+          <TabsTrigger value="checklist">Checklist</TabsTrigger>
           <TabsTrigger value="simulacoes">Simulações</TabsTrigger>
         </TabsList>
 
@@ -186,6 +188,17 @@ function EmpresaDetalhePage() {
             </CardHeader>
             <CardContent>
               <CreditosTab empresaId={empresaId} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="checklist">
+          <Card>
+            <CardHeader>
+              <CardTitle>Checklist — Ações para a Reforma Tributária</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ChecklistReformaTab empresaId={empresaId} />
             </CardContent>
           </Card>
         </TabsContent>
