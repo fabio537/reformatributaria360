@@ -607,6 +607,18 @@ function SimuladorPage() {
             <Button onClick={simular} disabled={!empresaId || loading}>
               {loading ? "Calculando…" : "Simular"}
             </Button>
+            {resultado && (
+              <>
+                <Button variant="outline" onClick={salvarSimulacao} disabled={saving || !!simulacaoSalvaId}>
+                  <Save className="h-4 w-4 mr-1" />
+                  {simulacaoSalvaId ? "Salva ✓" : saving ? "Salvando…" : "Salvar"}
+                </Button>
+                <Button variant="outline" onClick={gerarRelatorio} disabled={generatingPdf}>
+                  <FileText className="h-4 w-4 mr-1" />
+                  {generatingPdf ? "Gerando…" : "Gerar Relatório PDF"}
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Resumo dos dados cadastrados da empresa */}
