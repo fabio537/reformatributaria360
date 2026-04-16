@@ -656,12 +656,16 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
     // ── Tributos atuais no ano ──
     // PIS/COFINS: mantidos com fator específico (extintos a partir de 2027)
     // ICMS/ISS: mantidos com fator específico (reduzidos gradualmente 2029-2033)
-    // IPI: mantido com fator específico
-    // DAS (Simples): segue o mesmo padrão — componentes federais (PIS/COFINS) e estaduais proporcionais
+    // IPI: separado em ZFM (mantido) e não-ZFM (zerado a partir de 2027)
+    // DAS (Simples): segue o mesmo padrão — componentes federais (PIS/COFINS/IRPJ/CSLL) e estaduais proporcionais
+    //
+    // IPI ZFM: mantido integralmente (fator 1.0) pois preserva competitividade da ZFM
+    // IPI não-ZFM: segue ipi_fator do cronograma (0 a partir de 2027)
+    const ipiAno = (tribProd.ipi_zfm * 1.0 + tribProd.ipi_nao_zfm * t.ipi_fator) * 12;
     const tribAtualAno: DetalheTributoAtual = {
       pis: tributosAtuaisMensal.pis * t.pis_cofins_fator * 12,
       cofins: tributosAtuaisMensal.cofins * t.pis_cofins_fator * 12,
-      ipi: tributosAtuaisMensal.ipi * t.ipi_fator * 12,
+      ipi: ipiAno,
       icms: tributosAtuaisMensal.icms * t.icms_iss_fator * 12,
       iss: tributosAtuaisMensal.iss * t.icms_iss_fator * 12,
       // Para DAS no Simples, aproximação: ~50% federal (PIS/COFINS/IRPJ/CSLL), ~50% estadual/municipal
