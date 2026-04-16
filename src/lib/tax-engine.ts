@@ -686,11 +686,13 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
     // IS: só incide quando CBS/IBS estão em vigor (não na fase teste)
     const isAno = ibsCbsMensal.is * (t.cbs_teste ? 0 : 1.0) * 12;
 
+    // Se sem_incidencia_real (2026), CBS/IBS teste são compensáveis com PIS/COFINS
+    // e NÃO geram carga tributária adicional
     const ibsCbsAno: DetalheIbsCbs = {
-      cbs: cbsAno,
-      ibs: ibsAno,
-      is: isAno,
-      total: cbsAno + ibsAno + isAno,
+      cbs: t.sem_incidencia_real ? 0 : cbsAno,
+      ibs: t.sem_incidencia_real ? 0 : ibsAno,
+      is: t.sem_incidencia_real ? 0 : isAno,
+      total: t.sem_incidencia_real ? 0 : (cbsAno + ibsAno + isAno),
     };
 
     // ── Créditos no ano ──
