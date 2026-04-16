@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,7 +15,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Search, BookOpen } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Plus, Search, BookOpen, Scale, FileText } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/base-legal")({
   head: () => ({
@@ -33,6 +39,7 @@ function BaseLegalPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [form, setForm] = useState({
     titulo: "",
     conteudo: "",
@@ -73,17 +80,20 @@ function BaseLegalPage() {
   const filtered = artigos.filter(
     (a) =>
       a.titulo?.toLowerCase().includes(search.toLowerCase()) ||
-      a.categoria?.toLowerCase().includes(search.toLowerCase())
+      a.categoria?.toLowerCase().includes(search.toLowerCase()) ||
+      a.tags?.some((t: string) => t.toLowerCase().includes(search.toLowerCase()))
   );
 
-  const categorias = ["IBS", "CBS", "Transição", "Créditos", "Simples Nacional", "Geral"];
+  // Separar legislação fundamental dos demais artigos
+  const legislacao = filtered.filter((a) => a.categoria === "Legislação Fundamental" || a.categoria === "Regimes Diferenciados");
+  const outros = filtered.filter((a) => a.categoria !== "Legislação Fundamental" && a.categoria !== "Regimes Diferenciados");
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Base Legal</h1>
-          <p className="text-muted-foreground mt-1">Artigos e legislação sobre a reforma tributária</p>
+          <p className="text-muted-foreground mt-1">Legislação e artigos sobre a reforma tributária</p>
         </div>
         {auth.isStaff() && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -100,36 +110,19 @@ function BaseLegalPage() {
               <form onSubmit={handleCreate} className="space-y-4">
                 <div className="space-y-2">
                   <Label>Título</Label>
-                  <Input
-                    value={form.titulo}
-                    onChange={(e) => setForm({ ...form, titulo: e.target.value })}
-                    required
-                  />
+                  <Input value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} required />
                 </div>
                 <div className="space-y-2">
                   <Label>Categoria</Label>
-                  <Input
-                    value={form.categoria}
-                    onChange={(e) => setForm({ ...form, categoria: e.target.value })}
-                    placeholder="Ex: IBS, CBS, Transição"
-                  />
+                  <Input value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} placeholder="Ex: IBS, CBS, Transição" />
                 </div>
                 <div className="space-y-2">
                   <Label>Tags (separadas por vírgula)</Label>
-                  <Input
-                    value={form.tags}
-                    onChange={(e) => setForm({ ...form, tags: e.target.value })}
-                    placeholder="Ex: IBS, alíquota, transição"
-                  />
+                  <Input value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} placeholder="Ex: IBS, alíquota, transição" />
                 </div>
                 <div className="space-y-2">
                   <Label>Conteúdo</Label>
-                  <Textarea
-                    value={form.conteudo}
-                    onChange={(e) => setForm({ ...form, conteudo: e.target.value })}
-                    rows={8}
-                    required
-                  />
+                  <Textarea value={form.conteudo} onChange={(e) => setForm({ ...form, conteudo: e.target.value })} rows={8} required />
                 </div>
                 <Button type="submit" className="w-full">Publicar</Button>
               </form>
@@ -140,12 +133,7 @@ function BaseLegalPage() {
 
       <div className="flex items-center gap-3">
         <Search className="h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Buscar artigos..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm"
-        />
+        <Input placeholder="Buscar por título, categoria ou tag..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-sm" />
       </div>
 
       {loading ? (
@@ -158,35 +146,83 @@ function BaseLegalPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4">
-          {filtered.map((artigo) => (
-            <Card key={artigo.id}>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <CardTitle className="text-lg">{artigo.titulo}</CardTitle>
-                  <Badge variant="secondary">{artigo.categoria}</Badge>
-                </div>
-                {artigo.tags?.length > 0 && (
-                  <div className="flex gap-1 flex-wrap">
-                    {artigo.tags.map((tag: string) => (
-                      <Badge key={tag} variant="outline" className="text-xs">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap line-clamp-4">
-                  {artigo.conteudo}
-                </p>
-                <p className="text-xs text-muted-foreground mt-3">
-                  {new Date(artigo.created_at).toLocaleDateString("pt-BR")}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <>
+          {/* Legislação Fundamental */}
+          {legislacao.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Scale className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-semibold">Legislação Fundamental</h2>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Normas que fundamentam a reforma tributária brasileira — EC 132/2023, LC 214/2025, LCP 227/2026 e regulamentações complementares.
+              </p>
+              <Accordion type="single" collapsible className="space-y-2">
+                {legislacao.map((artigo) => (
+                  <AccordionItem key={artigo.id} value={artigo.id} className="border rounded-lg px-4">
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex items-center gap-3 text-left">
+                        <FileText className="h-4 w-4 shrink-0 text-primary" />
+                        <div>
+                          <p className="font-medium text-sm">{artigo.titulo}</p>
+                          <div className="flex gap-1 mt-1 flex-wrap">
+                            <Badge variant="secondary" className="text-xs">{artigo.categoria}</Badge>
+                            {artigo.tags?.slice(0, 3).map((tag: string) => (
+                              <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="pt-2 pb-4">
+                        <pre className="text-sm text-muted-foreground whitespace-pre-wrap font-sans leading-relaxed">
+                          {artigo.conteudo}
+                        </pre>
+                        <p className="text-xs text-muted-foreground mt-4 border-t pt-2">
+                          Adicionado em {new Date(artigo.created_at).toLocaleDateString("pt-BR")}
+                        </p>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </div>
+          )}
+
+          {/* Outros Artigos */}
+          {outros.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-semibold">Artigos e Análises</h2>
+              </div>
+              <div className="grid gap-4">
+                {outros.map((artigo) => (
+                  <Card key={artigo.id}>
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <CardTitle className="text-lg">{artigo.titulo}</CardTitle>
+                        <Badge variant="secondary">{artigo.categoria}</Badge>
+                      </div>
+                      {artigo.tags?.length > 0 && (
+                        <div className="flex gap-1 flex-wrap">
+                          {artigo.tags.map((tag: string) => (
+                            <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
+                          ))}
+                        </div>
+                      )}
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap line-clamp-4">{artigo.conteudo}</p>
+                      <p className="text-xs text-muted-foreground mt-3">{new Date(artigo.created_at).toLocaleDateString("pt-BR")}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
