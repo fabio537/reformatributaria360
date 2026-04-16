@@ -46,8 +46,9 @@ import {
   type EmpresaInput,
   type RegimeDiferenciado,
 } from "@/lib/tax-engine";
-import { AlertTriangle, TrendingDown, TrendingUp, Info, Calculator, BookOpen, Package, Briefcase, Receipt, ExternalLink } from "lucide-react";
+import { AlertTriangle, TrendingDown, TrendingUp, Info, Calculator, BookOpen, Package, Briefcase, Receipt, ExternalLink, Save, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { Json } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/simulador")({
   head: () => ({
