@@ -46,8 +46,9 @@ import {
   type EmpresaInput,
   type RegimeDiferenciado,
 } from "@/lib/tax-engine";
-import { AlertTriangle, TrendingDown, TrendingUp, Info, Calculator, BookOpen, Package, Briefcase, Receipt, ExternalLink } from "lucide-react";
+import { AlertTriangle, TrendingDown, TrendingUp, Info, Calculator, BookOpen, Package, Briefcase, Receipt, ExternalLink, Save, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { Json } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/simulador")({
   head: () => ({
@@ -100,7 +101,11 @@ function SimuladorPage() {
   const [empresas, setEmpresas] = useState<any[]>([]);
   const [empresaId, setEmpresaId] = useState("");
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
   const [resultado, setResultado] = useState<ResultadoSimulacao | null>(null);
+  const [simulacaoInput, setSimulacaoInput] = useState<SimulacaoInput | null>(null);
+  const [simulacaoSalvaId, setSimulacaoSalvaId] = useState<string | null>(null);
   const [resumoEmpresa, setResumoEmpresa] = useState<EmpresaResumo | null>(null);
 
   useEffect(() => {
@@ -215,6 +220,8 @@ function SimuladorPage() {
 
       const res = executarSimulacao(input);
       setResultado(res);
+      setSimulacaoInput(input);
+      setSimulacaoSalvaId(null);
 
       if (produtosInput.length === 0 && servicosInput.length === 0) {
         toast.warning("Nenhum produto ou serviço cadastrado. Cadastre os dados na página da empresa para uma simulação precisa.");
@@ -226,6 +233,223 @@ function SimuladorPage() {
       toast.error("Erro ao executar simulação");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const salvarSimulacao = async () => {
+    if (!resultado || !auth.user || !empresaId || !simulacaoInput) return;
+    setSaving(true);
+    try {
+      const nome = `Simulação ${resultado.empresa} — ${new Date().toLocaleDateString("pt-BR")}`;
+      const { data, error } = await supabase.from("simulacoes").insert({
+        nome,
+        empresa_id: empresaId,
+        user_id: auth.user.id,
+        ano_inicio: 2026,
+        ano_fim: 2033,
+        parametros: simulacaoInput as unknown as Json,
+        resultados: resultado as unknown as Json,
+      }).select("id").single();
+
+      if (error) throw error;
+      setSimulacaoSalvaId(data.id);
+      toast.success("Simulação salva com sucesso!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao salvar simulação");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const gerarRelatorio = async () => {
+    if (!resultado) return;
+    setGeneratingPdf(true);
+    try {
+      const { default: jsPDF } = await import("jspdf");
+      const autoTable = (await import("jspdf-autotable")).default;
+
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      let y = 20;
+
+      // Header
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("Relatório de Simulação Tributária", pageWidth / 2, y, { align: "center" });
+      y += 8;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text("Reforma Tributária — EC 132/2023, LC 214/2025", pageWidth / 2, y, { align: "center" });
+      y += 5;
+      doc.text(`Gerado em: ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`, pageWidth / 2, y, { align: "center" });
+      y += 10;
+
+      // Linha separadora
+      doc.setDrawColor(100);
+      doc.line(14, y, pageWidth - 14, y);
+      y += 8;
+
+      // Dados da Empresa
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("Dados da Empresa", 14, y);
+      y += 7;
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      const empresaData = [
+        ["Razão Social", resultado.empresa],
+        ["CNPJ", resultado.cnpj],
+        ["Regime Tributário", regimeTributarioLabels[resultado.regime_tributario] || resultado.regime_tributario],
+        ["Faturamento Anual", formatBRL(resultado.faturamento_anual)],
+      ];
+      empresaData.forEach(([label, value]) => {
+        doc.setFont("helvetica", "bold");
+        doc.text(`${label}: `, 14, y);
+        doc.setFont("helvetica", "normal");
+        doc.text(value, 60, y);
+        y += 5;
+      });
+      y += 5;
+
+      // Resumo de Cargas
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("Resumo Comparativo", 14, y);
+      y += 7;
+
+      autoTable(doc, {
+        startY: y,
+        head: [["Indicador", "Valor"]],
+        body: [
+          ["Carga Tributária Atual (anual)", formatBRL(resultado.carga_atual_anual)],
+          ["Créditos Sistema Atual (anual)", formatBRL(resultado.creditos_atuais_anual)],
+          ["Carga IBS/CBS em 2033 (anual)", formatBRL(resultado.carga_nova_anual)],
+          ["Créditos IBS/CBS (anual)", formatBRL(resultado.creditos_novos_anual)],
+          ["Variação em 2033", (() => {
+            const ultimo = resultado.anos[resultado.anos.length - 1];
+            return `${ultimo.variacao >= 0 ? "+" : ""}${ultimo.variacao_pct.toFixed(1)}% (${formatBRL(Math.abs(ultimo.variacao))})`;
+          })()],
+        ],
+        theme: "grid",
+        headStyles: { fillColor: [41, 98, 255], textColor: 255 },
+        styles: { fontSize: 9 },
+        margin: { left: 14, right: 14 },
+      });
+
+      y = (doc as any).lastAutoTable.finalY + 10;
+
+      // Tabela de Transição
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("Detalhamento Anual — Transição 2026-2033", 14, y);
+      y += 7;
+
+      autoTable(doc, {
+        startY: y,
+        head: [["Ano", "Fase", "Trib. Atuais", "IBS/CBS", "Créditos", "Carga Total", "Variação"]],
+        body: resultado.anos.map((a) => [
+          String(a.ano),
+          a.fase,
+          formatBRL(a.tributos_atuais_bruto.total),
+          formatBRL(a.ibs_cbs_bruto.total),
+          formatBRL(a.creditos.creditos_atuais + a.creditos.creditos_ibs_cbs),
+          formatBRL(a.carga_total),
+          `${a.variacao >= 0 ? "+" : ""}${a.variacao_pct.toFixed(1)}%`,
+        ]),
+        theme: "grid",
+        headStyles: { fillColor: [41, 98, 255], textColor: 255 },
+        styles: { fontSize: 8 },
+        columnStyles: {
+          0: { cellWidth: 15 },
+          1: { cellWidth: 35 },
+        },
+        margin: { left: 14, right: 14 },
+      });
+
+      y = (doc as any).lastAutoTable.finalY + 10;
+
+      // Detalhamento por tributo
+      if (y > 230) {
+        doc.addPage();
+        y = 20;
+      }
+
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("Composição Tributária por Ano", 14, y);
+      y += 7;
+
+      autoTable(doc, {
+        startY: y,
+        head: [["Ano", "PIS", "COFINS", "IPI", "ICMS", "ISS", "DAS", "CBS", "IBS", "IS"]],
+        body: resultado.anos.map((a) => [
+          String(a.ano),
+          formatBRL(a.tributos_atuais_bruto.pis),
+          formatBRL(a.tributos_atuais_bruto.cofins),
+          formatBRL(a.tributos_atuais_bruto.ipi),
+          formatBRL(a.tributos_atuais_bruto.icms),
+          formatBRL(a.tributos_atuais_bruto.iss),
+          formatBRL(a.tributos_atuais_bruto.das),
+          formatBRL(a.ibs_cbs_bruto.cbs),
+          formatBRL(a.ibs_cbs_bruto.ibs),
+          formatBRL(a.ibs_cbs_bruto.is),
+        ]),
+        theme: "grid",
+        headStyles: { fillColor: [41, 98, 255], textColor: 255 },
+        styles: { fontSize: 7 },
+        margin: { left: 14, right: 14 },
+      });
+
+      y = (doc as any).lastAutoTable.finalY + 10;
+
+      // Alertas
+      if (resultado.alertas.length > 0) {
+        if (y > 230) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text("Observações e Alertas", 14, y);
+        y += 7;
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        resultado.alertas.forEach((alerta) => {
+          if (y > 270) {
+            doc.addPage();
+            y = 20;
+          }
+          const lines = doc.splitTextToSize(`• ${alerta}`, pageWidth - 28);
+          doc.text(lines, 14, y);
+          y += lines.length * 4 + 3;
+        });
+      }
+
+      // Footer em todas as páginas
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "italic");
+        doc.setTextColor(150);
+        doc.text(
+          `Reforma Tributária 360 — Página ${i} de ${totalPages}`,
+          pageWidth / 2,
+          doc.internal.pageSize.getHeight() - 10,
+          { align: "center" }
+        );
+        doc.setTextColor(0);
+      }
+
+      doc.save(`relatorio-simulacao-${resultado.empresa.replace(/\s+/g, "-").toLowerCase()}-${new Date().toISOString().slice(0, 10)}.pdf`);
+      toast.success("Relatório PDF gerado com sucesso!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao gerar relatório");
+    } finally {
+      setGeneratingPdf(false);
     }
   };
 
@@ -383,6 +607,18 @@ function SimuladorPage() {
             <Button onClick={simular} disabled={!empresaId || loading}>
               {loading ? "Calculando…" : "Simular"}
             </Button>
+            {resultado && (
+              <>
+                <Button variant="outline" onClick={salvarSimulacao} disabled={saving || !!simulacaoSalvaId}>
+                  <Save className="h-4 w-4 mr-1" />
+                  {simulacaoSalvaId ? "Salva ✓" : saving ? "Salvando…" : "Salvar"}
+                </Button>
+                <Button variant="outline" onClick={gerarRelatorio} disabled={generatingPdf}>
+                  <FileText className="h-4 w-4 mr-1" />
+                  {generatingPdf ? "Gerando…" : "Gerar Relatório PDF"}
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Resumo dos dados cadastrados da empresa */}
