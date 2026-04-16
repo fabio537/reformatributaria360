@@ -31,8 +31,14 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Reforma Tributária — Plataforma de Suporte" },
-      { name: "description", content: "Plataforma de suporte à reforma tributária brasileira para escritórios contábeis." },
+      { title: "Reforma Tributária — Plataforma P&N Valorem" },
+      { name: "description", content: "Plataforma de suporte à reforma tributária brasileira para clientes da P&N Valorem" },
+      { property: "og:title", content: "Reforma Tributária — Plataforma P&N Valorem" },
+      { name: "twitter:title", content: "Reforma Tributária — Plataforma P&N Valorem" },
+      { property: "og:description", content: "Plataforma de suporte à reforma tributária brasileira para clientes da P&N Valorem" },
+      { name: "twitter:description", content: "Plataforma de suporte à reforma tributária brasileira para clientes da P&N Valorem" },
+      { name: "twitter:card", content: "summary" },
+      { property: "og:type", content: "website" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
