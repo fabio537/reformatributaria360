@@ -165,6 +165,21 @@ function EmpresasPage() {
     }
   };
 
+  const handleDownloadRelatorio = async (empresaId: string) => {
+    const sim = ultimaSimulacao[empresaId];
+    if (!sim?.resultados) return;
+    setDownloading(empresaId);
+    try {
+      const { gerarRelatorioPDF } = await import("@/lib/relatorio-pdf");
+      await gerarRelatorioPDF(sim.resultados as ResultadoSimulacao);
+      toast.success("Relatório baixado!");
+    } catch {
+      toast.error("Erro ao gerar relatório");
+    } finally {
+      setDownloading(null);
+    }
+  };
+
   const canEdit = auth.isAdmin() || auth.isStaff();
 
   const filtered = empresas.filter(
