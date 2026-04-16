@@ -50,6 +50,44 @@ export type Database = {
         }
         Relationships: []
       }
+      checklist_reforma: {
+        Row: {
+          concluido: boolean
+          empresa_id: string
+          id: string
+          item_key: string
+          observacao: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          concluido?: boolean
+          empresa_id: string
+          id?: string
+          item_key: string
+          observacao?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          concluido?: boolean
+          empresa_id?: string
+          id?: string
+          item_key?: string
+          observacao?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_reforma_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creditos_aquisicao: {
         Row: {
           aliquota_cofins: number | null
