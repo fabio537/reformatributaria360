@@ -12,6 +12,8 @@
  * - Total referência: 26,5%
  */
 
+import { verificarNcmZfm } from "./ncm-zfm";
+
 // ─── Alíquotas de Referência (LC 214/2025, Art. 9º) ───────────────────────
 
 export const ALIQUOTA_CBS_REF = 0.088; // 8,8%
