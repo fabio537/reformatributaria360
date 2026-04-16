@@ -319,7 +319,8 @@ function SimuladorPage() {
                         <TableHead className="h-8 text-xs px-1">Ano</TableHead>
                         <TableHead className="h-8 text-xs px-1">CBS</TableHead>
                         <TableHead className="h-8 text-xs px-1">IBS</TableHead>
-                        <TableHead className="h-8 text-xs px-1">Red. Atuais</TableHead>
+                        <TableHead className="h-8 text-xs px-1">PIS/COFINS</TableHead>
+                        <TableHead className="h-8 text-xs px-1">ICMS/ISS</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -329,8 +330,15 @@ function SimuladorPage() {
                           <TableCell className="py-1 px-1 text-xs tabular-nums">
                             {t.cbs_teste ? "0,9% (teste)" : formatPct(t.cbs_pct)}
                           </TableCell>
-                          <TableCell className="py-1 px-1 text-xs tabular-nums">{formatPct(t.ibs_pct)}</TableCell>
-                          <TableCell className="py-1 px-1 text-xs tabular-nums">{formatPct(t.reducao_atual)}</TableCell>
+                          <TableCell className="py-1 px-1 text-xs tabular-nums">
+                            {t.ibs_teste ? "0,1% (teste)" : formatPct(t.ibs_pct)}
+                          </TableCell>
+                          <TableCell className="py-1 px-1 text-xs tabular-nums">
+                            {t.pis_cofins_fator === 0 ? "Extinto" : formatPct(t.pis_cofins_fator)}
+                          </TableCell>
+                          <TableCell className="py-1 px-1 text-xs tabular-nums">
+                            {t.icms_iss_fator === 0 ? "Extinto" : formatPct(t.icms_iss_fator)}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
