@@ -71,24 +71,116 @@ function aliquotaEfetivaDAS(rbt12: number, anexo: FaixaDAS[]): number {
 }
 
 // ─── Cronograma de Transição (EC 132/2023, Art. 124 a 133) ─────────────────
+//
+// CRONOGRAMA CORRETO conforme EC 132/2023:
+//
+// 2026: TESTE — CBS 0,9% + IBS 0,1% (compensáveis com PIS/COFINS).
+//        Tributos atuais mantidos integralmente.
+//
+// 2027: CBS entra em vigor a 100% (8,8%). PIS e COFINS são EXTINTOS.
+//        IBS mantém alíquota-teste de 0,1%.
+//        ICMS, ISS e IPI mantidos integralmente.
+//
+// 2028: Idem 2027. CBS 100%, PIS/COFINS extintos.
+//        IBS 0,1% teste. ICMS/ISS/IPI mantidos.
+//
+// 2029-2032: CBS 100%. IBS entra em transição progressiva (10%, 25%, 50%, 75%).
+//        ICMS e ISS reduzidos proporcionalmente.
+//        IPI reduzido (exceto produtos com incidência na Zona Franca de Manaus).
+//
+// 2033: IBS 100%. ICMS e ISS extintos. IPI extinto (exceto ZFM).
 
 export interface TransicaoAno {
   ano: number;
+  /** Percentual da CBS aplicado (0.009 = teste 0,9%; 1.0 = alíquota plena 8,8%) */
   cbs_pct: number;
+  /** Se true, CBS é alíquota-teste fixa (não proporcional à alíquota de referência) */
   cbs_teste: boolean;
+  /** Percentual do IBS aplicado (0 a 1.0 da alíquota de referência 17,7%) */
   ibs_pct: number;
-  reducao_atual: number;
+  /** Se true, IBS é alíquota-teste fixa */
+  ibs_teste: boolean;
+  /** Fator de manutenção de PIS/COFINS (1.0 = mantido; 0 = extinto) */
+  pis_cofins_fator: number;
+  /** Fator de manutenção de ICMS/ISS (1.0 = mantido; 0 = extinto) */
+  icms_iss_fator: number;
+  /** Fator de manutenção de IPI (1.0 = mantido; 0 = extinto) */
+  ipi_fator: number;
 }
 
 export const CRONOGRAMA_TRANSICAO: TransicaoAno[] = [
-  { ano: 2026, cbs_pct: 0.009, cbs_teste: true, ibs_pct: 0, reducao_atual: 0 },
-  { ano: 2027, cbs_pct: 0.009, cbs_teste: true, ibs_pct: 0, reducao_atual: 0 },
-  { ano: 2028, cbs_pct: 0.009, cbs_teste: true, ibs_pct: 0, reducao_atual: 0 },
-  { ano: 2029, cbs_pct: 1.0, cbs_teste: false, ibs_pct: 0.10, reducao_atual: 0.10 },
-  { ano: 2030, cbs_pct: 1.0, cbs_teste: false, ibs_pct: 0.25, reducao_atual: 0.25 },
-  { ano: 2031, cbs_pct: 1.0, cbs_teste: false, ibs_pct: 0.50, reducao_atual: 0.50 },
-  { ano: 2032, cbs_pct: 1.0, cbs_teste: false, ibs_pct: 0.75, reducao_atual: 0.75 },
-  { ano: 2033, cbs_pct: 1.0, cbs_teste: false, ibs_pct: 1.0, reducao_atual: 1.0 },
+  // 2026: Teste — CBS 0,9%, IBS 0,1%. Tributos atuais 100% mantidos.
+  {
+    ano: 2026,
+    cbs_pct: 0.009, cbs_teste: true,
+    ibs_pct: 0.001, ibs_teste: true,
+    pis_cofins_fator: 1.0,
+    icms_iss_fator: 1.0,
+    ipi_fator: 1.0,
+  },
+  // 2027: CBS 100%. PIS/COFINS EXTINTOS. IBS 0,1% teste. ICMS/ISS/IPI mantidos.
+  {
+    ano: 2027,
+    cbs_pct: 1.0, cbs_teste: false,
+    ibs_pct: 0.001, ibs_teste: true,
+    pis_cofins_fator: 0.0,
+    icms_iss_fator: 1.0,
+    ipi_fator: 1.0,
+  },
+  // 2028: Idem 2027.
+  {
+    ano: 2028,
+    cbs_pct: 1.0, cbs_teste: false,
+    ibs_pct: 0.001, ibs_teste: true,
+    pis_cofins_fator: 0.0,
+    icms_iss_fator: 1.0,
+    ipi_fator: 1.0,
+  },
+  // 2029: CBS 100%. IBS 10%. ICMS/ISS reduzidos 10%. IPI reduzido 10%.
+  {
+    ano: 2029,
+    cbs_pct: 1.0, cbs_teste: false,
+    ibs_pct: 0.10, ibs_teste: false,
+    pis_cofins_fator: 0.0,
+    icms_iss_fator: 0.90,
+    ipi_fator: 0.90,
+  },
+  // 2030: CBS 100%. IBS 25%. ICMS/ISS reduzidos 25%.
+  {
+    ano: 2030,
+    cbs_pct: 1.0, cbs_teste: false,
+    ibs_pct: 0.25, ibs_teste: false,
+    pis_cofins_fator: 0.0,
+    icms_iss_fator: 0.75,
+    ipi_fator: 0.75,
+  },
+  // 2031: CBS 100%. IBS 50%. ICMS/ISS reduzidos 50%.
+  {
+    ano: 2031,
+    cbs_pct: 1.0, cbs_teste: false,
+    ibs_pct: 0.50, ibs_teste: false,
+    pis_cofins_fator: 0.0,
+    icms_iss_fator: 0.50,
+    ipi_fator: 0.50,
+  },
+  // 2032: CBS 100%. IBS 75%. ICMS/ISS reduzidos 75%.
+  {
+    ano: 2032,
+    cbs_pct: 1.0, cbs_teste: false,
+    ibs_pct: 0.75, ibs_teste: false,
+    pis_cofins_fator: 0.0,
+    icms_iss_fator: 0.25,
+    ipi_fator: 0.25,
+  },
+  // 2033: IBS 100%. ICMS/ISS/IPI extintos.
+  {
+    ano: 2033,
+    cbs_pct: 1.0, cbs_teste: false,
+    ibs_pct: 1.0, ibs_teste: false,
+    pis_cofins_fator: 0.0,
+    icms_iss_fator: 0.0,
+    ipi_fator: 0.0,
+  },
 ];
 
 // ─── Tipos de Entrada ──────────────────────────────────────────────────────
@@ -226,7 +318,6 @@ function calcularTributosAtuaisProdutos(
   }
 
   if (regime === "simples_nacional" && faturamentoAnual > 0) {
-    // Simples Nacional: carga via DAS (Anexo I para comércio/indústria)
     const aliqEfetiva = aliquotaEfetivaDAS(faturamentoAnual, DAS_ANEXO_I);
     das = faturamento * aliqEfetiva;
   } else {
@@ -273,20 +364,18 @@ function calcularTributosAtuaisServicos(
 
 /**
  * Calcula tributos IBS/CBS mensais sobre produtos.
- * Exportações são imunes de IBS/CBS.
+ * Exportações são imunes de IBS/CBS (mas mantêm créditos).
  * Inclui Imposto Seletivo (IS) quando aplicável.
  */
 function calcularIbsCbsProdutos(produtos: ProdutoInput[]): { cbs: number; ibs: number; is: number } {
   let cbs = 0, ibs = 0, is = 0;
   for (const p of produtos) {
-    // Exportações: imunidade de IBS/CBS
     if (p.destino_operacao === "exportacao") continue;
 
     const aliq = aliquotaEfetiva(p.regime_diferenciado as RegimeDiferenciado);
     cbs += p.valor_mensal * aliq.cbs;
     ibs += p.valor_mensal * aliq.ibs;
 
-    // Imposto Seletivo
     if (p.sujeito_imposto_seletivo && p.aliquota_is > 0) {
       is += p.valor_mensal * (p.aliquota_is / 100);
     }
@@ -311,24 +400,40 @@ function calcularIbsCbsServicos(servicos: ServicoInput[]): { cbs: number; ibs: n
  * Calcula créditos de aquisição.
  * 
  * Sistema atual: depende do regime tributário da empresa.
+ * - Lucro Real: crédito integral de PIS/COFINS/ICMS/IPI (não-cumulativo)
+ * - Lucro Presumido: crédito parcial de ICMS apenas (cumulativo para PIS/COFINS)
+ * - Simples Nacional: sem créditos
+ * 
  * Sistema novo (IBS/CBS): crédito com base no imposto efetivamente pago pelo
  * FORNECEDOR na etapa anterior (não-cumulatividade plena, LC 214/2025, Art. 28-46).
  */
 function calcularCreditos(
   creditos: CreditoInput[],
   regime: string,
-): { atuais_mensal: number; novos_mensal: number } {
-  let atuais = 0;
-  let novos = 0;
+): {
+  atuais_mensal_pis_cofins: number;
+  atuais_mensal_icms: number;
+  atuais_mensal_ipi: number;
+  novos_mensal_cbs: number;
+  novos_mensal_ibs: number;
+} {
+  let atuais_pis_cofins = 0;
+  let atuais_icms = 0;
+  let atuais_ipi = 0;
+  let novos_cbs = 0;
+  let novos_ibs = 0;
 
   for (const c of creditos) {
     const v = c.valor_mensal;
 
     // Créditos no sistema atual
     if (regime === "lucro_real") {
-      atuais += v * ((c.aliquota_pis + c.aliquota_cofins + c.aliquota_icms + c.aliquota_ipi) / 100);
+      atuais_pis_cofins += v * ((c.aliquota_pis + c.aliquota_cofins) / 100);
+      atuais_icms += v * (c.aliquota_icms / 100);
+      atuais_ipi += v * (c.aliquota_ipi / 100);
     } else if (regime === "lucro_presumido") {
-      atuais += v * ((c.aliquota_icms * 0.5) / 100);
+      // Lucro presumido: PIS/COFINS cumulativo (sem crédito). ICMS parcial.
+      atuais_icms += v * ((c.aliquota_icms * 0.5) / 100);
     }
     // Simples Nacional: sem créditos no sistema atual
 
@@ -336,10 +441,17 @@ function calcularCreditos(
     const aliqFornecedor = aliquotaEfetiva(
       (c.regime_diferenciado_fornecedor || "padrao") as RegimeDiferenciado
     );
-    novos += v * aliqFornecedor.total;
+    novos_cbs += v * aliqFornecedor.cbs;
+    novos_ibs += v * aliqFornecedor.ibs;
   }
 
-  return { atuais_mensal: atuais, novos_mensal: novos };
+  return {
+    atuais_mensal_pis_cofins: atuais_pis_cofins,
+    atuais_mensal_icms: atuais_icms,
+    atuais_mensal_ipi: atuais_ipi,
+    novos_mensal_cbs: novos_cbs,
+    novos_mensal_ibs: novos_ibs,
+  };
 }
 
 /**
@@ -393,7 +505,7 @@ function gerarAlertas(input: SimulacaoInput): string[] {
     const valorExport = exportacoes.reduce((s, p) => s + p.valor_mensal, 0);
     alertas.push(
       `${exportacoes.length} produto(s) para exportação (${formatarBRL(valorExport * 12)}/ano): ` +
-      `imunes de IBS/CBS, mas mantêm direito a créditos das aquisições.`
+      `imunes de IBS/CBS, mas mantêm direito a créditos das aquisições (LC 214/2025, Art. 5º, §1º).`
     );
   }
 
@@ -402,7 +514,8 @@ function gerarAlertas(input: SimulacaoInput): string[] {
   if (comIS.length > 0) {
     alertas.push(
       `${comIS.length} produto(s) sujeito(s) ao Imposto Seletivo (IS). ` +
-      `O IS incide sobre bens prejudiciais à saúde/meio ambiente (tabaco, bebidas, etc.).`
+      `O IS incide sobre bens prejudiciais à saúde/meio ambiente (tabaco, bebidas, veículos, etc.). ` +
+      `Incide uma única vez, sobre o produtor/importador (EC 132/2023, Art. 153, VIII).`
     );
   }
 
@@ -411,7 +524,8 @@ function gerarAlertas(input: SimulacaoInput): string[] {
   );
   if (temReducao60) {
     alertas.push(
-      "Itens com redução de 60% (alimentos, higiene, agropecuários): alíquota efetiva de ~10,6% (40% de 26,5%)."
+      "Itens com redução de 60% (alimentos, higiene, agropecuários, saúde): alíquota efetiva de ~10,6% (40% de 26,5%). " +
+      "Referência: LC 214/2025, Arts. 257-276."
     );
   }
 
@@ -420,7 +534,8 @@ function gerarAlertas(input: SimulacaoInput): string[] {
   );
   if (temAliquotaZero) {
     alertas.push(
-      "Itens com alíquota zero (cesta básica nacional): isentos de IBS/CBS, mas mantêm direito a créditos das aquisições."
+      "Itens com alíquota zero (cesta básica nacional, Art. 8º LC 214/2025): isentos de IBS/CBS, " +
+      "mas mantêm direito integral a créditos das aquisições."
     );
   }
 
@@ -436,6 +551,14 @@ function gerarAlertas(input: SimulacaoInput): string[] {
     );
   }
 
+  // Alerta sobre a transição
+  alertas.push(
+    "📅 Cronograma da transição: 2026 = teste (CBS 0,9% + IBS 0,1%); " +
+    "2027 = CBS 100%, PIS/COFINS extintos; " +
+    "2029-2032 = IBS progressivo (10%→75%), ICMS/ISS reduzidos; " +
+    "2033 = sistema novo integral."
+  );
+
   return alertas;
 }
 
@@ -444,8 +567,9 @@ function formatarBRL(v: number): string {
 }
 
 function faseTransicao(t: TransicaoAno): string {
-  if (t.cbs_teste) return "Fase teste (CBS 0,9%)";
-  if (t.ibs_pct < 1.0) return `Transição (IBS ${(t.ibs_pct * 100).toFixed(0)}%)`;
+  if (t.cbs_teste && t.ibs_teste) return "Fase teste (CBS 0,9% + IBS 0,1%)";
+  if (!t.cbs_teste && t.ibs_teste) return "CBS integral, IBS teste (0,1%)";
+  if (t.ibs_pct < 1.0) return `Transição (IBS ${(t.ibs_pct * 100).toFixed(0)}%, ICMS/ISS ${(t.icms_iss_fator * 100).toFixed(0)}%)`;
   return "Sistema novo integral";
 }
 
@@ -454,7 +578,7 @@ function faseTransicao(t: TransicaoAno): string {
 export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
   const { empresa, produtos, servicos, creditos } = input;
 
-  // 1. Calcular tributos mensais no sistema atual
+  // 1. Calcular tributos mensais no sistema atual (base 100%)
   const tribProd = calcularTributosAtuaisProdutos(produtos, empresa.regime_tributario, empresa.faturamento_anual);
   const tribServ = calcularTributosAtuaisServicos(servicos, empresa.regime_tributario, empresa.faturamento_anual);
 
@@ -475,7 +599,7 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
     tributosAtuaisMensal.iss +
     tributosAtuaisMensal.das;
 
-  // 2. Calcular IBS/CBS mensal no sistema novo (100%)
+  // 2. Calcular IBS/CBS mensal no sistema novo (alíquotas plenas)
   const ibsCbsProd = calcularIbsCbsProdutos(produtos);
   const ibsCbsServ = calcularIbsCbsServicos(servicos);
 
@@ -487,40 +611,64 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
   };
   ibsCbsMensal.total = ibsCbsMensal.cbs + ibsCbsMensal.ibs + ibsCbsMensal.is;
 
-  // 3. Calcular créditos
+  // 3. Calcular créditos (separados por tipo de tributo)
   const cred = calcularCreditos(creditos, empresa.regime_tributario);
 
-  // 4. Valores anuais base
+  // 4. Valores anuais base (sistema atual em regime pleno)
   const cargaAtualAnual = tributosAtuaisMensal.total * 12;
   const cargaNovaAnual = ibsCbsMensal.total * 12;
-  const creditosAtuaisAnual = cred.atuais_mensal * 12;
-  const creditosNovosAnual = cred.novos_mensal * 12;
+  const creditosAtuaisAnual = (cred.atuais_mensal_pis_cofins + cred.atuais_mensal_icms + cred.atuais_mensal_ipi) * 12;
+  const creditosNovosAnual = (cred.novos_mensal_cbs + cred.novos_mensal_ibs) * 12;
   const cargaAtualLiquidaBase = cargaAtualAnual - creditosAtuaisAnual;
 
   // 5. Gerar resultados por ano da transição
   const fatMensal = tribProd.faturamento + tribServ.faturamento;
 
   const anos: ResultadoAno[] = CRONOGRAMA_TRANSICAO.map((t) => {
-    const fatorAtual = 1 - t.reducao_atual;
+    // ── Tributos atuais no ano ──
+    // PIS/COFINS: mantidos com fator específico (extintos a partir de 2027)
+    // ICMS/ISS: mantidos com fator específico (reduzidos gradualmente 2029-2033)
+    // IPI: mantido com fator específico
+    // DAS (Simples): segue o mesmo padrão — componentes federais (PIS/COFINS) e estaduais proporcionais
     const tribAtualAno: DetalheTributoAtual = {
-      pis: tributosAtuaisMensal.pis * fatorAtual * 12,
-      cofins: tributosAtuaisMensal.cofins * fatorAtual * 12,
-      ipi: tributosAtuaisMensal.ipi * fatorAtual * 12,
-      icms: tributosAtuaisMensal.icms * fatorAtual * 12,
-      iss: tributosAtuaisMensal.iss * fatorAtual * 12,
-      das: tributosAtuaisMensal.das * fatorAtual * 12,
-      total: tributosAtuaisMensal.total * fatorAtual * 12,
+      pis: tributosAtuaisMensal.pis * t.pis_cofins_fator * 12,
+      cofins: tributosAtuaisMensal.cofins * t.pis_cofins_fator * 12,
+      ipi: tributosAtuaisMensal.ipi * t.ipi_fator * 12,
+      icms: tributosAtuaisMensal.icms * t.icms_iss_fator * 12,
+      iss: tributosAtuaisMensal.iss * t.icms_iss_fator * 12,
+      // Para DAS no Simples, aproximação: ~50% federal (PIS/COFINS/IRPJ/CSLL), ~50% estadual/municipal
+      das: tributosAtuaisMensal.das * (
+        empresa.regime_tributario === "simples_nacional"
+          ? (t.pis_cofins_fator * 0.5 + t.icms_iss_fator * 0.5)
+          : 1.0
+      ) * 12,
+      total: 0,
     };
+    tribAtualAno.total =
+      tribAtualAno.pis + tribAtualAno.cofins + tribAtualAno.ipi +
+      tribAtualAno.icms + tribAtualAno.iss + tribAtualAno.das;
 
+    // ── IBS/CBS no ano ──
     let cbsAno: number;
     if (t.cbs_teste) {
+      // Alíquota-teste fixa de 0,9% sobre faturamento
       cbsAno = fatMensal * t.cbs_pct * 12;
     } else {
+      // CBS proporcional à alíquota de referência
       cbsAno = ibsCbsMensal.cbs * t.cbs_pct * 12;
     }
-    const ibsAno = ibsCbsMensal.ibs * t.ibs_pct * 12;
-    // IS acompanha a transição do IBS/CBS
-    const isAno = ibsCbsMensal.is * (t.cbs_teste ? 0 : Math.max(t.cbs_pct, t.ibs_pct)) * 12;
+
+    let ibsAno: number;
+    if (t.ibs_teste) {
+      // Alíquota-teste fixa de 0,1% sobre faturamento
+      ibsAno = fatMensal * t.ibs_pct * 12;
+    } else {
+      // IBS proporcional à alíquota de referência
+      ibsAno = ibsCbsMensal.ibs * t.ibs_pct * 12;
+    }
+
+    // IS: só incide quando CBS/IBS estão em vigor (não na fase teste)
+    const isAno = ibsCbsMensal.is * (t.cbs_teste ? 0 : 1.0) * 12;
 
     const ibsCbsAno: DetalheIbsCbs = {
       cbs: cbsAno,
@@ -529,8 +677,28 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
       total: cbsAno + ibsAno + isAno,
     };
 
-    const creditosAtuaisAno = cred.atuais_mensal * fatorAtual * 12;
-    const creditosNovosAno = cred.novos_mensal * (t.cbs_teste ? t.cbs_pct / ALIQUOTA_CBS_REF : (t.cbs_pct * ALIQUOTA_CBS_REF + t.ibs_pct * ALIQUOTA_IBS_REF) / ALIQUOTA_TOTAL_REF) * 12;
+    // ── Créditos no ano ──
+    // Créditos atuais: PIS/COFINS segue fator federal, ICMS/IPI segue fator estadual
+    const creditosAtuaisAno =
+      cred.atuais_mensal_pis_cofins * t.pis_cofins_fator * 12 +
+      cred.atuais_mensal_icms * t.icms_iss_fator * 12 +
+      cred.atuais_mensal_ipi * t.ipi_fator * 12;
+
+    // Créditos novos: proporcionais ao IBS/CBS efetivamente cobrado
+    let creditosNovosAno: number;
+    if (t.cbs_teste && t.ibs_teste) {
+      // Fase teste: créditos proporcionais às alíquotas-teste
+      creditosNovosAno = (cred.novos_mensal_cbs * (t.cbs_pct / ALIQUOTA_CBS_REF) +
+        cred.novos_mensal_ibs * (t.ibs_pct / ALIQUOTA_IBS_REF)) * 12;
+    } else if (t.ibs_teste) {
+      // CBS integral, IBS teste
+      creditosNovosAno = (cred.novos_mensal_cbs * t.cbs_pct +
+        cred.novos_mensal_ibs * (t.ibs_pct / ALIQUOTA_IBS_REF)) * 12;
+    } else {
+      // Ambos em regime normal (proporcional ao percentual)
+      creditosNovosAno = (cred.novos_mensal_cbs * t.cbs_pct +
+        cred.novos_mensal_ibs * t.ibs_pct) * 12;
+    }
 
     const creditosAno: CreditosDetalhe = {
       creditos_atuais: creditosAtuaisAno,
