@@ -75,20 +75,21 @@ function aliquotaEfetivaDAS(rbt12: number, anexo: FaixaDAS[]): number {
 // CRONOGRAMA CORRETO conforme EC 132/2023:
 //
 // 2026: TESTE — CBS 0,9% + IBS 0,1% (compensáveis com PIS/COFINS).
-//        Tributos atuais mantidos integralmente.
+//        NÃO HÁ INCIDÊNCIA REAL — são alíquotas-teste sem impacto na carga tributária.
+//        Tributos atuais mantidos integralmente (PIS, COFINS, IPI, ICMS, ISS).
 //
 // 2027: CBS entra em vigor a 100% (8,8%). PIS e COFINS são EXTINTOS.
 //        IBS mantém alíquota-teste de 0,1%.
-//        ICMS, ISS e IPI mantidos integralmente.
+//        ICMS e ISS mantidos integralmente.
+//        IPI REDUZIDO A ZERO (exceto produtos com incidência na Zona Franca de Manaus).
 //
-// 2028: Idem 2027. CBS 100%, PIS/COFINS extintos.
-//        IBS 0,1% teste. ICMS/ISS/IPI mantidos.
+// 2028: Idem 2027.
 //
-// 2029-2032: CBS 100%. IBS entra em transição progressiva (10%, 25%, 50%, 75%).
+// 2029-2032: CBS 100%. IBS em transição progressiva (10%, 25%, 50%, 75%).
 //        ICMS e ISS reduzidos proporcionalmente.
-//        IPI reduzido (exceto produtos com incidência na Zona Franca de Manaus).
+//        IPI permanece zerado (exceto ZFM).
 //
-// 2033: IBS 100%. ICMS e ISS extintos. IPI extinto (exceto ZFM).
+// 2033: IBS 100%. ICMS e ISS extintos. IPI zerado (exceto ZFM).
 
 export interface TransicaoAno {
   ano: number;
@@ -104,12 +105,14 @@ export interface TransicaoAno {
   pis_cofins_fator: number;
   /** Fator de manutenção de ICMS/ISS (1.0 = mantido; 0 = extinto) */
   icms_iss_fator: number;
-  /** Fator de manutenção de IPI (1.0 = mantido; 0 = extinto) */
+  /** Fator de manutenção de IPI (1.0 = mantido; 0 = extinto). A partir de 2027 o IPI é zerado (exceto ZFM). */
   ipi_fator: number;
+  /** Se true, as alíquotas-teste NÃO geram incidência real (são compensáveis com tributos atuais) */
+  sem_incidencia_real: boolean;
 }
 
 export const CRONOGRAMA_TRANSICAO: TransicaoAno[] = [
-  // 2026: Teste — CBS 0,9%, IBS 0,1%. Tributos atuais 100% mantidos.
+  // 2026: Teste — CBS 0,9%, IBS 0,1%. Sem incidência real (compensáveis). Tributos atuais 100%.
   {
     ano: 2026,
     cbs_pct: 0.009, cbs_teste: true,
@@ -117,15 +120,17 @@ export const CRONOGRAMA_TRANSICAO: TransicaoAno[] = [
     pis_cofins_fator: 1.0,
     icms_iss_fator: 1.0,
     ipi_fator: 1.0,
+    sem_incidencia_real: true,
   },
-  // 2027: CBS 100%. PIS/COFINS EXTINTOS. IBS 0,1% teste. ICMS/ISS/IPI mantidos.
+  // 2027: CBS 100%. PIS/COFINS EXTINTOS. IPI ZERADO (exceto ZFM). IBS 0,1% teste. ICMS/ISS mantidos.
   {
     ano: 2027,
     cbs_pct: 1.0, cbs_teste: false,
     ibs_pct: 0.001, ibs_teste: true,
     pis_cofins_fator: 0.0,
     icms_iss_fator: 1.0,
-    ipi_fator: 1.0,
+    ipi_fator: 0.0,
+    sem_incidencia_real: false,
   },
   // 2028: Idem 2027.
   {
@@ -134,45 +139,50 @@ export const CRONOGRAMA_TRANSICAO: TransicaoAno[] = [
     ibs_pct: 0.001, ibs_teste: true,
     pis_cofins_fator: 0.0,
     icms_iss_fator: 1.0,
-    ipi_fator: 1.0,
+    ipi_fator: 0.0,
+    sem_incidencia_real: false,
   },
-  // 2029: CBS 100%. IBS 10%. ICMS/ISS reduzidos 10%. IPI reduzido 10%.
+  // 2029: CBS 100%. IBS 10%. ICMS/ISS reduzidos 10%. IPI zerado.
   {
     ano: 2029,
     cbs_pct: 1.0, cbs_teste: false,
     ibs_pct: 0.10, ibs_teste: false,
     pis_cofins_fator: 0.0,
     icms_iss_fator: 0.90,
-    ipi_fator: 0.90,
+    ipi_fator: 0.0,
+    sem_incidencia_real: false,
   },
-  // 2030: CBS 100%. IBS 25%. ICMS/ISS reduzidos 25%.
+  // 2030: CBS 100%. IBS 25%. ICMS/ISS reduzidos 25%. IPI zerado.
   {
     ano: 2030,
     cbs_pct: 1.0, cbs_teste: false,
     ibs_pct: 0.25, ibs_teste: false,
     pis_cofins_fator: 0.0,
     icms_iss_fator: 0.75,
-    ipi_fator: 0.75,
+    ipi_fator: 0.0,
+    sem_incidencia_real: false,
   },
-  // 2031: CBS 100%. IBS 50%. ICMS/ISS reduzidos 50%.
+  // 2031: CBS 100%. IBS 50%. ICMS/ISS reduzidos 50%. IPI zerado.
   {
     ano: 2031,
     cbs_pct: 1.0, cbs_teste: false,
     ibs_pct: 0.50, ibs_teste: false,
     pis_cofins_fator: 0.0,
     icms_iss_fator: 0.50,
-    ipi_fator: 0.50,
+    ipi_fator: 0.0,
+    sem_incidencia_real: false,
   },
-  // 2032: CBS 100%. IBS 75%. ICMS/ISS reduzidos 75%.
+  // 2032: CBS 100%. IBS 75%. ICMS/ISS reduzidos 75%. IPI zerado.
   {
     ano: 2032,
     cbs_pct: 1.0, cbs_teste: false,
     ibs_pct: 0.75, ibs_teste: false,
     pis_cofins_fator: 0.0,
     icms_iss_fator: 0.25,
-    ipi_fator: 0.25,
+    ipi_fator: 0.0,
+    sem_incidencia_real: false,
   },
-  // 2033: IBS 100%. ICMS/ISS/IPI extintos.
+  // 2033: IBS 100%. ICMS/ISS extintos. IPI zerado.
   {
     ano: 2033,
     cbs_pct: 1.0, cbs_teste: false,
@@ -180,6 +190,7 @@ export const CRONOGRAMA_TRANSICAO: TransicaoAno[] = [
     pis_cofins_fator: 0.0,
     icms_iss_fator: 0.0,
     ipi_fator: 0.0,
+    sem_incidencia_real: false,
   },
 ];
 
@@ -553,10 +564,15 @@ function gerarAlertas(input: SimulacaoInput): string[] {
 
   // Alerta sobre a transição
   alertas.push(
-    "📅 Cronograma da transição: 2026 = teste (CBS 0,9% + IBS 0,1%); " +
-    "2027 = CBS 100%, PIS/COFINS extintos; " +
+    "📅 Cronograma da transição: 2026 = teste sem incidência real (CBS 0,9% + IBS 0,1% compensáveis com PIS/COFINS); " +
+    "2027 = CBS 100%, PIS/COFINS e IPI extintos; " +
     "2029-2032 = IBS progressivo (10%→75%), ICMS/ISS reduzidos; " +
     "2033 = sistema novo integral."
+  );
+
+  alertas.push(
+    "⚠️ IPI: a partir de 2027 o IPI é reduzido a zero para todos os produtos, EXCETO aqueles com " +
+    "incidência mantida para preservar a competitividade da Zona Franca de Manaus (EC 132/2023, Art. 126, §3º)."
   );
 
   return alertas;
@@ -567,8 +583,8 @@ function formatarBRL(v: number): string {
 }
 
 function faseTransicao(t: TransicaoAno): string {
-  if (t.cbs_teste && t.ibs_teste) return "Fase teste (CBS 0,9% + IBS 0,1%)";
-  if (!t.cbs_teste && t.ibs_teste) return "CBS integral, IBS teste (0,1%)";
+  if (t.sem_incidencia_real) return "Teste sem incidência real (CBS 0,9% + IBS 0,1% compensáveis)";
+  if (!t.cbs_teste && t.ibs_teste) return "CBS integral, IBS teste (0,1%). IPI zerado.";
   if (t.ibs_pct < 1.0) return `Transição (IBS ${(t.ibs_pct * 100).toFixed(0)}%, ICMS/ISS ${(t.icms_iss_fator * 100).toFixed(0)}%)`;
   return "Sistema novo integral";
 }
@@ -670,11 +686,13 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
     // IS: só incide quando CBS/IBS estão em vigor (não na fase teste)
     const isAno = ibsCbsMensal.is * (t.cbs_teste ? 0 : 1.0) * 12;
 
+    // Se sem_incidencia_real (2026), CBS/IBS teste são compensáveis com PIS/COFINS
+    // e NÃO geram carga tributária adicional
     const ibsCbsAno: DetalheIbsCbs = {
-      cbs: cbsAno,
-      ibs: ibsAno,
-      is: isAno,
-      total: cbsAno + ibsAno + isAno,
+      cbs: t.sem_incidencia_real ? 0 : cbsAno,
+      ibs: t.sem_incidencia_real ? 0 : ibsAno,
+      is: t.sem_incidencia_real ? 0 : isAno,
+      total: t.sem_incidencia_real ? 0 : (cbsAno + ibsAno + isAno),
     };
 
     // ── Créditos no ano ──
@@ -685,11 +703,10 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
       cred.atuais_mensal_ipi * t.ipi_fator * 12;
 
     // Créditos novos: proporcionais ao IBS/CBS efetivamente cobrado
+    // Em 2026 (sem_incidencia_real), não há créditos novos pois não há incidência real
     let creditosNovosAno: number;
-    if (t.cbs_teste && t.ibs_teste) {
-      // Fase teste: créditos proporcionais às alíquotas-teste
-      creditosNovosAno = (cred.novos_mensal_cbs * (t.cbs_pct / ALIQUOTA_CBS_REF) +
-        cred.novos_mensal_ibs * (t.ibs_pct / ALIQUOTA_IBS_REF)) * 12;
+    if (t.sem_incidencia_real) {
+      creditosNovosAno = 0;
     } else if (t.ibs_teste) {
       // CBS integral, IBS teste
       creditosNovosAno = (cred.novos_mensal_cbs * t.cbs_pct +
