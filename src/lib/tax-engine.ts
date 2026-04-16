@@ -564,10 +564,15 @@ function gerarAlertas(input: SimulacaoInput): string[] {
 
   // Alerta sobre a transição
   alertas.push(
-    "📅 Cronograma da transição: 2026 = teste (CBS 0,9% + IBS 0,1%); " +
-    "2027 = CBS 100%, PIS/COFINS extintos; " +
+    "📅 Cronograma da transição: 2026 = teste sem incidência real (CBS 0,9% + IBS 0,1% compensáveis com PIS/COFINS); " +
+    "2027 = CBS 100%, PIS/COFINS e IPI extintos; " +
     "2029-2032 = IBS progressivo (10%→75%), ICMS/ISS reduzidos; " +
     "2033 = sistema novo integral."
+  );
+
+  alertas.push(
+    "⚠️ IPI: a partir de 2027 o IPI é reduzido a zero para todos os produtos, EXCETO aqueles com " +
+    "incidência mantida para preservar a competitividade da Zona Franca de Manaus (EC 132/2023, Art. 126, §3º)."
   );
 
   return alertas;
