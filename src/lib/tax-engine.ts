@@ -513,6 +513,23 @@ function gerarAlertas(input: SimulacaoInput): string[] {
     );
   }
 
+  // Produtos com NCM da ZFM — IPI mantido após 2027
+  const produtosZfm = produtos.filter(p => verificarNcmZfm(p.ncm).isZfm);
+  if (produtosZfm.length > 0) {
+    const setores = [...new Set(produtosZfm.map(p => verificarNcmZfm(p.ncm).setor))].filter(Boolean);
+    alertas.push(
+      `🏭 ${produtosZfm.length} produto(s) com NCM de setor da Zona Franca de Manaus (${setores.join(", ")}). ` +
+      `O IPI desses produtos é MANTIDO após 2027 para preservar a competitividade da ZFM (EC 132/2023, Art. 126, §3º).`
+    );
+  }
+
+  const produtosNaoZfm = produtos.filter(p => !verificarNcmZfm(p.ncm).isZfm && p.aliquota_ipi > 0);
+  if (produtosNaoZfm.length > 0) {
+    alertas.push(
+      `📋 ${produtosNaoZfm.length} produto(s) com IPI que será EXTINTO a partir de 2027 (NCM fora dos setores ZFM).`
+    );
+  }
+
   // Créditos com fornecedor em regime diferenciado
   const creditosDiferenciados = creditos.filter(c => c.regime_diferenciado_fornecedor !== "padrao");
   if (creditosDiferenciados.length > 0) {
