@@ -261,6 +261,7 @@ function EmpresasPage() {
                   <TableHead>Regime</TableHead>
                   <TableHead>Faturamento Anual</TableHead>
                   <TableHead>CNAE</TableHead>
+                  <TableHead>Simulação</TableHead>
                   <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -277,6 +278,23 @@ function EmpresasPage() {
                         : "—"}
                     </TableCell>
                     <TableCell>{empresa.cnae_principal || "—"}</TableCell>
+                    <TableCell>
+                      {ultimaSimulacao[empresa.id] ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1.5 text-xs"
+                          disabled={downloading === empresa.id}
+                          onClick={() => handleDownloadRelatorio(empresa.id)}
+                          title={`Baixar relatório: ${ultimaSimulacao[empresa.id].nome}`}
+                        >
+                          <FileDown className="h-3.5 w-3.5" />
+                          {downloading === empresa.id ? "Gerando…" : "PDF"}
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         {canEdit && (
