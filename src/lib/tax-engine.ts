@@ -12,6 +12,8 @@
  * - Total referência: 26,5%
  */
 
+import { verificarNcmZfm } from "./ncm-zfm";
+
 // ─── Alíquotas de Referência (LC 214/2025, Art. 9º) ───────────────────────
 
 export const ALIQUOTA_CBS_REF = 0.088; // 8,8%
@@ -321,8 +323,9 @@ function calcularTributosAtuaisProdutos(
   produtos: ProdutoInput[],
   regime: string,
   faturamentoAnual: number,
-): Omit<DetalheTributoAtual, "iss" | "total"> & { faturamento: number } {
+): Omit<DetalheTributoAtual, "iss" | "total"> & { faturamento: number; ipi_zfm: number; ipi_nao_zfm: number } {
   let pis = 0, cofins = 0, ipi = 0, icms = 0, das = 0, faturamento = 0;
+  let ipi_zfm = 0, ipi_nao_zfm = 0;
 
   for (const p of produtos) {
     faturamento += p.valor_mensal;
@@ -336,12 +339,21 @@ function calcularTributosAtuaisProdutos(
       const v = p.valor_mensal;
       pis += v * (p.aliquota_pis / 100);
       cofins += v * (p.aliquota_cofins / 100);
-      ipi += v * (p.aliquota_ipi / 100);
+      const ipiProduto = v * (p.aliquota_ipi / 100);
+      ipi += ipiProduto;
       icms += v * (p.aliquota_icms / 100);
+
+      // Separar IPI por ZFM: produtos com NCM de ZFM mantêm IPI após 2027
+      const { isZfm } = verificarNcmZfm(p.ncm);
+      if (isZfm) {
+        ipi_zfm += ipiProduto;
+      } else {
+        ipi_nao_zfm += ipiProduto;
+      }
     }
   }
 
-  return { pis, cofins, ipi, icms, das, faturamento };
+  return { pis, cofins, ipi, icms, das, faturamento, ipi_zfm, ipi_nao_zfm };
 }
 
 /**
@@ -501,6 +513,23 @@ function gerarAlertas(input: SimulacaoInput): string[] {
     );
   }
 
+  // Produtos com NCM da ZFM — IPI mantido após 2027
+  const produtosZfm = produtos.filter(p => verificarNcmZfm(p.ncm).isZfm);
+  if (produtosZfm.length > 0) {
+    const setores = Array.from(new Set(produtosZfm.map(p => verificarNcmZfm(p.ncm).setor))).filter(Boolean);
+    alertas.push(
+      `🏭 ${produtosZfm.length} produto(s) com NCM de setor da Zona Franca de Manaus (${setores.join(", ")}). ` +
+      `O IPI desses produtos é MANTIDO após 2027 para preservar a competitividade da ZFM (EC 132/2023, Art. 126, §3º).`
+    );
+  }
+
+  const produtosNaoZfm = produtos.filter(p => !verificarNcmZfm(p.ncm).isZfm && p.aliquota_ipi > 0);
+  if (produtosNaoZfm.length > 0) {
+    alertas.push(
+      `📋 ${produtosNaoZfm.length} produto(s) com IPI que será EXTINTO a partir de 2027 (NCM fora dos setores ZFM).`
+    );
+  }
+
   // Créditos com fornecedor em regime diferenciado
   const creditosDiferenciados = creditos.filter(c => c.regime_diferenciado_fornecedor !== "padrao");
   if (creditosDiferenciados.length > 0) {
@@ -644,12 +673,16 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
     // ── Tributos atuais no ano ──
     // PIS/COFINS: mantidos com fator específico (extintos a partir de 2027)
     // ICMS/ISS: mantidos com fator específico (reduzidos gradualmente 2029-2033)
-    // IPI: mantido com fator específico
-    // DAS (Simples): segue o mesmo padrão — componentes federais (PIS/COFINS) e estaduais proporcionais
+    // IPI: separado em ZFM (mantido) e não-ZFM (zerado a partir de 2027)
+    // DAS (Simples): segue o mesmo padrão — componentes federais (PIS/COFINS/IRPJ/CSLL) e estaduais proporcionais
+    //
+    // IPI ZFM: mantido integralmente (fator 1.0) pois preserva competitividade da ZFM
+    // IPI não-ZFM: segue ipi_fator do cronograma (0 a partir de 2027)
+    const ipiAno = (tribProd.ipi_zfm * 1.0 + tribProd.ipi_nao_zfm * t.ipi_fator) * 12;
     const tribAtualAno: DetalheTributoAtual = {
       pis: tributosAtuaisMensal.pis * t.pis_cofins_fator * 12,
       cofins: tributosAtuaisMensal.cofins * t.pis_cofins_fator * 12,
-      ipi: tributosAtuaisMensal.ipi * t.ipi_fator * 12,
+      ipi: ipiAno,
       icms: tributosAtuaisMensal.icms * t.icms_iss_fator * 12,
       iss: tributosAtuaisMensal.iss * t.icms_iss_fator * 12,
       // Para DAS no Simples, aproximação: ~50% federal (PIS/COFINS/IRPJ/CSLL), ~50% estadual/municipal
