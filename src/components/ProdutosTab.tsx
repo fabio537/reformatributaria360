@@ -26,7 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Upload, Trash2 } from "lucide-react";
+import { Plus, Upload, Trash2, Pencil } from "lucide-react";
 import { ImportDialog } from "./ImportDialog";
 import { toast } from "sonner";
 
@@ -88,6 +88,7 @@ export function ProdutosTab({ empresaId }: { empresaId: string }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const fetchItems = async () => {
     setLoading(true);
@@ -102,7 +103,34 @@ export function ProdutosTab({ empresaId }: { empresaId: string }) {
 
   useEffect(() => { fetchItems(); }, [empresaId]);
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const openCreate = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+    setDialogOpen(true);
+  };
+
+  const openEdit = (p: any) => {
+    setEditingId(p.id);
+    setForm({
+      descricao: p.descricao || "",
+      ncm: p.ncm || "",
+      valor_mensal: String(p.valor_mensal || ""),
+      quantidade_mensal: String(p.quantidade_mensal || ""),
+      unidade: p.unidade || "",
+      aliquota_icms: String(p.aliquota_icms || ""),
+      aliquota_pis: String(p.aliquota_pis || ""),
+      aliquota_cofins: String(p.aliquota_cofins || ""),
+      aliquota_ipi: String(p.aliquota_ipi || ""),
+      regime_diferenciado: p.regime_diferenciado || "padrao",
+      tipo_operacao: p.tipo_operacao || "revenda",
+      destino_operacao: p.destino_operacao || "mercado_interno",
+      sujeito_imposto_seletivo: p.sujeito_imposto_seletivo || false,
+      aliquota_is: String(p.aliquota_is || ""),
+    });
+    setDialogOpen(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = {
       empresa_id: empresaId,
@@ -121,11 +149,16 @@ export function ProdutosTab({ empresaId }: { empresaId: string }) {
       sujeito_imposto_seletivo: form.sujeito_imposto_seletivo,
       aliquota_is: Number(form.aliquota_is) || 0,
     };
-    const { error } = await supabase.from("produtos").insert(payload as any);
+
+    const { error } = editingId
+      ? await supabase.from("produtos").update(payload as any).eq("id", editingId)
+      : await supabase.from("produtos").insert(payload as any);
+
     if (error) { toast.error(error.message); return; }
-    toast.success("Produto adicionado!");
+    toast.success(editingId ? "Produto atualizado!" : "Produto adicionado!");
     setDialogOpen(false);
     setForm(emptyForm);
+    setEditingId(null);
     fetchItems();
   };
 
@@ -141,7 +174,7 @@ export function ProdutosTab({ empresaId }: { empresaId: string }) {
         <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
           <Upload className="h-4 w-4 mr-1" /> Importar
         </Button>
-        <Button size="sm" onClick={() => setDialogOpen(true)}>
+        <Button size="sm" onClick={openCreate}>
           <Plus className="h-4 w-4 mr-1" /> Novo Produto
         </Button>
       </div>
@@ -162,7 +195,7 @@ export function ProdutosTab({ empresaId }: { empresaId: string }) {
                 <TableHead className="min-w-[100px]">Operação</TableHead>
                 <TableHead className="min-w-[120px]">Destino</TableHead>
                 <TableHead className="min-w-[60px]">IS</TableHead>
-                <TableHead className="w-10"></TableHead>
+                <TableHead className="w-20"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -178,9 +211,14 @@ export function ProdutosTab({ empresaId }: { empresaId: string }) {
                   <TableCell>{destinoLabels[p.destino_operacao] || p.destino_operacao}</TableCell>
                   <TableCell>{p.sujeito_imposto_seletivo ? `${p.aliquota_is}%` : "—"}</TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(p)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -192,9 +230,9 @@ export function ProdutosTab({ empresaId }: { empresaId: string }) {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Novo Produto</DialogTitle>
+            <DialogTitle>{editingId ? "Editar Produto" : "Novo Produto"}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleCreate} className="space-y-3">
+          <form onSubmit={handleSubmit} className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label>Descrição *</Label>
@@ -290,7 +328,7 @@ export function ProdutosTab({ empresaId }: { empresaId: string }) {
                 </div>
               )}
             </div>
-            <Button type="submit" className="w-full">Cadastrar</Button>
+            <Button type="submit" className="w-full">{editingId ? "Salvar Alterações" : "Cadastrar"}</Button>
           </form>
         </DialogContent>
       </Dialog>
