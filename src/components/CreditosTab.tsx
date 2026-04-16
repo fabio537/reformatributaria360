@@ -25,7 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Upload, Trash2 } from "lucide-react";
+import { Plus, Upload, Trash2, Pencil } from "lucide-react";
 import { ImportDialog } from "./ImportDialog";
 import { toast } from "sonner";
 
@@ -66,6 +66,7 @@ export function CreditosTab({ empresaId }: { empresaId: string }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -80,7 +81,29 @@ export function CreditosTab({ empresaId }: { empresaId: string }) {
 
   useEffect(() => { fetchData(); }, [empresaId]);
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const openCreate = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+    setDialogOpen(true);
+  };
+
+  const openEdit = (c: any) => {
+    setEditingId(c.id);
+    setForm({
+      fornecedor: c.fornecedor || "",
+      descricao: c.descricao || "",
+      ncm: c.ncm || "",
+      valor_mensal: String(c.valor_mensal || ""),
+      aliquota_icms: String(c.aliquota_icms || ""),
+      aliquota_pis: String(c.aliquota_pis || ""),
+      aliquota_cofins: String(c.aliquota_cofins || ""),
+      aliquota_ipi: String(c.aliquota_ipi || ""),
+      regime_diferenciado_fornecedor: c.regime_diferenciado_fornecedor || "padrao",
+    });
+    setDialogOpen(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = {
       empresa_id: empresaId,
@@ -94,11 +117,16 @@ export function CreditosTab({ empresaId }: { empresaId: string }) {
       aliquota_ipi: Number(form.aliquota_ipi) || 0,
       regime_diferenciado_fornecedor: form.regime_diferenciado_fornecedor,
     };
-    const { error } = await supabase.from("creditos_aquisicao").insert(payload as any);
+
+    const { error } = editingId
+      ? await supabase.from("creditos_aquisicao").update(payload as any).eq("id", editingId)
+      : await supabase.from("creditos_aquisicao").insert(payload as any);
+
     if (error) { toast.error(error.message); return; }
-    toast.success("Crédito adicionado!");
+    toast.success(editingId ? "Crédito atualizado!" : "Crédito adicionado!");
     setDialogOpen(false);
     setForm(emptyForm);
+    setEditingId(null);
     fetchData();
   };
 
@@ -114,7 +142,7 @@ export function CreditosTab({ empresaId }: { empresaId: string }) {
         <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
           <Upload className="h-4 w-4 mr-1" /> Importar
         </Button>
-        <Button size="sm" onClick={() => setDialogOpen(true)}>
+        <Button size="sm" onClick={openCreate}>
           <Plus className="h-4 w-4 mr-1" /> Novo Crédito
         </Button>
       </div>
@@ -136,7 +164,7 @@ export function CreditosTab({ empresaId }: { empresaId: string }) {
                 <TableHead className="min-w-[60px] text-right">ICMS</TableHead>
                 <TableHead className="min-w-[60px] text-right">PIS</TableHead>
                 <TableHead className="min-w-[70px] text-right">COFINS</TableHead>
-                <TableHead className="w-10"></TableHead>
+                <TableHead className="w-20"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -153,9 +181,14 @@ export function CreditosTab({ empresaId }: { empresaId: string }) {
                   <TableCell className="tabular-nums text-right whitespace-nowrap">{c.aliquota_pis}%</TableCell>
                   <TableCell className="tabular-nums text-right whitespace-nowrap">{c.aliquota_cofins}%</TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(c.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(c)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(c.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -167,9 +200,9 @@ export function CreditosTab({ empresaId }: { empresaId: string }) {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Novo Crédito de Aquisição</DialogTitle>
+            <DialogTitle>{editingId ? "Editar Crédito" : "Novo Crédito de Aquisição"}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleCreate} className="space-y-3">
+          <form onSubmit={handleSubmit} className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label>Fornecedor *</Label>
@@ -220,7 +253,7 @@ export function CreditosTab({ empresaId }: { empresaId: string }) {
                 <Input type="number" step="0.01" value={form.aliquota_ipi} onChange={(e) => setForm({ ...form, aliquota_ipi: e.target.value })} className="input-numeric" />
               </div>
             </div>
-            <Button type="submit" className="w-full">Cadastrar</Button>
+            <Button type="submit" className="w-full">{editingId ? "Salvar Alterações" : "Cadastrar"}</Button>
           </form>
         </DialogContent>
       </Dialog>

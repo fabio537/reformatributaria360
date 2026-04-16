@@ -25,7 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Upload, Trash2 } from "lucide-react";
+import { Plus, Upload, Trash2, Pencil } from "lucide-react";
 import { ImportDialog } from "./ImportDialog";
 import { toast } from "sonner";
 
@@ -64,6 +64,7 @@ export function ServicosTab({ empresaId }: { empresaId: string }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -78,7 +79,28 @@ export function ServicosTab({ empresaId }: { empresaId: string }) {
 
   useEffect(() => { fetchData(); }, [empresaId]);
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const openCreate = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+    setDialogOpen(true);
+  };
+
+  const openEdit = (s: any) => {
+    setEditingId(s.id);
+    setForm({
+      descricao: s.descricao || "",
+      codigo_servico: s.codigo_servico || "",
+      valor_mensal: String(s.valor_mensal || ""),
+      aliquota_iss: String(s.aliquota_iss || ""),
+      aliquota_pis: String(s.aliquota_pis || ""),
+      aliquota_cofins: String(s.aliquota_cofins || ""),
+      regime_diferenciado: s.regime_diferenciado || "padrao",
+      tipo_servico: s.tipo_servico || "",
+    });
+    setDialogOpen(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = {
       empresa_id: empresaId,
@@ -91,11 +113,16 @@ export function ServicosTab({ empresaId }: { empresaId: string }) {
       regime_diferenciado: form.regime_diferenciado,
       tipo_servico: form.tipo_servico || null,
     };
-    const { error } = await supabase.from("servicos").insert(payload as any);
+
+    const { error } = editingId
+      ? await supabase.from("servicos").update(payload as any).eq("id", editingId)
+      : await supabase.from("servicos").insert(payload as any);
+
     if (error) { toast.error(error.message); return; }
-    toast.success("Serviço adicionado!");
+    toast.success(editingId ? "Serviço atualizado!" : "Serviço adicionado!");
     setDialogOpen(false);
     setForm(emptyForm);
+    setEditingId(null);
     fetchData();
   };
 
@@ -111,7 +138,7 @@ export function ServicosTab({ empresaId }: { empresaId: string }) {
         <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
           <Upload className="h-4 w-4 mr-1" /> Importar
         </Button>
-        <Button size="sm" onClick={() => setDialogOpen(true)}>
+        <Button size="sm" onClick={openCreate}>
           <Plus className="h-4 w-4 mr-1" /> Novo Serviço
         </Button>
       </div>
@@ -129,7 +156,7 @@ export function ServicosTab({ empresaId }: { empresaId: string }) {
               <TableHead>Valor Mensal</TableHead>
               <TableHead>ISS %</TableHead>
               <TableHead>Regime</TableHead>
-              <TableHead className="w-10"></TableHead>
+              <TableHead className="w-20"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -143,9 +170,14 @@ export function ServicosTab({ empresaId }: { empresaId: string }) {
                 <TableCell className="tabular-nums text-right whitespace-nowrap">{s.aliquota_iss}%</TableCell>
                 <TableCell>{regimeDifLabels[s.regime_diferenciado] || s.regime_diferenciado}</TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="icon" onClick={() => handleDelete(s.id)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(s)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(s.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -156,9 +188,9 @@ export function ServicosTab({ empresaId }: { empresaId: string }) {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Novo Serviço</DialogTitle>
+            <DialogTitle>{editingId ? "Editar Serviço" : "Novo Serviço"}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleCreate} className="space-y-3">
+          <form onSubmit={handleSubmit} className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label>Descrição *</Label>
@@ -205,7 +237,7 @@ export function ServicosTab({ empresaId }: { empresaId: string }) {
                 </SelectContent>
               </Select>
             </div>
-            <Button type="submit" className="w-full">Cadastrar</Button>
+            <Button type="submit" className="w-full">{editingId ? "Salvar Alterações" : "Cadastrar"}</Button>
           </form>
         </DialogContent>
       </Dialog>
