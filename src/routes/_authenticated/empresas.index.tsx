@@ -50,7 +50,9 @@ const regimeLabels: Record<string, string> = {
 function EmpresasPage() {
   const auth = useAuth();
   const [empresas, setEmpresas] = useState<any[]>([]);
+  const [ultimaSimulacao, setUltimaSimulacao] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -64,6 +66,19 @@ function EmpresasPage() {
       .select("*")
       .order("razao_social");
     setEmpresas(data || []);
+
+    // Buscar última simulação de cada empresa
+    const { data: sims } = await supabase
+      .from("simulacoes")
+      .select("id, empresa_id, nome, created_at, resultados")
+      .order("created_at", { ascending: false });
+
+    const map: Record<string, any> = {};
+    sims?.forEach((s) => {
+      if (!map[s.empresa_id]) map[s.empresa_id] = s;
+    });
+    setUltimaSimulacao(map);
+
     setLoading(false);
   };
 
