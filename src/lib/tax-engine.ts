@@ -703,11 +703,10 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
       cred.atuais_mensal_ipi * t.ipi_fator * 12;
 
     // Créditos novos: proporcionais ao IBS/CBS efetivamente cobrado
+    // Em 2026 (sem_incidencia_real), não há créditos novos pois não há incidência real
     let creditosNovosAno: number;
-    if (t.cbs_teste && t.ibs_teste) {
-      // Fase teste: créditos proporcionais às alíquotas-teste
-      creditosNovosAno = (cred.novos_mensal_cbs * (t.cbs_pct / ALIQUOTA_CBS_REF) +
-        cred.novos_mensal_ibs * (t.ibs_pct / ALIQUOTA_IBS_REF)) * 12;
+    if (t.sem_incidencia_real) {
+      creditosNovosAno = 0;
     } else if (t.ibs_teste) {
       // CBS integral, IBS teste
       creditosNovosAno = (cred.novos_mensal_cbs * t.cbs_pct +
