@@ -101,7 +101,11 @@ function SimuladorPage() {
   const [empresas, setEmpresas] = useState<any[]>([]);
   const [empresaId, setEmpresaId] = useState("");
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
   const [resultado, setResultado] = useState<ResultadoSimulacao | null>(null);
+  const [simulacaoInput, setSimulacaoInput] = useState<SimulacaoInput | null>(null);
+  const [simulacaoSalvaId, setSimulacaoSalvaId] = useState<string | null>(null);
   const [resumoEmpresa, setResumoEmpresa] = useState<EmpresaResumo | null>(null);
 
   useEffect(() => {
