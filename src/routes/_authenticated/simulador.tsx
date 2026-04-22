@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/AuthContext";
+import { useLinkedEmpresa } from "@/hooks/useLinkedEmpresa";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -98,6 +99,7 @@ interface EmpresaResumo {
 
 function SimuladorPage() {
   const auth = useAuth();
+  const linkedEmpresa = useLinkedEmpresa();
   const [empresas, setEmpresas] = useState<any[]>([]);
   const [empresaId, setEmpresaId] = useState("");
   const [loading, setLoading] = useState(false);
@@ -110,9 +112,17 @@ function SimuladorPage() {
 
   useEffect(() => {
     supabase.from("empresas").select("id, razao_social, cnpj").order("razao_social").then(({ data }) => {
-      setEmpresas(data || []);
+      const empresasDisponiveis = auth.hasRole("cliente") && linkedEmpresa.empresaId
+        ? (data || []).filter((empresa) => empresa.id === linkedEmpresa.empresaId)
+        : (data || []);
+
+      setEmpresas(empresasDisponiveis);
+
+      if (auth.hasRole("cliente") && linkedEmpresa.empresaId) {
+        setEmpresaId(linkedEmpresa.empresaId);
+      }
     });
-  }, []);
+  }, [auth, linkedEmpresa.empresaId]);
 
   // Buscar resumo quando empresa é selecionada
   useEffect(() => {
@@ -409,24 +419,34 @@ function SimuladorPage() {
             <Calculator className="h-5 w-5" />
             Parâmetros da Simulação
           </CardTitle>
-          <CardDescription>Selecione a empresa com produtos, serviços e créditos cadastrados</CardDescription>
+          <CardDescription>
+            {auth.hasRole("cliente")
+              ? "Simulação da sua empresa vinculada com base nos cadastros já existentes"
+              : "Selecione a empresa com produtos, serviços e créditos cadastrados"}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-end gap-4">
             <div className="space-y-2 flex-1 max-w-sm">
               <Label>Empresa</Label>
-              <Select value={empresaId} onValueChange={setEmpresaId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione uma empresa" />
-                </SelectTrigger>
-                <SelectContent>
-                  {empresas.map((e) => (
-                    <SelectItem key={e.id} value={e.id}>
-                      {e.razao_social}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {auth.hasRole("cliente") ? (
+                <div className="flex h-10 items-center rounded-md border bg-muted/40 px-3 text-sm text-foreground">
+                  {empresas[0]?.razao_social || "Empresa vinculada"}
+                </div>
+              ) : (
+                <Select value={empresaId} onValueChange={setEmpresaId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma empresa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {empresas.map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        {e.razao_social}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <Button onClick={simular} disabled={!empresaId || loading}>
               {loading ? "Calculando…" : "Simular"}
