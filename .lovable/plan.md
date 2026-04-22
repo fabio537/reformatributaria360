@@ -1,55 +1,111 @@
 
+## Plano de implementação
 
-## Plano: Checklist de Ações para Reforma Tributária
+### Objetivo
+Reorganizar a navegação para clientes com foco exclusivo na empresa vinculada e adicionar um novo simulador de alíquotas por produto/NCM no menu principal, sempre respeitando o vínculo usuário → empresa.
 
-O PDF enviado é uma declaração de cessão de imóvel (não relacionado). O conteúdo relevante vem da **imagem**, que lista ações de antecipação à reforma tributária. Vou criar uma funcionalidade de checklist por empresa.
+### 1. Reorganizar a navegação para perfil cliente
+- Ajustar o menu lateral para ter comportamento diferente entre equipe interna e cliente.
+- Para cliente, exibir uma navegação simplificada, orientada à própria empresa:
+  - Dashboard
+  - Minha Empresa
+  - Checklist
+  - Simulações
+  - Simulador por NCM
+  - Base Legal
+  - Atualizações
+- Para equipe interna, manter a visão administrativa atual, incluindo Empresas e Usuários.
+- Renomear e reposicionar itens para reduzir a dependência de entrar em “Empresas” para acessar funcionalidades operacionais.
 
-### Itens do Checklist (extraídos da imagem)
+### 2. Centralizar a lógica de “empresa vinculada do cliente”
+- Criar uma camada reutilizável para descobrir a empresa vinculada ao usuário autenticado.
+- Usar essa lógica para:
+  - direcionar o cliente à própria empresa;
+  - filtrar telas que hoje dependem de seleção manual;
+  - impedir que cliente navegue para dados de outra empresa.
+- Revisar a proteção das rotas autenticadas para evitar exposição momentânea de conteúdo antes do redirecionamento.
 
-17 itens organizados em 3 categorias:
+### 3. Transformar o checklist em item principal do menu
+- Criar uma rota principal dedicada ao checklist do cliente, usando automaticamente a empresa vinculada.
+- Reaproveitar o componente existente do checklist.
+- Manter a visualização contextual por empresa para staff, mas dar acesso direto ao cliente pelo menu principal.
+- Exibir progresso geral e mensagens de contexto da empresa atual.
 
-**Preparação Interna**
-1. Mapa do perfil de fornecedores e clientes
-2. Saneamento de cadastros (itens, fornecedores, clientes)
-3. Cálculo dos preços líquidos
-4. Atualização do ERP (bases de cálculo, alíquotas, CST, cClassTrib)
-5. Atualização das notas técnicas XML
-6. Parâmetros no ERP (TES, Tabela Z, J1BTAX, TAXBRA)
+### 4. Melhorar a experiência “Minha Empresa”
+- Criar uma rota principal “Minha Empresa” para clientes, levando diretamente ao detalhe da empresa vinculada.
+- Para clientes, ocultar ações administrativas que não façam sentido.
+- Para staff, manter a gestão completa por lista de empresas e detalhe individual.
 
-**Estratégia Comercial**
-7. Ecossistema de fornecedores/clientes — comunicação e preparação
-8. Preparação de Pedidos de Compra (POs) com IBS/CBS
-9. Gross Up com novos tributos na base dos antigos
-10. Repassar aumento/redução de tributos ao mercado
-11. Foco em fornecedores da CURVA A
-12. Revisão de preços com contratos atualizados
+### 5. Criar o novo “Simulador por NCM” no menu principal
+- Adicionar uma nova página dedicada ao simulador de produto.
+- Fluxo principal:
+  - cliente informa NCM;
+  - informa opcionalmente descrição, valor do produto e regime diferenciado;
+  - sistema avalia enquadramento;
+  - retorna alíquota estimada e cronograma de descontinuidade dos tributos atuais.
+- O resultado deve mostrar, no mínimo:
+  - alíquota estimada de CBS;
+  - alíquota estimada de IBS;
+  - alíquota total prevista;
+  - manutenção/extinção de PIS, COFINS, IPI, ICMS e ISS por ano;
+  - observações sobre IPI/ZFM quando aplicável;
+  - alertas de limitação quando o NCM não permitir enquadramento confiável.
 
-**Decisões Estratégicas 2026-2027**
-13. Alterar ou não alterar BC e preços em 2026?
-14. 2026: Laboratório de preços, testes e (re)testes
-15. Nota de débito/crédito, Multa e Juros, Ajustes de estorno
-16. Recursos escassos e limitados — planejamento de equipe
-17. Recuperação Tributária Acelerada (PIS/COFINS extintos em 2027)
+### 6. Reaproveitar e expandir o motor tributário
+- Extrair do motor atual funções menores para cálculo unitário por produto/NCM.
+- Aproveitar as regras já existentes de:
+  - cronograma 2026–2033;
+  - manutenção/extinção de tributos;
+  - validação de NCM para IPI/ZFM;
+  - regimes diferenciados.
+- Criar uma saída específica para consulta rápida por produto, sem depender da simulação completa da empresa.
 
-### Alterações
+### 7. Ajustar permissões para clientes operarem o que é da própria empresa
+- Revisar as políticas de acesso para garantir que o cliente possa:
+  - visualizar seus dados;
+  - acessar suas simulações;
+  - usar checklist da própria empresa;
+  - eventualmente registrar observações/checks, se esse for o comportamento esperado da tela principal.
+- Manter o isolamento total entre empresas pelo vínculo existente.
 
-#### 1. Banco de dados — tabela `checklist_reforma`
-- Campos: `id`, `empresa_id` (FK), `item_key` (text, identificador fixo do item), `concluido` (boolean), `observacao` (text), `updated_at`, `updated_by`
-- RLS: acesso vinculado ao `empresa_id` do usuário
+### 8. Refinar a tela de simulações para perfil cliente
+- Simplificar a página atual do simulador completo para clientes:
+  - pré-selecionar automaticamente a empresa vinculada;
+  - remover seleção de empresa quando houver apenas uma empresa permitida;
+  - manter histórico apenas da própria empresa.
+- Staff continua com capacidade de simular qualquer empresa permitida pelo papel.
 
-#### 2. Componente `ChecklistReformaTab.tsx`
-- Lista os 17 itens agrupados por categoria com checkboxes
-- Cada item mostra: descrição, checkbox de conclusão, campo opcional de observação
-- Barra de progresso geral (ex: "7 de 17 concluídos — 41%")
-- Salva automaticamente ao marcar/desmarcar
+### 9. Ajustes de UX
+- Melhorar a hierarquia visual do menu e dos atalhos principais.
+- Destacar claramente em cada tela qual empresa está sendo consultada.
+- Reduzir cliques para cliente chegar em:
+  - checklist;
+  - dados da empresa;
+  - simulações;
+  - consulta por NCM.
 
-#### 3. Página da empresa (`empresas.$empresaId.tsx`)
-- Nova aba "Checklist" nas tabs existentes (entre Créditos e Simulações)
+## Arquivos e áreas afetadas
+- `src/components/AppSidebar.tsx`
+- `src/routes/_authenticated.tsx`
+- `src/routes/_authenticated/empresas.index.tsx`
+- `src/routes/_authenticated/empresas.$empresaId.tsx`
+- `src/routes/_authenticated/simulador.tsx`
+- `src/lib/tax-engine.ts`
+- novo hook/helper para resolver empresa do usuário autenticado
+- novas rotas dedicadas para:
+  - checklist principal
+  - minha empresa
+  - simulador por NCM
+- possível migration para ajustar permissões do checklist, se necessário
 
-### Arquivos afetados
-| Arquivo | Ação |
-|---------|------|
-| Migration SQL | Criar tabela `checklist_reforma` com RLS |
-| `src/components/ChecklistReformaTab.tsx` | Novo componente |
-| `src/routes/_authenticated/empresas.$empresaId.tsx` | Adicionar aba Checklist |
+## Detalhes técnicos
+- A navegação do cliente passará a ser orientada por contexto da empresa vinculada, não pela lista completa de empresas.
+- O novo simulador por NCM será uma consulta rápida e independente da simulação completa, mas reutilizará o mesmo cronograma tributário já existente no motor.
+- O comportamento de IPI continuará considerando a validação especial por NCM/ZFM já implementada.
+- Caso o cliente deva marcar o checklist diretamente, será necessário ajustar a política de acesso do checklist para permitir atualização apenas na própria empresa vinculada.
 
+## Resultado esperado
+- Cliente entra no sistema e vê apenas conteúdos da própria empresa.
+- Checklist passa a ser acessível diretamente no menu principal.
+- Existe um novo simulador de produto por NCM no menu principal.
+- O sistema retorna a alíquota prevista e mostra, ano a ano, quais tributos deixam de incidir ou permanecem aplicáveis.
