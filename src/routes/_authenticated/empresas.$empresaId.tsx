@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/AuthContext";
+import { useLinkedEmpresa } from "@/hooks/useLinkedEmpresa";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCnpj } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/_authenticated/empresas/$empresaId")({
 function EmpresaDetalhePage() {
   const { empresaId } = Route.useParams();
   const auth = useAuth();
+  const linkedEmpresa = useLinkedEmpresa();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<EmpresaFormValues>(getEmptyEmpresaForm());
@@ -114,12 +116,16 @@ function EmpresaDetalhePage() {
     return <p className="p-4 text-sm text-muted-foreground">Carregando...</p>;
   }
 
+  if (auth.hasRole("cliente") && linkedEmpresa.empresaId && linkedEmpresa.empresaId !== empresaId) {
+    return <p className="p-4 text-sm text-muted-foreground">Você não tem acesso a esta empresa.</p>;
+  }
+
   const isStaff = auth.isStaff();
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Link to="/empresas">
+        <Link to={auth.hasRole("cliente") ? "/minha-empresa" : "/empresas"}>
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-5 w-5" />
           </Button>

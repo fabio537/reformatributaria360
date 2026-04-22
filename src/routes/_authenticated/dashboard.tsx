@@ -1,6 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, Calculator, BookOpen, Newspaper } from "lucide-react";
+import { useAuth } from "@/hooks/AuthContext";
+import { useLinkedEmpresa } from "@/hooks/useLinkedEmpresa";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -13,19 +17,55 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function DashboardPage() {
-  const stats = [
-    { title: "Empresas", value: "—", icon: Building2, color: "bg-primary" },
+  const auth = useAuth();
+  const linkedEmpresa = useLinkedEmpresa();
+  const [stats, setStats] = useState([
+    { title: auth.hasRole("cliente") ? "Minha Empresa" : "Empresas", value: "—", icon: Building2, color: "bg-primary" },
     { title: "Simulações", value: "—", icon: Calculator, color: "bg-chart-2" },
     { title: "Artigos", value: "—", icon: BookOpen, color: "bg-chart-3" },
     { title: "Atualizações", value: "—", icon: Newspaper, color: "bg-chart-4" },
-  ];
+  ]);
+
+  useEffect(() => {
+    async function loadStats() {
+      const empresaFilter = auth.hasRole("cliente") && linkedEmpresa.empresaId ? linkedEmpresa.empresaId : null;
+
+      const empresasQuery = empresaFilter
+        ? supabase.from("empresas").select("id", { count: "exact", head: true }).eq("id", empresaFilter)
+        : supabase.from("empresas").select("id", { count: "exact", head: true });
+
+      const simulacoesQuery = empresaFilter
+        ? supabase.from("simulacoes").select("id", { count: "exact", head: true }).eq("empresa_id", empresaFilter)
+        : supabase.from("simulacoes").select("id", { count: "exact", head: true });
+
+      const [empresasRes, simulacoesRes, artigosRes, atualizacoesRes] = await Promise.all([
+        empresasQuery,
+        simulacoesQuery,
+        supabase.from("artigos_legais").select("id", { count: "exact", head: true }).eq("publicado", true),
+        supabase.from("fontes_atualizacao").select("id", { count: "exact", head: true }),
+      ]);
+
+      setStats([
+        { title: auth.hasRole("cliente") ? "Minha Empresa" : "Empresas", value: String(empresasRes.count ?? 0), icon: Building2, color: "bg-primary" },
+        { title: "Simulações", value: String(simulacoesRes.count ?? 0), icon: Calculator, color: "bg-chart-2" },
+        { title: "Artigos", value: String(artigosRes.count ?? 0), icon: BookOpen, color: "bg-chart-3" },
+        { title: "Atualizações", value: String(atualizacoesRes.count ?? 0), icon: Newspaper, color: "bg-chart-4" },
+      ]);
+    }
+
+    if (!linkedEmpresa.loading) {
+      loadStats();
+    }
+  }, [auth, linkedEmpresa.empresaId, linkedEmpresa.loading]);
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground mt-1">
-          Visão geral da plataforma de suporte à reforma tributária
+          {auth.hasRole("cliente")
+            ? "Visão da sua empresa e das suas frentes prioritárias da reforma tributária"
+            : "Visão geral da plataforma de suporte à reforma tributária"}
         </p>
       </div>
 

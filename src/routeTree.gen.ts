@@ -13,9 +13,12 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
+import { Route as AuthenticatedSimuladorNcmRouteImport } from './routes/_authenticated/simulador-ncm'
 import { Route as AuthenticatedSimuladorRouteImport } from './routes/_authenticated/simulador'
+import { Route as AuthenticatedMinhaEmpresaRouteImport } from './routes/_authenticated/minha-empresa'
 import { Route as AuthenticatedEmpresasRouteImport } from './routes/_authenticated/empresas'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedChecklistRouteImport } from './routes/_authenticated/checklist'
 import { Route as AuthenticatedBaseLegalRouteImport } from './routes/_authenticated/base-legal'
 import { Route as AuthenticatedAtualizacoesRouteImport } from './routes/_authenticated/atualizacoes'
 import { Route as AuthenticatedEmpresasIndexRouteImport } from './routes/_authenticated/empresas.index'
@@ -40,11 +43,23 @@ const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   path: '/usuarios',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedSimuladorNcmRoute =
+  AuthenticatedSimuladorNcmRouteImport.update({
+    id: '/simulador-ncm',
+    path: '/simulador-ncm',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedSimuladorRoute = AuthenticatedSimuladorRouteImport.update({
   id: '/simulador',
   path: '/simulador',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedMinhaEmpresaRoute =
+  AuthenticatedMinhaEmpresaRouteImport.update({
+    id: '/minha-empresa',
+    path: '/minha-empresa',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedEmpresasRoute = AuthenticatedEmpresasRouteImport.update({
   id: '/empresas',
   path: '/empresas',
@@ -53,6 +68,11 @@ const AuthenticatedEmpresasRoute = AuthenticatedEmpresasRouteImport.update({
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedChecklistRoute = AuthenticatedChecklistRouteImport.update({
+  id: '/checklist',
+  path: '/checklist',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedBaseLegalRoute = AuthenticatedBaseLegalRouteImport.update({
@@ -84,9 +104,12 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/atualizacoes': typeof AuthenticatedAtualizacoesRoute
   '/base-legal': typeof AuthenticatedBaseLegalRoute
+  '/checklist': typeof AuthenticatedChecklistRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresas': typeof AuthenticatedEmpresasRouteWithChildren
+  '/minha-empresa': typeof AuthenticatedMinhaEmpresaRoute
   '/simulador': typeof AuthenticatedSimuladorRoute
+  '/simulador-ncm': typeof AuthenticatedSimuladorNcmRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/empresas/$empresaId': typeof AuthenticatedEmpresasEmpresaIdRoute
   '/empresas/': typeof AuthenticatedEmpresasIndexRoute
@@ -96,8 +119,11 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/atualizacoes': typeof AuthenticatedAtualizacoesRoute
   '/base-legal': typeof AuthenticatedBaseLegalRoute
+  '/checklist': typeof AuthenticatedChecklistRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/minha-empresa': typeof AuthenticatedMinhaEmpresaRoute
   '/simulador': typeof AuthenticatedSimuladorRoute
+  '/simulador-ncm': typeof AuthenticatedSimuladorNcmRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/empresas/$empresaId': typeof AuthenticatedEmpresasEmpresaIdRoute
   '/empresas': typeof AuthenticatedEmpresasIndexRoute
@@ -109,9 +135,12 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/atualizacoes': typeof AuthenticatedAtualizacoesRoute
   '/_authenticated/base-legal': typeof AuthenticatedBaseLegalRoute
+  '/_authenticated/checklist': typeof AuthenticatedChecklistRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/empresas': typeof AuthenticatedEmpresasRouteWithChildren
+  '/_authenticated/minha-empresa': typeof AuthenticatedMinhaEmpresaRoute
   '/_authenticated/simulador': typeof AuthenticatedSimuladorRoute
+  '/_authenticated/simulador-ncm': typeof AuthenticatedSimuladorNcmRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/empresas/$empresaId': typeof AuthenticatedEmpresasEmpresaIdRoute
   '/_authenticated/empresas/': typeof AuthenticatedEmpresasIndexRoute
@@ -123,9 +152,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/atualizacoes'
     | '/base-legal'
+    | '/checklist'
     | '/dashboard'
     | '/empresas'
+    | '/minha-empresa'
     | '/simulador'
+    | '/simulador-ncm'
     | '/usuarios'
     | '/empresas/$empresaId'
     | '/empresas/'
@@ -135,8 +167,11 @@ export interface FileRouteTypes {
     | '/login'
     | '/atualizacoes'
     | '/base-legal'
+    | '/checklist'
     | '/dashboard'
+    | '/minha-empresa'
     | '/simulador'
+    | '/simulador-ncm'
     | '/usuarios'
     | '/empresas/$empresaId'
     | '/empresas'
@@ -147,9 +182,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authenticated/atualizacoes'
     | '/_authenticated/base-legal'
+    | '/_authenticated/checklist'
     | '/_authenticated/dashboard'
     | '/_authenticated/empresas'
+    | '/_authenticated/minha-empresa'
     | '/_authenticated/simulador'
+    | '/_authenticated/simulador-ncm'
     | '/_authenticated/usuarios'
     | '/_authenticated/empresas/$empresaId'
     | '/_authenticated/empresas/'
@@ -191,11 +229,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/simulador-ncm': {
+      id: '/_authenticated/simulador-ncm'
+      path: '/simulador-ncm'
+      fullPath: '/simulador-ncm'
+      preLoaderRoute: typeof AuthenticatedSimuladorNcmRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/simulador': {
       id: '/_authenticated/simulador'
       path: '/simulador'
       fullPath: '/simulador'
       preLoaderRoute: typeof AuthenticatedSimuladorRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/minha-empresa': {
+      id: '/_authenticated/minha-empresa'
+      path: '/minha-empresa'
+      fullPath: '/minha-empresa'
+      preLoaderRoute: typeof AuthenticatedMinhaEmpresaRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/empresas': {
@@ -210,6 +262,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/checklist': {
+      id: '/_authenticated/checklist'
+      path: '/checklist'
+      fullPath: '/checklist'
+      preLoaderRoute: typeof AuthenticatedChecklistRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/base-legal': {
@@ -261,18 +320,24 @@ const AuthenticatedEmpresasRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedAtualizacoesRoute: typeof AuthenticatedAtualizacoesRoute
   AuthenticatedBaseLegalRoute: typeof AuthenticatedBaseLegalRoute
+  AuthenticatedChecklistRoute: typeof AuthenticatedChecklistRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEmpresasRoute: typeof AuthenticatedEmpresasRouteWithChildren
+  AuthenticatedMinhaEmpresaRoute: typeof AuthenticatedMinhaEmpresaRoute
   AuthenticatedSimuladorRoute: typeof AuthenticatedSimuladorRoute
+  AuthenticatedSimuladorNcmRoute: typeof AuthenticatedSimuladorNcmRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAtualizacoesRoute: AuthenticatedAtualizacoesRoute,
   AuthenticatedBaseLegalRoute: AuthenticatedBaseLegalRoute,
+  AuthenticatedChecklistRoute: AuthenticatedChecklistRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEmpresasRoute: AuthenticatedEmpresasRouteWithChildren,
+  AuthenticatedMinhaEmpresaRoute: AuthenticatedMinhaEmpresaRoute,
   AuthenticatedSimuladorRoute: AuthenticatedSimuladorRoute,
+  AuthenticatedSimuladorNcmRoute: AuthenticatedSimuladorNcmRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
 }
 

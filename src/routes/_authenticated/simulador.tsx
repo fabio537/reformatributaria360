@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/AuthContext";
+import { useLinkedEmpresa } from "@/hooks/useLinkedEmpresa";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -98,6 +99,7 @@ interface EmpresaResumo {
 
 function SimuladorPage() {
   const auth = useAuth();
+  const linkedEmpresa = useLinkedEmpresa();
   const [empresas, setEmpresas] = useState<any[]>([]);
   const [empresaId, setEmpresaId] = useState("");
   const [loading, setLoading] = useState(false);
@@ -110,9 +112,17 @@ function SimuladorPage() {
 
   useEffect(() => {
     supabase.from("empresas").select("id, razao_social, cnpj").order("razao_social").then(({ data }) => {
-      setEmpresas(data || []);
+      const empresasDisponiveis = auth.hasRole("cliente") && linkedEmpresa.empresaId
+        ? (data || []).filter((empresa) => empresa.id === linkedEmpresa.empresaId)
+        : (data || []);
+
+      setEmpresas(empresasDisponiveis);
+
+      if (auth.hasRole("cliente") && linkedEmpresa.empresaId) {
+        setEmpresaId(linkedEmpresa.empresaId);
+      }
     });
-  }, []);
+  }, [auth, linkedEmpresa.empresaId]);
 
   // Buscar resumo quando empresa é selecionada
   useEffect(() => {
@@ -409,24 +419,34 @@ function SimuladorPage() {
             <Calculator className="h-5 w-5" />
             Parâmetros da Simulação
           </CardTitle>
-          <CardDescription>Selecione a empresa com produtos, serviços e créditos cadastrados</CardDescription>
+          <CardDescription>
+            {auth.hasRole("cliente")
+              ? "Simulação da sua empresa vinculada com base nos cadastros já existentes"
+              : "Selecione a empresa com produtos, serviços e créditos cadastrados"}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-end gap-4">
             <div className="space-y-2 flex-1 max-w-sm">
               <Label>Empresa</Label>
-              <Select value={empresaId} onValueChange={setEmpresaId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione uma empresa" />
-                </SelectTrigger>
-                <SelectContent>
-                  {empresas.map((e) => (
-                    <SelectItem key={e.id} value={e.id}>
-                      {e.razao_social}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {auth.hasRole("cliente") ? (
+                <div className="flex h-10 items-center rounded-md border bg-muted/40 px-3 text-sm text-foreground">
+                  {empresas[0]?.razao_social || "Empresa vinculada"}
+                </div>
+              ) : (
+                <Select value={empresaId} onValueChange={setEmpresaId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma empresa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {empresas.map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        {e.razao_social}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <Button onClick={simular} disabled={!empresaId || loading}>
               {loading ? "Calculando…" : "Simular"}
@@ -508,7 +528,7 @@ function SimuladorPage() {
               </div>
 
               {(resumoEmpresa.totalProdutos === 0 && resumoEmpresa.totalServicos === 0) && (
-                <div className="flex items-center gap-2 text-amber-600 bg-amber-500/10 rounded-md p-2">
+                <div className="flex items-center gap-2 rounded-md border border-warning/30 bg-warning/10 p-2 text-warning-foreground">
                   <AlertTriangle className="h-4 w-4 shrink-0" />
                   <p className="text-xs">
                     Nenhum produto ou serviço cadastrado. <Link to="/empresas/$empresaId" params={{ empresaId }} className="underline font-medium">Cadastre os dados</Link> para obter uma simulação precisa.
@@ -524,9 +544,9 @@ function SimuladorPage() {
         <>
           {/* Alertas */}
           {resultado.alertas.length > 0 && (
-            <Card className="border-amber-500/30 bg-amber-500/5">
+            <Card className="border-warning/30 bg-warning/10">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2 text-amber-600">
+                <CardTitle className="text-base flex items-center gap-2 text-warning-foreground">
                   <AlertTriangle className="h-4 w-4" />
                   Observações da Simulação
                 </CardTitle>
@@ -535,7 +555,7 @@ function SimuladorPage() {
                 <ul className="space-y-2">
                   {resultado.alertas.map((a, i) => (
                     <li key={i} className="text-sm text-muted-foreground flex gap-2">
-                      <Info className="h-4 w-4 mt-0.5 shrink-0 text-amber-500" />
+                      <Info className="h-4 w-4 mt-0.5 shrink-0 text-warning-foreground" />
                       {a}
                     </li>
                   ))}
@@ -578,7 +598,7 @@ function SimuladorPage() {
                   const positivo = ultimo.variacao >= 0;
                   return (
                     <>
-                      <div className={`text-2xl font-bold tabular-nums flex items-center gap-1 ${positivo ? "text-red-500" : "text-green-500"}`}>
+                      <div className={`text-2xl font-bold tabular-nums flex items-center gap-1 ${positivo ? "text-destructive" : "text-success"}`}>
                         {positivo ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
                         {formatBRL(Math.abs(ultimo.variacao))}
                       </div>
@@ -623,7 +643,7 @@ function SimuladorPage() {
                     <Bar dataKey="ICMS" fill="var(--color-chart-3)" stackId="a" />
                     <Bar dataKey="ISS" fill="var(--color-chart-4)" stackId="a" />
                     <Bar dataKey="CBS" fill="var(--color-chart-5)" stackId="b" />
-                    <Bar dataKey="IBS" fill="hsl(200 80% 50%)" stackId="b" />
+                     <Bar dataKey="IBS" fill="var(--color-chart-2)" stackId="b" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -684,7 +704,7 @@ function SimuladorPage() {
                         -{formatBRL(a.creditos.creditos_atuais + a.creditos.creditos_ibs_cbs)}
                       </td>
                       <td className="py-2 px-2 text-right tabular-nums font-medium">{formatBRL(a.carga_total)}</td>
-                      <td className={`py-2 px-2 text-right tabular-nums font-medium ${a.variacao >= 0 ? "text-red-500" : "text-green-500"}`}>
+                      <td className={`py-2 px-2 text-right tabular-nums font-medium ${a.variacao >= 0 ? "text-destructive" : "text-success"}`}>
                         {a.variacao >= 0 ? "+" : ""}{a.variacao_pct.toFixed(1)}%
                       </td>
                     </tr>

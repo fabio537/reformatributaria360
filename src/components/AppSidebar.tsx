@@ -2,10 +2,12 @@ import {
   LayoutDashboard,
   Building2,
   Calculator,
+  ClipboardList,
   BookOpen,
   Newspaper,
   Users,
   LogOut,
+  PackageSearch,
 } from "lucide-react";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
@@ -30,6 +32,16 @@ const mainItems = [
   { title: "Atualizações", url: "/atualizacoes", icon: Newspaper },
 ];
 
+const clientItems = [
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Minha Empresa", url: "/minha-empresa", icon: Building2 },
+  { title: "Checklist", url: "/checklist", icon: ClipboardList },
+  { title: "Simulações", url: "/simulador", icon: Calculator },
+  { title: "Simulador por NCM", url: "/simulador-ncm", icon: PackageSearch },
+  { title: "Base Legal", url: "/base-legal", icon: BookOpen },
+  { title: "Atualizações", url: "/atualizacoes", icon: Newspaper },
+];
+
 const adminItems = [
   { title: "Usuários", url: "/usuarios", icon: Users },
 ];
@@ -39,6 +51,7 @@ export function AppSidebar({ auth }: { auth: AuthState }) {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const currentPath = location.pathname;
+  const items = auth.hasRole("cliente") ? clientItems : mainItems;
 
   const isActive = (path: string) => currentPath.startsWith(path);
 
@@ -55,7 +68,7 @@ export function AppSidebar({ auth }: { auth: AuthState }) {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainItems.map((item) => (
+              {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild

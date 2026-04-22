@@ -304,6 +304,41 @@ export interface ResultadoSimulacao {
   alertas: string[];
 }
 
+export interface SimulacaoNcmInput {
+  ncm: string;
+  descricao?: string;
+  valor: number;
+  regime_diferenciado: RegimeDiferenciado;
+  sujeito_imposto_seletivo?: boolean;
+  aliquota_is?: number;
+  aliquota_ipi_atual?: number;
+  aliquota_pis_atual?: number;
+  aliquota_cofins_atual?: number;
+  aliquota_icms_atual?: number;
+}
+
+export interface SimulacaoNcmAno {
+  ano: number;
+  aliquota_cbs: number;
+  aliquota_ibs: number;
+  aliquota_total_nova: number;
+  tributos_descontinuados: string[];
+  tributos_mantidos: string[];
+  observacao: string;
+}
+
+export interface ResultadoSimulacaoNcm {
+  ncm: string;
+  descricao: string;
+  aliquota_cbs_estimada: number;
+  aliquota_ibs_estimada: number;
+  aliquota_total_estimada: number;
+  valor_referencia: number;
+  setor_zfm: string | null;
+  cronograma: SimulacaoNcmAno[];
+  alertas: string[];
+}
+
 // ─── Motor de Cálculo ──────────────────────────────────────────────────────
 
 function aliquotaEfetiva(regime: RegimeDiferenciado): { cbs: number; ibs: number; total: number } {
@@ -616,6 +651,87 @@ function faseTransicao(t: TransicaoAno): string {
   if (!t.cbs_teste && t.ibs_teste) return "CBS integral, IBS teste (0,1%). IPI zerado.";
   if (t.ibs_pct < 1.0) return `Transição (IBS ${(t.ibs_pct * 100).toFixed(0)}%, ICMS/ISS ${(t.icms_iss_fator * 100).toFixed(0)}%)`;
   return "Sistema novo integral";
+}
+
+function nomeTributosMantidos(t: TransicaoAno, isZfm: boolean): { mantidos: string[]; descontinuados: string[] } {
+  const mantidos: string[] = [];
+  const descontinuados: string[] = [];
+
+  if (t.pis_cofins_fator > 0) {
+    mantidos.push("PIS", "COFINS");
+  } else {
+    descontinuados.push("PIS", "COFINS");
+  }
+
+  if (t.icms_iss_fator > 0) {
+    mantidos.push("ICMS", "ISS");
+  } else {
+    descontinuados.push("ICMS", "ISS");
+  }
+
+  if (isZfm || t.ipi_fator > 0) {
+    mantidos.push("IPI");
+  } else {
+    descontinuados.push("IPI");
+  }
+
+  return { mantidos, descontinuados };
+}
+
+export function simularAliquotaPorNcm(input: SimulacaoNcmInput): ResultadoSimulacaoNcm {
+  const descricao = input.descricao?.trim() || "Produto informado";
+  const valorReferencia = Math.max(0, input.valor || 0);
+  const aliquotas = aliquotaEfetiva(input.regime_diferenciado);
+  const { isZfm, setor } = verificarNcmZfm(input.ncm);
+  const alertas: string[] = [];
+
+  if (input.ncm.replace(/\D/g, "").length < 8) {
+    alertas.push("NCM informado com menos de 8 dígitos. O enquadramento é indicativo e pode exigir validação manual.");
+  }
+
+  if (input.regime_diferenciado !== "padrao") {
+    alertas.push("A alíquota estimada considera o regime diferenciado selecionado para o produto.");
+  }
+
+  if (isZfm) {
+    alertas.push(`O NCM informado se enquadra em setor com preservação de IPI na ZFM (${setor}).`);
+  } else {
+    alertas.push("O IPI tende a ser reduzido a zero a partir de 2027, salvo enquadramento específico em preservação da ZFM.");
+  }
+
+  if (input.sujeito_imposto_seletivo && (input.aliquota_is || 0) > 0) {
+    alertas.push("Há incidência estimada de Imposto Seletivo para este item.");
+  }
+
+  const cronograma = CRONOGRAMA_TRANSICAO.map((ano) => {
+    const aliquotaCbs = ano.cbs_teste ? ano.cbs_pct : aliquotas.cbs * ano.cbs_pct;
+    const aliquotaIbs = ano.ibs_teste ? ano.ibs_pct : aliquotas.ibs * ano.ibs_pct;
+    const { mantidos, descontinuados } = nomeTributosMantidos(ano, isZfm);
+
+    return {
+      ano: ano.ano,
+      aliquota_cbs: aliquotaCbs,
+      aliquota_ibs: aliquotaIbs,
+      aliquota_total_nova: ano.sem_incidencia_real ? 0 : aliquotaCbs + aliquotaIbs,
+      tributos_mantidos: mantidos,
+      tributos_descontinuados: descontinuados,
+      observacao: ano.sem_incidencia_real
+        ? "Fase teste, sem incidência econômica adicional no período."
+        : faseTransicao(ano),
+    };
+  });
+
+  return {
+    ncm: input.ncm,
+    descricao,
+    aliquota_cbs_estimada: aliquotas.cbs,
+    aliquota_ibs_estimada: aliquotas.ibs,
+    aliquota_total_estimada: aliquotas.total,
+    valor_referencia: valorReferencia,
+    setor_zfm: setor,
+    cronograma,
+    alertas,
+  };
 }
 
 // ─── Função Principal ──────────────────────────────────────────────────────

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/AuthContext";
+import { useLinkedEmpresa } from "@/hooks/useLinkedEmpresa";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCnpj } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ const regimeLabels: Record<string, string> = {
 
 function EmpresasPage() {
   const auth = useAuth();
+  const linkedEmpresa = useLinkedEmpresa();
   const [empresas, setEmpresas] = useState<any[]>([]);
   const [ultimaSimulacao, setUltimaSimulacao] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
@@ -188,6 +190,10 @@ function EmpresasPage() {
       e.cnpj?.includes(search)
   );
 
+  const visibleEmpresas = auth.hasRole("cliente") && linkedEmpresa.empresaId
+    ? filtered.filter((empresa) => empresa.id === linkedEmpresa.empresaId)
+    : filtered;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -247,9 +253,9 @@ function EmpresasPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {loading || linkedEmpresa.loading ? (
             <p className="text-sm text-muted-foreground">Carregando...</p>
-          ) : filtered.length === 0 ? (
+          ) : visibleEmpresas.length === 0 ? (
             <p className="text-sm text-muted-foreground">Nenhuma empresa encontrada.</p>
           ) : (
             <Table>
@@ -266,7 +272,7 @@ function EmpresasPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((empresa) => (
+                {visibleEmpresas.map((empresa) => (
                   <TableRow key={empresa.id}>
                     <TableCell className="font-medium">{empresa.razao_social}</TableCell>
                     <TableCell className="input-cnpj">{formatCnpj(empresa.cnpj)}</TableCell>
