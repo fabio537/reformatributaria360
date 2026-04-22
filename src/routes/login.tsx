@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/AuthContext";
+import { useLinkedEmpresa } from "@/hooks/useLinkedEmpresa";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +20,7 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const auth = useAuth();
   const navigate = useNavigate();
+  const linkedEmpresa = useLinkedEmpresa();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -27,10 +29,10 @@ function LoginPage() {
   const [nome, setNome] = useState("");
 
   useEffect(() => {
-    if (auth.isAuthenticated) {
-      navigate({ to: "/dashboard" });
+    if (auth.isAuthenticated && !linkedEmpresa.loading) {
+      navigate({ to: auth.hasRole("cliente") ? "/minha-empresa" : "/dashboard" });
     }
-  }, [auth.isAuthenticated, navigate]);
+  }, [auth, linkedEmpresa.loading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
