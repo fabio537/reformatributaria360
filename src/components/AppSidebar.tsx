@@ -42,6 +42,17 @@ const clientItems = [
   { title: "Atualizações", url: "/atualizacoes", icon: Newspaper },
 ];
 
+const staffItems = [
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Empresas", url: "/empresas", icon: Building2 },
+  { title: "Minha Empresa", url: "/minha-empresa", icon: Building2 },
+  { title: "Checklist", url: "/checklist", icon: ClipboardList },
+  { title: "Simulações", url: "/simulador", icon: Calculator },
+  { title: "Simulador por NCM", url: "/simulador-ncm", icon: PackageSearch },
+  { title: "Base Legal", url: "/base-legal", icon: BookOpen },
+  { title: "Atualizações", url: "/atualizacoes", icon: Newspaper },
+];
+
 const adminItems = [
   { title: "Usuários", url: "/usuarios", icon: Users },
 ];
@@ -51,7 +62,7 @@ export function AppSidebar({ auth }: { auth: AuthState }) {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const currentPath = location.pathname;
-  const items = auth.hasRole("cliente") ? clientItems : mainItems;
+  const items = auth.hasRole("cliente") ? clientItems : auth.isStaff() ? staffItems : mainItems;
 
   const isActive = (path: string) => currentPath.startsWith(path);
 
