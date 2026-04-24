@@ -34,6 +34,7 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { createUserFn } from "@/server/create-user";
 import { updateUserFn } from "@/server/update-user";
+import { listUserEmailsFn } from "@/server/list-user-emails";
 
 export const Route = createFileRoute("/_authenticated/usuarios")({
   head: () => ({
@@ -67,6 +68,7 @@ type UserRow = {
   id: string;
   user_id: string;
   nome: string;
+  email: string;
   telefone: string | null;
   created_at: string;
   roles: string[];
@@ -79,6 +81,7 @@ type EmpresaRow = { id: string; razao_social: string; nome_fantasia: string | nu
 function UsuariosPage() {
   const createUser = useServerFn(createUserFn);
   const updateUser = useServerFn(updateUserFn);
+  const listEmails = useServerFn(listUserEmailsFn);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [empresas, setEmpresas] = useState<EmpresaRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,6 +92,7 @@ function UsuariosPage() {
   const [editing, setEditing] = useState<UserRow | null>(null);
   const [editForm, setEditForm] = useState({
     nome: "",
+    email: "",
     telefone: "",
     role: "" as string,
     empresa_ids: [] as string[],
@@ -113,12 +117,21 @@ function UsuariosPage() {
         supabase.from("empresa_usuarios").select("*"),
       ]);
 
+    let emailMap: Record<string, string> = {};
+    try {
+      const res = await listEmails({ data: undefined } as any);
+      emailMap = res?.emails || {};
+    } catch (err) {
+      // Silently ignore — non-admin users can't list emails
+    }
+
     const combined: UserRow[] = (profiles || []).map((p: any) => {
       const userLinks = (links || []).filter((l: any) => l.user_id === p.user_id);
       return {
         id: p.id,
         user_id: p.user_id,
         nome: p.nome,
+        email: emailMap[p.user_id] || "",
         telefone: p.telefone,
         created_at: p.created_at,
         roles: (roles || []).filter((r: any) => r.user_id === p.user_id).map((r: any) => r.role),
@@ -179,6 +192,7 @@ function UsuariosPage() {
     setEditing(u);
     setEditForm({
       nome: u.nome || "",
+      email: u.email || "",
       telefone: u.telefone || "",
       role: u.roles[0] || "",
       empresa_ids: [...u.empresa_ids],
@@ -202,6 +216,15 @@ function UsuariosPage() {
       toast.error("O nome é obrigatório.");
       return;
     }
+    if (!editForm.email.trim()) {
+      toast.error("O e-mail é obrigatório.");
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(editForm.email.trim())) {
+      toast.error("E-mail inválido.");
+      return;
+    }
     if (!editForm.role) {
       toast.error("Selecione o tipo de acesso.");
       return;
@@ -215,6 +238,9 @@ function UsuariosPage() {
       return;
     }
 
+    const emailChanged =
+      editForm.email.trim().toLowerCase() !== (editing.email || "").toLowerCase();
+
     setSubmitting(true);
     try {
       await updateUser({
@@ -226,6 +252,7 @@ function UsuariosPage() {
           empresa_ids:
             editForm.role === "cliente" ? editForm.empresa_ids : editForm.empresa_ids,
           new_password: editForm.new_password || undefined,
+          new_email: emailChanged ? editForm.email.trim() : undefined,
         },
       });
       toast.success("Usuário atualizado com sucesso!");
@@ -373,6 +400,19 @@ function UsuariosPage() {
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="edit-email">E-mail *</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                placeholder="email@exemplo.com"
+              />
+              <p className="text-xs text-muted-foreground">
+                Alterar o e-mail muda também o login do usuário.
+              </p>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="edit-telefone">Telefone</Label>
               <Input
                 id="edit-telefone"
@@ -513,6 +553,7 @@ function UsuariosPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
+                  <TableHead>E-mail</TableHead>
                   <TableHead>Telefone</TableHead>
                   <TableHead>Perfil</TableHead>
                   <TableHead>Empresa(s)</TableHead>
@@ -524,6 +565,7 @@ function UsuariosPage() {
                 {users.map((u) => (
                   <TableRow key={u.id}>
                     <TableCell className="font-medium">{u.nome}</TableCell>
+                    <TableCell className="text-sm">{u.email || "—"}</TableCell>
                     <TableCell>{u.telefone || "—"}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
