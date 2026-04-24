@@ -250,7 +250,10 @@ function UsuariosPage() {
 
     setSubmitting(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
       await updateUser({
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         data: {
           target_user_id: editing.user_id,
           nome: editForm.nome.trim(),
@@ -261,7 +264,7 @@ function UsuariosPage() {
           new_password: editForm.new_password || undefined,
           new_email: emailChanged ? editForm.email.trim() : undefined,
         },
-      });
+      } as any);
       toast.success("Usuário atualizado com sucesso!");
       setEditOpen(false);
       setEditing(null);
