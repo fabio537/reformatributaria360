@@ -353,7 +353,7 @@ function UsuariosPage() {
                   type="password"
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Mínimo 8 caracteres, com letras e números"
                 />
               </div>
               <div className="space-y-2">
