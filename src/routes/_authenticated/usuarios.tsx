@@ -81,6 +81,7 @@ type EmpresaRow = { id: string; razao_social: string; nome_fantasia: string | nu
 function UsuariosPage() {
   const createUser = useServerFn(createUserFn);
   const updateUser = useServerFn(updateUserFn);
+  const listEmails = useServerFn(listUserEmailsFn);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [empresas, setEmpresas] = useState<EmpresaRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,6 +92,7 @@ function UsuariosPage() {
   const [editing, setEditing] = useState<UserRow | null>(null);
   const [editForm, setEditForm] = useState({
     nome: "",
+    email: "",
     telefone: "",
     role: "" as string,
     empresa_ids: [] as string[],
