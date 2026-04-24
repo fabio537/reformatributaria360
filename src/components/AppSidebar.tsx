@@ -22,6 +22,7 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { InstallAppButton } from "@/components/InstallAppButton";
 import type { AuthState } from "@/hooks/useAuth";
 
 const mainItems = [
@@ -125,6 +126,9 @@ export function AppSidebar({ auth }: { auth: AuthState }) {
       </SidebarContent>
 
       <SidebarFooter>
+        <div className="px-2 pb-2">
+          <InstallAppButton collapsed={collapsed} />
+        </div>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton onClick={() => auth.logout()} tooltip="Sair">
