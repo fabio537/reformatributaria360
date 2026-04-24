@@ -192,6 +192,7 @@ function UsuariosPage() {
     setEditing(u);
     setEditForm({
       nome: u.nome || "",
+      email: u.email || "",
       telefone: u.telefone || "",
       role: u.roles[0] || "",
       empresa_ids: [...u.empresa_ids],
