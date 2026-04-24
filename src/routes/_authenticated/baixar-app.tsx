@@ -152,7 +152,7 @@ function BaixarAppPage() {
                 <Monitor className="h-4 w-4" /> Linux
               </TabsTrigger>
               <TabsTrigger value="chromeos" className="gap-1">
-                <Chrome className="h-4 w-4" /> ChromeOS
+                <Globe className="h-4 w-4" /> ChromeOS
               </TabsTrigger>
               <TabsTrigger value="mobile" className="gap-1">
                 <Smartphone className="h-4 w-4" /> Mobile
