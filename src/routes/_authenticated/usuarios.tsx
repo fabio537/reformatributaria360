@@ -77,6 +77,8 @@ type UserRow = {
 type EmpresaRow = { id: string; razao_social: string; nome_fantasia: string | null };
 
 function UsuariosPage() {
+  const createUser = useServerFn(createUserFn);
+  const updateUser = useServerFn(updateUserFn);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [empresas, setEmpresas] = useState<EmpresaRow[]>([]);
   const [loading, setLoading] = useState(true);
