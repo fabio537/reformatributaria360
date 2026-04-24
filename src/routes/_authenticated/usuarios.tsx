@@ -119,12 +119,17 @@ function UsuariosPage() {
 
     let emailMap: Record<string, string> = {};
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const token = session?.access_token;
-      const res = await listEmails({
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      } as any);
-      emailMap = res?.emails || {};
+
+      if (token) {
+        const res = await listEmails({
+          headers: { Authorization: `Bearer ${token}` },
+        } as any);
+        emailMap = res?.emails || {};
+      }
     } catch (err) {
       // Silently ignore — non-admin users can't list emails
     }
@@ -172,10 +177,16 @@ function UsuariosPage() {
 
     setSubmitting(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const token = session?.access_token;
+      if (!token) {
+        throw new Error("Sessão inválida. Entre novamente para continuar.");
+      }
+
       await createUser({
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        headers: { Authorization: `Bearer ${token}` },
         data: {
           email: form.email,
           password: form.password,
@@ -250,10 +261,16 @@ function UsuariosPage() {
 
     setSubmitting(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const token = session?.access_token;
+      if (!token) {
+        throw new Error("Sessão inválida. Entre novamente para continuar.");
+      }
+
       await updateUser({
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        headers: { Authorization: `Bearer ${token}` },
         data: {
           target_user_id: editing.user_id,
           nome: editForm.nome.trim(),
