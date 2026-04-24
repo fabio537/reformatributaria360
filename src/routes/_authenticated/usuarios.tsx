@@ -166,8 +166,12 @@ function UsuariosPage() {
       toast.error("Preencha todos os campos obrigatórios.");
       return;
     }
-    if (form.password.length < 6) {
-      toast.error("A senha deve ter pelo menos 6 caracteres.");
+    if (form.password.length < 8) {
+      toast.error("A senha deve ter pelo menos 8 caracteres.");
+      return;
+    }
+    if (!/[A-Za-z]/.test(form.password) || !/\d/.test(form.password)) {
+      toast.error("A senha deve combinar letras e números.");
       return;
     }
     if (form.role === "cliente" && !form.empresa_id) {
