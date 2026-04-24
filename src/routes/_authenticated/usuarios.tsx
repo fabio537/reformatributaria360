@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -28,9 +29,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, UserPlus, Shield, Users, Eye } from "lucide-react";
+import { UserPlus, Shield, Users, Eye, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { createUserFn } from "@/server/create-user";
+import { updateUserFn } from "@/server/update-user";
 
 export const Route = createFileRoute("/_authenticated/usuarios")({
   head: () => ({
@@ -60,12 +62,35 @@ const roleDescriptions: Record<string, string> = {
   cliente: "Visualiza apenas a empresa vinculada",
 };
 
+type UserRow = {
+  id: string;
+  user_id: string;
+  nome: string;
+  telefone: string | null;
+  created_at: string;
+  roles: string[];
+  empresa_ids: string[];
+  empresas: string[];
+};
+
+type EmpresaRow = { id: string; razao_social: string; nome_fantasia: string | null };
+
 function UsuariosPage() {
-  const [users, setUsers] = useState<any[]>([]);
-  const [empresas, setEmpresas] = useState<any[]>([]);
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [empresas, setEmpresas] = useState<EmpresaRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editing, setEditing] = useState<UserRow | null>(null);
+  const [editForm, setEditForm] = useState({
+    nome: "",
+    telefone: "",
+    role: "" as string,
+    empresa_ids: [] as string[],
+    new_password: "",
+  });
 
   const [form, setForm] = useState({
     nome: "",
@@ -85,16 +110,22 @@ function UsuariosPage() {
         supabase.from("empresa_usuarios").select("*"),
       ]);
 
-    const combined = (profiles || []).map((p) => ({
-      ...p,
-      roles: (roles || []).filter((r: any) => r.user_id === p.user_id).map((r: any) => r.role),
-      empresas: (links || [])
-        .filter((l: any) => l.user_id === p.user_id)
-        .map((l: any) => {
+    const combined: UserRow[] = (profiles || []).map((p: any) => {
+      const userLinks = (links || []).filter((l: any) => l.user_id === p.user_id);
+      return {
+        id: p.id,
+        user_id: p.user_id,
+        nome: p.nome,
+        telefone: p.telefone,
+        created_at: p.created_at,
+        roles: (roles || []).filter((r: any) => r.user_id === p.user_id).map((r: any) => r.role),
+        empresa_ids: userLinks.map((l: any) => l.empresa_id),
+        empresas: userLinks.map((l: any) => {
           const emp = (emps || []).find((e: any) => e.id === l.empresa_id);
           return emp ? emp.nome_fantasia || emp.razao_social : l.empresa_id;
         }),
-    }));
+      };
+    });
 
     setUsers(combined);
     setEmpresas(emps || []);
@@ -136,6 +167,70 @@ function UsuariosPage() {
       fetchData();
     } catch (err: any) {
       toast.error(err.message || "Erro ao criar usuário.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const openEdit = (u: UserRow) => {
+    setEditing(u);
+    setEditForm({
+      nome: u.nome || "",
+      telefone: u.telefone || "",
+      role: u.roles[0] || "",
+      empresa_ids: [...u.empresa_ids],
+      new_password: "",
+    });
+    setEditOpen(true);
+  };
+
+  const toggleEmpresa = (empresaId: string, checked: boolean) => {
+    setEditForm((prev) => ({
+      ...prev,
+      empresa_ids: checked
+        ? [...prev.empresa_ids, empresaId]
+        : prev.empresa_ids.filter((id) => id !== empresaId),
+    }));
+  };
+
+  const handleUpdate = async () => {
+    if (!editing) return;
+    if (!editForm.nome.trim()) {
+      toast.error("O nome é obrigatório.");
+      return;
+    }
+    if (!editForm.role) {
+      toast.error("Selecione o tipo de acesso.");
+      return;
+    }
+    if (editForm.role === "cliente" && editForm.empresa_ids.length === 0) {
+      toast.error("Vincule pelo menos uma empresa ao cliente.");
+      return;
+    }
+    if (editForm.new_password && editForm.new_password.length < 6) {
+      toast.error("A nova senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await updateUserFn({
+        data: {
+          target_user_id: editing.user_id,
+          nome: editForm.nome.trim(),
+          telefone: editForm.telefone.trim() || null,
+          role: editForm.role as "admin" | "funcionario" | "cliente",
+          empresa_ids:
+            editForm.role === "cliente" ? editForm.empresa_ids : editForm.empresa_ids,
+          new_password: editForm.new_password || undefined,
+        },
+      });
+      toast.success("Usuário atualizado com sucesso!");
+      setEditOpen(false);
+      setEditing(null);
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao atualizar usuário.");
     } finally {
       setSubmitting(false);
     }
@@ -259,6 +354,134 @@ function UsuariosPage() {
         </Dialog>
       </div>
 
+      {/* Edit dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Usuário</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label htmlFor="edit-nome">Nome *</Label>
+              <Input
+                id="edit-nome"
+                value={editForm.nome}
+                onChange={(e) => setEditForm({ ...editForm, nome: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-telefone">Telefone</Label>
+              <Input
+                id="edit-telefone"
+                value={editForm.telefone}
+                onChange={(e) => setEditForm({ ...editForm, telefone: e.target.value })}
+                placeholder="(00) 00000-0000"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Tipo de Acesso *</Label>
+              <Select
+                value={editForm.role}
+                onValueChange={(v) =>
+                  setEditForm({
+                    ...editForm,
+                    role: v,
+                    empresa_ids: v === "cliente" ? editForm.empresa_ids : [],
+                  })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cliente">
+                    <div className="flex items-center gap-2">
+                      <Eye className="h-3.5 w-3.5" />
+                      Cliente
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="funcionario">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-3.5 w-3.5" />
+                      Colaborador
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="admin">
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-3.5 w-3.5" />
+                      Administrador
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              {editForm.role && (
+                <p className="text-xs text-muted-foreground">
+                  {roleDescriptions[editForm.role]}
+                </p>
+              )}
+            </div>
+
+            {editForm.role === "cliente" && (
+              <div className="space-y-2">
+                <Label>Empresas Vinculadas *</Label>
+                <div className="max-h-48 overflow-y-auto space-y-2 rounded-md border p-3">
+                  {empresas.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">Nenhuma empresa cadastrada.</p>
+                  ) : (
+                    empresas.map((e) => (
+                      <label
+                        key={e.id}
+                        className="flex items-start gap-2 cursor-pointer text-sm"
+                      >
+                        <Checkbox
+                          checked={editForm.empresa_ids.includes(e.id)}
+                          onCheckedChange={(c) => toggleEmpresa(e.id, !!c)}
+                        />
+                        <span>{e.nome_fantasia || e.razao_social}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-password">Nova Senha (opcional)</Label>
+              <Input
+                id="edit-password"
+                type="password"
+                value={editForm.new_password}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, new_password: e.target.value })
+                }
+                placeholder="Deixe em branco para manter a atual"
+              />
+              <p className="text-xs text-muted-foreground">
+                Mínimo 6 caracteres. Preencha apenas se quiser redefinir.
+              </p>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setEditOpen(false)}
+                disabled={submitting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={handleUpdate}
+                disabled={submitting}
+              >
+                {submitting ? "Salvando..." : "Salvar"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Legenda de permissões */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {(["admin", "funcionario", "cliente"] as const).map((role) => (
@@ -291,6 +514,7 @@ function UsuariosPage() {
                   <TableHead>Perfil</TableHead>
                   <TableHead>Empresa(s)</TableHead>
                   <TableHead>Criado em</TableHead>
+                  <TableHead className="w-20 text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -320,6 +544,16 @@ function UsuariosPage() {
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {new Date(u.created_at).toLocaleDateString("pt-BR")}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openEdit(u)}
+                        title="Editar usuário"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
