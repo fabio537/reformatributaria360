@@ -172,7 +172,10 @@ function UsuariosPage() {
 
     setSubmitting(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
       await createUser({
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         data: {
           email: form.email,
           password: form.password,
@@ -180,7 +183,7 @@ function UsuariosPage() {
           role: form.role as "admin" | "funcionario" | "cliente",
           empresa_id: form.role === "cliente" ? form.empresa_id : undefined,
         },
-      });
+      } as any);
       toast.success("Usuário criado com sucesso!");
       setDialogOpen(false);
       setForm({ nome: "", email: "", password: "", role: "", empresa_id: "" });
