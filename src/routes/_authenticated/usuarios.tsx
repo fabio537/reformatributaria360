@@ -553,6 +553,7 @@ function UsuariosPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
+                  <TableHead>E-mail</TableHead>
                   <TableHead>Telefone</TableHead>
                   <TableHead>Perfil</TableHead>
                   <TableHead>Empresa(s)</TableHead>
@@ -564,6 +565,7 @@ function UsuariosPage() {
                 {users.map((u) => (
                   <TableRow key={u.id}>
                     <TableCell className="font-medium">{u.nome}</TableCell>
+                    <TableCell className="text-sm">{u.email || "—"}</TableCell>
                     <TableCell>{u.telefone || "—"}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
