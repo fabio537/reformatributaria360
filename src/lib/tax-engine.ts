@@ -62,6 +62,33 @@ const DAS_ANEXO_III: FaixaDAS[] = [
   { limite: 4800000, aliquota: 0.33, deducao: 648000 },
 ];
 
+// ─── Composição interna do DAS (LC 123/2006, Anexos I e III) ───────────────
+// Percentuais médios de cada tributo dentro da alíquota total do anexo.
+// Anexo I (Comércio): IRPJ 5,5% | CSLL 3,5% | COFINS 12,74% | PIS 2,76% | CPP 41,5% | ICMS 34,0%
+// Anexo III (Serviços): IRPJ 4,0% | CSLL 3,5% | COFINS 12,82% | PIS 2,78% | CPP 43,4% | ISS 33,5%
+// Esses percentuais são aplicados sobre a alíquota efetiva apurada por faixa.
+
+interface ComposicaoDAS {
+  pis: number;
+  cofins: number;
+  icms_iss: number; // ICMS no Anexo I, ISS no Anexo III
+  outros: number;   // IRPJ + CSLL + CPP (mantidos integralmente após 2027)
+}
+
+const COMPOSICAO_DAS_ANEXO_I: ComposicaoDAS = {
+  pis: 0.0276,
+  cofins: 0.1274,
+  icms_iss: 0.34,
+  outros: 0.055 + 0.035 + 0.415, // 0,505
+};
+
+const COMPOSICAO_DAS_ANEXO_III: ComposicaoDAS = {
+  pis: 0.0278,
+  cofins: 0.1282,
+  icms_iss: 0.335,
+  outros: 0.04 + 0.035 + 0.434, // 0,509
+};
+
 /**
  * Calcula a alíquota efetiva do DAS com base no faturamento (RBT12)
  */
@@ -353,14 +380,24 @@ function aliquotaEfetiva(regime: RegimeDiferenciado): { cbs: number; ibs: number
 /**
  * Calcula tributos atuais mensais sobre produtos.
  * Para Simples Nacional, usa tabela DAS em vez de alíquotas individuais.
+ * Retorna também a composição do DAS para tratamento da Reforma a partir de 2027.
  */
 function calcularTributosAtuaisProdutos(
   produtos: ProdutoInput[],
   regime: string,
   faturamentoAnual: number,
-): Omit<DetalheTributoAtual, "iss" | "total"> & { faturamento: number; ipi_zfm: number; ipi_nao_zfm: number } {
+): Omit<DetalheTributoAtual, "iss" | "total"> & {
+  faturamento: number;
+  ipi_zfm: number;
+  ipi_nao_zfm: number;
+  das_pis: number;
+  das_cofins: number;
+  das_icms: number;
+  das_outros: number;
+} {
   let pis = 0, cofins = 0, ipi = 0, icms = 0, das = 0, faturamento = 0;
   let ipi_zfm = 0, ipi_nao_zfm = 0;
+  let das_pis = 0, das_cofins = 0, das_icms = 0, das_outros = 0;
 
   for (const p of produtos) {
     faturamento += p.valor_mensal;
@@ -369,6 +406,11 @@ function calcularTributosAtuaisProdutos(
   if (regime === "simples_nacional" && faturamentoAnual > 0) {
     const aliqEfetiva = aliquotaEfetivaDAS(faturamentoAnual, DAS_ANEXO_I);
     das = faturamento * aliqEfetiva;
+    const c = COMPOSICAO_DAS_ANEXO_I;
+    das_pis = das * c.pis;
+    das_cofins = das * c.cofins;
+    das_icms = das * c.icms_iss;
+    das_outros = das * c.outros;
   } else {
     for (const p of produtos) {
       const v = p.valor_mensal;
@@ -388,7 +430,7 @@ function calcularTributosAtuaisProdutos(
     }
   }
 
-  return { pis, cofins, ipi, icms, das, faturamento, ipi_zfm, ipi_nao_zfm };
+  return { pis, cofins, ipi, icms, das, faturamento, ipi_zfm, ipi_nao_zfm, das_pis, das_cofins, das_icms, das_outros };
 }
 
 /**
@@ -398,8 +440,19 @@ function calcularTributosAtuaisServicos(
   servicos: ServicoInput[],
   regime: string,
   faturamentoAnual: number,
-): { pis: number; cofins: number; iss: number; das: number; faturamento: number } {
+): {
+  pis: number;
+  cofins: number;
+  iss: number;
+  das: number;
+  faturamento: number;
+  das_pis: number;
+  das_cofins: number;
+  das_iss: number;
+  das_outros: number;
+} {
   let pis = 0, cofins = 0, iss = 0, das = 0, faturamento = 0;
+  let das_pis = 0, das_cofins = 0, das_iss = 0, das_outros = 0;
 
   for (const s of servicos) {
     faturamento += s.valor_mensal;
@@ -408,6 +461,11 @@ function calcularTributosAtuaisServicos(
   if (regime === "simples_nacional" && faturamentoAnual > 0) {
     const aliqEfetiva = aliquotaEfetivaDAS(faturamentoAnual, DAS_ANEXO_III);
     das = faturamento * aliqEfetiva;
+    const c = COMPOSICAO_DAS_ANEXO_III;
+    das_pis = das * c.pis;
+    das_cofins = das * c.cofins;
+    das_iss = das * c.icms_iss;
+    das_outros = das * c.outros;
   } else {
     for (const s of servicos) {
       const v = s.valor_mensal;
@@ -417,7 +475,7 @@ function calcularTributosAtuaisServicos(
     }
   }
 
-  return { pis, cofins, iss, das, faturamento };
+  return { pis, cofins, iss, das, faturamento, das_pis, das_cofins, das_iss, das_outros };
 }
 
 /**
@@ -534,10 +592,12 @@ function gerarAlertas(input: SimulacaoInput): string[] {
     }
   }
 
-  if (empresa.optante_simples_mei) {
+  if (empresa.optante_simples_mei || empresa.regime_tributario === "simples_nacional") {
     alertas.push(
-      "Empresa optante pelo Simples Nacional/MEI: a simulação do sistema atual usa a tabela DAS (alíquota efetiva por faixa). " +
-      "No novo sistema, poderá optar por recolher IBS/CBS dentro do Simples ou migrar para o regime geral."
+      "Empresa optante pelo Simples Nacional/MEI: até 2026 o DAS é mantido integralmente (tabela por faixa). " +
+      "A partir de 2027, as parcelas de PIS e COFINS são EXCLUÍDAS do DAS e a empresa passa a recolher a CBS POR FORA, " +
+      "à alíquota plena (8,8% × fator do regime), sobre o faturamento. ICMS/ISS continuam dentro do DAS (regime do Simples). " +
+      "Opcionalmente, a empresa pode aderir ao regime regular do IBS/CBS para aproveitar créditos integrais."
     );
   }
 
@@ -785,28 +845,45 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
   // 5. Gerar resultados por ano da transição
   const fatMensal = tribProd.faturamento + tribServ.faturamento;
 
+  const isSimples = empresa.regime_tributario === "simples_nacional";
+
+  // Composição mensal do DAS (apenas Simples) — soma produtos + serviços
+  const dasPisMensal = tribProd.das_pis + tribServ.das_pis;
+  const dasCofinsMensal = tribProd.das_cofins + tribServ.das_cofins;
+  const dasIcmsIssMensal = tribProd.das_icms + tribServ.das_iss;
+  const dasOutrosMensal = tribProd.das_outros + tribServ.das_outros;
+
   const anos: ResultadoAno[] = CRONOGRAMA_TRANSICAO.map((t) => {
     // ── Tributos atuais no ano ──
     // PIS/COFINS: mantidos com fator específico (extintos a partir de 2027)
     // ICMS/ISS: mantidos com fator específico (reduzidos gradualmente 2029-2033)
     // IPI: separado em ZFM (mantido) e não-ZFM (zerado a partir de 2027)
-    // DAS (Simples): segue o mesmo padrão — componentes federais (PIS/COFINS/IRPJ/CSLL) e estaduais proporcionais
     //
-    // IPI ZFM: mantido integralmente (fator 1.0) pois preserva competitividade da ZFM
-    // IPI não-ZFM: segue ipi_fator do cronograma (0 a partir de 2027)
+    // SIMPLES NACIONAL: o DAS é recomposto a partir de suas parcelas internas:
+    //   - PIS/COFINS dentro do DAS seguem pis_cofins_fator (zerados em 2027 → CBS por fora)
+    //   - ICMS/ISS dentro do DAS seguem icms_iss_fator
+    //   - IRPJ/CSLL/CPP (outros) permanecem integralmente
     const ipiAno = (tribProd.ipi_zfm * 1.0 + tribProd.ipi_nao_zfm * t.ipi_fator) * 12;
+
+    let dasAno: number;
+    if (isSimples) {
+      const dasMensalAno =
+        dasPisMensal * t.pis_cofins_fator +
+        dasCofinsMensal * t.pis_cofins_fator +
+        dasIcmsIssMensal * t.icms_iss_fator +
+        dasOutrosMensal;
+      dasAno = dasMensalAno * 12;
+    } else {
+      dasAno = tributosAtuaisMensal.das * 12;
+    }
+
     const tribAtualAno: DetalheTributoAtual = {
       pis: tributosAtuaisMensal.pis * t.pis_cofins_fator * 12,
       cofins: tributosAtuaisMensal.cofins * t.pis_cofins_fator * 12,
       ipi: ipiAno,
       icms: tributosAtuaisMensal.icms * t.icms_iss_fator * 12,
       iss: tributosAtuaisMensal.iss * t.icms_iss_fator * 12,
-      // Para DAS no Simples, aproximação: ~50% federal (PIS/COFINS/IRPJ/CSLL), ~50% estadual/municipal
-      das: tributosAtuaisMensal.das * (
-        empresa.regime_tributario === "simples_nacional"
-          ? (t.pis_cofins_fator * 0.5 + t.icms_iss_fator * 0.5)
-          : 1.0
-      ) * 12,
+      das: dasAno,
       total: 0,
     };
     tribAtualAno.total =
@@ -814,21 +891,24 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
       tribAtualAno.icms + tribAtualAno.iss + tribAtualAno.das;
 
     // ── IBS/CBS no ano ──
+    // Para Simples Nacional, a partir de 2027 (quando PIS/COFINS são extintos no DAS),
+    // a empresa passa a recolher CBS POR FORA do DAS, sobre o faturamento, à alíquota plena.
+    // O IBS, por padrão, segue dentro do DAS via parcela ICMS/ISS (regime do Simples).
+    // (A empresa pode optar pelo regime regular do IBS/CBS — não modelado aqui por padrão.)
     let cbsAno: number;
     if (t.cbs_teste) {
-      // Alíquota-teste fixa de 0,9% sobre faturamento
       cbsAno = fatMensal * t.cbs_pct * 12;
     } else {
-      // CBS proporcional à alíquota de referência
       cbsAno = ibsCbsMensal.cbs * t.cbs_pct * 12;
     }
 
     let ibsAno: number;
     if (t.ibs_teste) {
-      // Alíquota-teste fixa de 0,1% sobre faturamento
       ibsAno = fatMensal * t.ibs_pct * 12;
+    } else if (isSimples) {
+      // No Simples, IBS continua dentro do DAS (parcela ICMS/ISS) — não cobrar por fora
+      ibsAno = 0;
     } else {
-      // IBS proporcional à alíquota de referência
       ibsAno = ibsCbsMensal.ibs * t.ibs_pct * 12;
     }
 
@@ -843,6 +923,7 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
       is: t.sem_incidencia_real ? 0 : isAno,
       total: t.sem_incidencia_real ? 0 : (cbsAno + ibsAno + isAno),
     };
+
 
     // ── Créditos no ano ──
     // Créditos atuais: PIS/COFINS segue fator federal, ICMS/IPI segue fator estadual
