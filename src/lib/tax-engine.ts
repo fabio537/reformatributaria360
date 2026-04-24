@@ -380,14 +380,24 @@ function aliquotaEfetiva(regime: RegimeDiferenciado): { cbs: number; ibs: number
 /**
  * Calcula tributos atuais mensais sobre produtos.
  * Para Simples Nacional, usa tabela DAS em vez de alíquotas individuais.
+ * Retorna também a composição do DAS para tratamento da Reforma a partir de 2027.
  */
 function calcularTributosAtuaisProdutos(
   produtos: ProdutoInput[],
   regime: string,
   faturamentoAnual: number,
-): Omit<DetalheTributoAtual, "iss" | "total"> & { faturamento: number; ipi_zfm: number; ipi_nao_zfm: number } {
+): Omit<DetalheTributoAtual, "iss" | "total"> & {
+  faturamento: number;
+  ipi_zfm: number;
+  ipi_nao_zfm: number;
+  das_pis: number;
+  das_cofins: number;
+  das_icms: number;
+  das_outros: number;
+} {
   let pis = 0, cofins = 0, ipi = 0, icms = 0, das = 0, faturamento = 0;
   let ipi_zfm = 0, ipi_nao_zfm = 0;
+  let das_pis = 0, das_cofins = 0, das_icms = 0, das_outros = 0;
 
   for (const p of produtos) {
     faturamento += p.valor_mensal;
@@ -396,6 +406,11 @@ function calcularTributosAtuaisProdutos(
   if (regime === "simples_nacional" && faturamentoAnual > 0) {
     const aliqEfetiva = aliquotaEfetivaDAS(faturamentoAnual, DAS_ANEXO_I);
     das = faturamento * aliqEfetiva;
+    const c = COMPOSICAO_DAS_ANEXO_I;
+    das_pis = das * c.pis;
+    das_cofins = das * c.cofins;
+    das_icms = das * c.icms_iss;
+    das_outros = das * c.outros;
   } else {
     for (const p of produtos) {
       const v = p.valor_mensal;
@@ -415,7 +430,7 @@ function calcularTributosAtuaisProdutos(
     }
   }
 
-  return { pis, cofins, ipi, icms, das, faturamento, ipi_zfm, ipi_nao_zfm };
+  return { pis, cofins, ipi, icms, das, faturamento, ipi_zfm, ipi_nao_zfm, das_pis, das_cofins, das_icms, das_outros };
 }
 
 /**
@@ -425,8 +440,19 @@ function calcularTributosAtuaisServicos(
   servicos: ServicoInput[],
   regime: string,
   faturamentoAnual: number,
-): { pis: number; cofins: number; iss: number; das: number; faturamento: number } {
+): {
+  pis: number;
+  cofins: number;
+  iss: number;
+  das: number;
+  faturamento: number;
+  das_pis: number;
+  das_cofins: number;
+  das_iss: number;
+  das_outros: number;
+} {
   let pis = 0, cofins = 0, iss = 0, das = 0, faturamento = 0;
+  let das_pis = 0, das_cofins = 0, das_iss = 0, das_outros = 0;
 
   for (const s of servicos) {
     faturamento += s.valor_mensal;
@@ -435,6 +461,11 @@ function calcularTributosAtuaisServicos(
   if (regime === "simples_nacional" && faturamentoAnual > 0) {
     const aliqEfetiva = aliquotaEfetivaDAS(faturamentoAnual, DAS_ANEXO_III);
     das = faturamento * aliqEfetiva;
+    const c = COMPOSICAO_DAS_ANEXO_III;
+    das_pis = das * c.pis;
+    das_cofins = das * c.cofins;
+    das_iss = das * c.icms_iss;
+    das_outros = das * c.outros;
   } else {
     for (const s of servicos) {
       const v = s.valor_mensal;
@@ -444,7 +475,7 @@ function calcularTributosAtuaisServicos(
     }
   }
 
-  return { pis, cofins, iss, das, faturamento };
+  return { pis, cofins, iss, das, faturamento, das_pis, das_cofins, das_iss, das_outros };
 }
 
 /**
