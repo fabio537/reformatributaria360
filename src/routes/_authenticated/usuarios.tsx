@@ -269,7 +269,7 @@ function UsuariosPage() {
         throw new Error("Sessão inválida. Entre novamente para continuar.");
       }
 
-      await updateUser({
+      const result = await updateUser({
         headers: { Authorization: `Bearer ${token}` },
         data: {
           target_user_id: editing.user_id,
@@ -282,6 +282,11 @@ function UsuariosPage() {
           new_email: emailChanged ? editForm.email.trim() : undefined,
         },
       } as any);
+
+      if (result?.success === false) {
+        throw new Error(result.error || "Erro ao atualizar usuário.");
+      }
+
       toast.success("Usuário atualizado com sucesso!");
       setEditOpen(false);
       setEditing(null);
