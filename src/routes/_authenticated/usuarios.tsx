@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/select";
 import { UserPlus, Shield, Users, Eye, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
 import { createUserFn } from "@/server/create-user";
 import { updateUserFn } from "@/server/update-user";
 
@@ -76,6 +77,8 @@ type UserRow = {
 type EmpresaRow = { id: string; razao_social: string; nome_fantasia: string | null };
 
 function UsuariosPage() {
+  const createUser = useServerFn(createUserFn);
+  const updateUser = useServerFn(updateUserFn);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [empresas, setEmpresas] = useState<EmpresaRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -152,7 +155,7 @@ function UsuariosPage() {
 
     setSubmitting(true);
     try {
-      await createUserFn({
+      await createUser({
         data: {
           email: form.email,
           password: form.password,
@@ -214,7 +217,7 @@ function UsuariosPage() {
 
     setSubmitting(true);
     try {
-      await updateUserFn({
+      await updateUser({
         data: {
           target_user_id: editing.user_id,
           nome: editForm.nome.trim(),
