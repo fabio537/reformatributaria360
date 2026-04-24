@@ -25,8 +25,7 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"login" | "signup">("login");
-  const [nome, setNome] = useState("");
+  const mode = "login" as const;
 
   useEffect(() => {
     if (auth.isAuthenticated && !linkedEmpresa.loading) {
@@ -39,11 +38,7 @@ function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      if (mode === "login") {
-        await auth.login(email, password);
-      } else {
-        await auth.signup(email, password, nome);
-      }
+      await auth.login(email, password);
     } catch (err: any) {
       setError(err.message || "Erro ao autenticar");
     } finally {
@@ -58,23 +53,11 @@ function LoginPage() {
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
             <span className="text-xl font-bold text-primary-foreground">RT</span>
           </div>
-          <CardTitle className="text-2xl font-bold">
-            {mode === "login" ? "Acessar Plataforma" : "Criar Conta"}
-          </CardTitle>
-          <CardDescription>
-            {mode === "login"
-              ? "Entre com suas credenciais para acessar"
-              : "Preencha os dados para criar sua conta"}
-          </CardDescription>
+          <CardTitle className="text-2xl font-bold">Acessar Plataforma</CardTitle>
+          <CardDescription>Entre com suas credenciais para acessar</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {mode === "signup" && (
-              <div className="space-y-2">
-                <Label htmlFor="nome">Nome</Label>
-                <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Seu nome completo" required />
-              </div>
-            )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" required />
@@ -85,15 +68,11 @@ function LoginPage() {
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Carregando..." : mode === "login" ? "Entrar" : "Criar Conta"}
+              {loading ? "Carregando..." : "Entrar"}
             </Button>
           </form>
-          <div className="mt-4 text-center text-sm text-muted-foreground">
-            {mode === "login" ? (
-              <>Não tem conta?{" "}<button onClick={() => setMode("signup")} className="text-primary underline-offset-4 hover:underline">Criar conta</button></>
-            ) : (
-              <>Já tem conta?{" "}<button onClick={() => setMode("login")} className="text-primary underline-offset-4 hover:underline">Fazer login</button></>
-            )}
+          <div className="mt-4 text-center text-xs text-muted-foreground">
+            Apenas administradores podem criar novas contas. Solicite acesso ao seu administrador.
           </div>
         </CardContent>
       </Card>
