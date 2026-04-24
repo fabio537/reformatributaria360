@@ -62,6 +62,33 @@ const DAS_ANEXO_III: FaixaDAS[] = [
   { limite: 4800000, aliquota: 0.33, deducao: 648000 },
 ];
 
+// ─── Composição interna do DAS (LC 123/2006, Anexos I e III) ───────────────
+// Percentuais médios de cada tributo dentro da alíquota total do anexo.
+// Anexo I (Comércio): IRPJ 5,5% | CSLL 3,5% | COFINS 12,74% | PIS 2,76% | CPP 41,5% | ICMS 34,0%
+// Anexo III (Serviços): IRPJ 4,0% | CSLL 3,5% | COFINS 12,82% | PIS 2,78% | CPP 43,4% | ISS 33,5%
+// Esses percentuais são aplicados sobre a alíquota efetiva apurada por faixa.
+
+interface ComposicaoDAS {
+  pis: number;
+  cofins: number;
+  icms_iss: number; // ICMS no Anexo I, ISS no Anexo III
+  outros: number;   // IRPJ + CSLL + CPP (mantidos integralmente após 2027)
+}
+
+const COMPOSICAO_DAS_ANEXO_I: ComposicaoDAS = {
+  pis: 0.0276,
+  cofins: 0.1274,
+  icms_iss: 0.34,
+  outros: 0.055 + 0.035 + 0.415, // 0,505
+};
+
+const COMPOSICAO_DAS_ANEXO_III: ComposicaoDAS = {
+  pis: 0.0278,
+  cofins: 0.1282,
+  icms_iss: 0.335,
+  outros: 0.04 + 0.035 + 0.434, // 0,509
+};
+
 /**
  * Calcula a alíquota efetiva do DAS com base no faturamento (RBT12)
  */
