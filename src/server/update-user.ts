@@ -65,6 +65,22 @@ export const updateUserFn = createServerFn({ method: "POST" })
       }
     }
 
+    // Update auth user (email)
+    if (data.new_email) {
+      const emailTrim = data.new_email.trim();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(emailTrim)) {
+        throw new Error("E-mail inválido.");
+      }
+      const { error: emailError } = await adminClient.auth.admin.updateUserById(
+        data.target_user_id,
+        { email: emailTrim, email_confirm: true }
+      );
+      if (emailError) {
+        throw new Error(`Erro ao atualizar e-mail: ${emailError.message}`);
+      }
+    }
+
     // Replace role if provided
     if (data.role) {
       const { error: delRoleError } = await adminClient
