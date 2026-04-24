@@ -8,6 +8,7 @@ import {
   Users,
   LogOut,
   PackageSearch,
+  Download,
 } from "lucide-react";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
@@ -31,6 +32,7 @@ const mainItems = [
   { title: "Simulador", url: "/simulador", icon: Calculator },
   { title: "Base Legal", url: "/base-legal", icon: BookOpen },
   { title: "Atualizações", url: "/atualizacoes", icon: Newspaper },
+  { title: "Baixar App", url: "/baixar-app", icon: Download },
 ];
 
 const clientItems = [
@@ -41,6 +43,7 @@ const clientItems = [
   { title: "Simulador por NCM", url: "/simulador-ncm", icon: PackageSearch },
   { title: "Base Legal", url: "/base-legal", icon: BookOpen },
   { title: "Atualizações", url: "/atualizacoes", icon: Newspaper },
+  { title: "Baixar App", url: "/baixar-app", icon: Download },
 ];
 
 const staffItems = [
@@ -52,6 +55,7 @@ const staffItems = [
   { title: "Simulador por NCM", url: "/simulador-ncm", icon: PackageSearch },
   { title: "Base Legal", url: "/base-legal", icon: BookOpen },
   { title: "Atualizações", url: "/atualizacoes", icon: Newspaper },
+  { title: "Baixar App", url: "/baixar-app", icon: Download },
 ];
 
 const adminItems = [
