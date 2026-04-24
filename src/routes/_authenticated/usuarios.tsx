@@ -166,8 +166,12 @@ function UsuariosPage() {
       toast.error("Preencha todos os campos obrigatórios.");
       return;
     }
-    if (form.password.length < 6) {
-      toast.error("A senha deve ter pelo menos 6 caracteres.");
+    if (form.password.length < 8) {
+      toast.error("A senha deve ter pelo menos 8 caracteres.");
+      return;
+    }
+    if (!/[A-Za-z]/.test(form.password) || !/\d/.test(form.password)) {
+      toast.error("A senha deve combinar letras e números.");
       return;
     }
     if (form.role === "cliente" && !form.empresa_id) {
@@ -251,9 +255,15 @@ function UsuariosPage() {
       toast.error("Vincule pelo menos uma empresa ao cliente.");
       return;
     }
-    if (editForm.new_password && editForm.new_password.length < 6) {
-      toast.error("A nova senha deve ter pelo menos 6 caracteres.");
-      return;
+    if (editForm.new_password) {
+      if (editForm.new_password.length < 8) {
+        toast.error("A nova senha deve ter pelo menos 8 caracteres.");
+        return;
+      }
+      if (!/[A-Za-z]/.test(editForm.new_password) || !/\d/.test(editForm.new_password)) {
+        toast.error("A nova senha deve combinar letras e números.");
+        return;
+      }
     }
 
     const emailChanged =
@@ -343,7 +353,7 @@ function UsuariosPage() {
                   type="password"
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Mínimo 8 caracteres, com letras e números"
                 />
               </div>
               <div className="space-y-2">
@@ -531,9 +541,9 @@ function UsuariosPage() {
                 }
                 placeholder="Deixe em branco para manter a atual"
               />
-              <p className="text-xs text-muted-foreground">
-                Mínimo 6 caracteres. Preencha apenas se quiser redefinir.
-              </p>
+      <p className="text-xs text-muted-foreground">
+                 Mínimo 8 caracteres, com letras e números. Preencha apenas se quiser redefinir.
+               </p>
             </div>
 
             <div className="flex gap-2 pt-2">
