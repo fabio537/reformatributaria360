@@ -119,7 +119,11 @@ function UsuariosPage() {
 
     let emailMap: Record<string, string> = {};
     try {
-      const res = await listEmails({ data: undefined } as any);
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const res = await listEmails({
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      } as any);
       emailMap = res?.emails || {};
     } catch (err) {
       // Silently ignore — non-admin users can't list emails
@@ -168,7 +172,10 @@ function UsuariosPage() {
 
     setSubmitting(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
       await createUser({
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         data: {
           email: form.email,
           password: form.password,
@@ -176,7 +183,7 @@ function UsuariosPage() {
           role: form.role as "admin" | "funcionario" | "cliente",
           empresa_id: form.role === "cliente" ? form.empresa_id : undefined,
         },
-      });
+      } as any);
       toast.success("Usuário criado com sucesso!");
       setDialogOpen(false);
       setForm({ nome: "", email: "", password: "", role: "", empresa_id: "" });
@@ -243,7 +250,10 @@ function UsuariosPage() {
 
     setSubmitting(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
       await updateUser({
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         data: {
           target_user_id: editing.user_id,
           nome: editForm.nome.trim(),
@@ -254,7 +264,7 @@ function UsuariosPage() {
           new_password: editForm.new_password || undefined,
           new_email: emailChanged ? editForm.email.trim() : undefined,
         },
-      });
+      } as any);
       toast.success("Usuário atualizado com sucesso!");
       setEditOpen(false);
       setEditing(null);
