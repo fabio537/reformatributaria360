@@ -251,9 +251,15 @@ function UsuariosPage() {
       toast.error("Vincule pelo menos uma empresa ao cliente.");
       return;
     }
-    if (editForm.new_password && editForm.new_password.length < 6) {
-      toast.error("A nova senha deve ter pelo menos 6 caracteres.");
-      return;
+    if (editForm.new_password) {
+      if (editForm.new_password.length < 8) {
+        toast.error("A nova senha deve ter pelo menos 8 caracteres.");
+        return;
+      }
+      if (!/[A-Za-z]/.test(editForm.new_password) || !/\d/.test(editForm.new_password)) {
+        toast.error("A nova senha deve combinar letras e números.");
+        return;
+      }
     }
 
     const emailChanged =
@@ -531,9 +537,9 @@ function UsuariosPage() {
                 }
                 placeholder="Deixe em branco para manter a atual"
               />
-              <p className="text-xs text-muted-foreground">
-                Mínimo 6 caracteres. Preencha apenas se quiser redefinir.
-              </p>
+      <p className="text-xs text-muted-foreground">
+                 Mínimo 8 caracteres, com letras e números. Preencha apenas se quiser redefinir.
+               </p>
             </div>
 
             <div className="flex gap-2 pt-2">
