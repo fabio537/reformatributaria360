@@ -155,7 +155,7 @@ function UsuariosPage() {
 
     setSubmitting(true);
     try {
-      await createUserFn({
+      await createUser({
         data: {
           email: form.email,
           password: form.password,
