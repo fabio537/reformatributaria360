@@ -216,6 +216,15 @@ function UsuariosPage() {
       toast.error("O nome é obrigatório.");
       return;
     }
+    if (!editForm.email.trim()) {
+      toast.error("O e-mail é obrigatório.");
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(editForm.email.trim())) {
+      toast.error("E-mail inválido.");
+      return;
+    }
     if (!editForm.role) {
       toast.error("Selecione o tipo de acesso.");
       return;
@@ -229,6 +238,9 @@ function UsuariosPage() {
       return;
     }
 
+    const emailChanged =
+      editForm.email.trim().toLowerCase() !== (editing.email || "").toLowerCase();
+
     setSubmitting(true);
     try {
       await updateUser({
@@ -240,6 +252,7 @@ function UsuariosPage() {
           empresa_ids:
             editForm.role === "cliente" ? editForm.empresa_ids : editForm.empresa_ids,
           new_password: editForm.new_password || undefined,
+          new_email: emailChanged ? editForm.email.trim() : undefined,
         },
       });
       toast.success("Usuário atualizado com sucesso!");
