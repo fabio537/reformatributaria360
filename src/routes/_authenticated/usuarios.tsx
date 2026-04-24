@@ -117,12 +117,21 @@ function UsuariosPage() {
         supabase.from("empresa_usuarios").select("*"),
       ]);
 
+    let emailMap: Record<string, string> = {};
+    try {
+      const res = await listEmails({ data: undefined } as any);
+      emailMap = res?.emails || {};
+    } catch (err) {
+      // Silently ignore — non-admin users can't list emails
+    }
+
     const combined: UserRow[] = (profiles || []).map((p: any) => {
       const userLinks = (links || []).filter((l: any) => l.user_id === p.user_id);
       return {
         id: p.id,
         user_id: p.user_id,
         nome: p.nome,
+        email: emailMap[p.user_id] || "",
         telefone: p.telefone,
         created_at: p.created_at,
         roles: (roles || []).filter((r: any) => r.user_id === p.user_id).map((r: any) => r.role),
