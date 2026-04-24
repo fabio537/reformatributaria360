@@ -217,7 +217,7 @@ function UsuariosPage() {
 
     setSubmitting(true);
     try {
-      await updateUserFn({
+      await updateUser({
         data: {
           target_user_id: editing.user_id,
           nome: editForm.nome.trim(),
