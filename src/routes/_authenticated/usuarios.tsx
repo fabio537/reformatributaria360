@@ -68,6 +68,7 @@ type UserRow = {
   id: string;
   user_id: string;
   nome: string;
+  email: string;
   telefone: string | null;
   created_at: string;
   roles: string[];
