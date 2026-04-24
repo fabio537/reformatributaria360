@@ -22,6 +22,7 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { InstallAppButton } from "@/components/InstallAppButton";
 import type { AuthState } from "@/hooks/useAuth";
 
 const mainItems = [
