@@ -20,6 +20,7 @@ import { Route as AuthenticatedEmpresasRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedChecklistRouteImport } from './routes/_authenticated/checklist'
 import { Route as AuthenticatedBaseLegalRouteImport } from './routes/_authenticated/base-legal'
+import { Route as AuthenticatedBaixarAppRouteImport } from './routes/_authenticated/baixar-app'
 import { Route as AuthenticatedAtualizacoesRouteImport } from './routes/_authenticated/atualizacoes'
 import { Route as AuthenticatedEmpresasIndexRouteImport } from './routes/_authenticated/empresas.index'
 import { Route as AuthenticatedEmpresasEmpresaIdRouteImport } from './routes/_authenticated/empresas.$empresaId'
@@ -80,6 +81,11 @@ const AuthenticatedBaseLegalRoute = AuthenticatedBaseLegalRouteImport.update({
   path: '/base-legal',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedBaixarAppRoute = AuthenticatedBaixarAppRouteImport.update({
+  id: '/baixar-app',
+  path: '/baixar-app',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAtualizacoesRoute =
   AuthenticatedAtualizacoesRouteImport.update({
     id: '/atualizacoes',
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/atualizacoes': typeof AuthenticatedAtualizacoesRoute
+  '/baixar-app': typeof AuthenticatedBaixarAppRoute
   '/base-legal': typeof AuthenticatedBaseLegalRoute
   '/checklist': typeof AuthenticatedChecklistRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -118,6 +125,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/atualizacoes': typeof AuthenticatedAtualizacoesRoute
+  '/baixar-app': typeof AuthenticatedBaixarAppRoute
   '/base-legal': typeof AuthenticatedBaseLegalRoute
   '/checklist': typeof AuthenticatedChecklistRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -134,6 +142,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/_authenticated/atualizacoes': typeof AuthenticatedAtualizacoesRoute
+  '/_authenticated/baixar-app': typeof AuthenticatedBaixarAppRoute
   '/_authenticated/base-legal': typeof AuthenticatedBaseLegalRoute
   '/_authenticated/checklist': typeof AuthenticatedChecklistRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/atualizacoes'
+    | '/baixar-app'
     | '/base-legal'
     | '/checklist'
     | '/dashboard'
@@ -166,6 +176,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/atualizacoes'
+    | '/baixar-app'
     | '/base-legal'
     | '/checklist'
     | '/dashboard'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/login'
     | '/_authenticated/atualizacoes'
+    | '/_authenticated/baixar-app'
     | '/_authenticated/base-legal'
     | '/_authenticated/checklist'
     | '/_authenticated/dashboard'
@@ -278,6 +290,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBaseLegalRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/baixar-app': {
+      id: '/_authenticated/baixar-app'
+      path: '/baixar-app'
+      fullPath: '/baixar-app'
+      preLoaderRoute: typeof AuthenticatedBaixarAppRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/atualizacoes': {
       id: '/_authenticated/atualizacoes'
       path: '/atualizacoes'
@@ -319,6 +338,7 @@ const AuthenticatedEmpresasRouteWithChildren =
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAtualizacoesRoute: typeof AuthenticatedAtualizacoesRoute
+  AuthenticatedBaixarAppRoute: typeof AuthenticatedBaixarAppRoute
   AuthenticatedBaseLegalRoute: typeof AuthenticatedBaseLegalRoute
   AuthenticatedChecklistRoute: typeof AuthenticatedChecklistRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -331,6 +351,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAtualizacoesRoute: AuthenticatedAtualizacoesRoute,
+  AuthenticatedBaixarAppRoute: AuthenticatedBaixarAppRoute,
   AuthenticatedBaseLegalRoute: AuthenticatedBaseLegalRoute,
   AuthenticatedChecklistRoute: AuthenticatedChecklistRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
