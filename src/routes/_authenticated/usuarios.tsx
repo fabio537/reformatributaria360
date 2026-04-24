@@ -119,7 +119,11 @@ function UsuariosPage() {
 
     let emailMap: Record<string, string> = {};
     try {
-      const res = await listEmails({ data: undefined } as any);
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const res = await listEmails({
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      } as any);
       emailMap = res?.emails || {};
     } catch (err) {
       // Silently ignore — non-admin users can't list emails
