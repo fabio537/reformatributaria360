@@ -26,7 +26,7 @@ export const updateUserFn = createServerFn({ method: "POST" })
       .maybeSingle();
 
     if (!callerRole) {
-      throw new Error("Apenas administradores podem editar usuários.");
+      return { success: false, error: "Apenas administradores podem editar usuários." };
     }
 
     const { createClient } = await import("@supabase/supabase-js");
@@ -34,6 +34,42 @@ export const updateUserFn = createServerFn({ method: "POST" })
       process.env.SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
+
+    // Validate/update password first to avoid partial updates when it fails
+    if (data.new_password) {
+      if (data.new_password.length < 6) {
+        return { success: false, error: "A nova senha deve ter pelo menos 6 caracteres." };
+      }
+      const { error: authError } = await adminClient.auth.admin.updateUserById(
+        data.target_user_id,
+        { password: data.new_password }
+      );
+      if (authError) {
+        if (authError.message.includes("weak and easy to guess")) {
+          return {
+            success: false,
+            error: "A nova senha é fraca demais. Use uma combinação mais forte e menos óbvia.",
+          };
+        }
+        return { success: false, error: `Erro ao redefinir senha: ${authError.message}` };
+      }
+    }
+
+    // Update auth user (email)
+    if (data.new_email) {
+      const emailTrim = data.new_email.trim();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(emailTrim)) {
+        return { success: false, error: "E-mail inválido." };
+      }
+      const { error: emailError } = await adminClient.auth.admin.updateUserById(
+        data.target_user_id,
+        { email: emailTrim, email_confirm: true }
+      );
+      if (emailError) {
+        return { success: false, error: `Erro ao atualizar e-mail: ${emailError.message}` };
+      }
+    }
 
     // Update profile (nome / telefone)
     if (data.nome !== undefined || data.telefone !== undefined) {
@@ -47,37 +83,7 @@ export const updateUserFn = createServerFn({ method: "POST" })
         .eq("user_id", data.target_user_id);
 
       if (profileError) {
-        throw new Error(`Erro ao atualizar perfil: ${profileError.message}`);
-      }
-    }
-
-    // Update auth user (password)
-    if (data.new_password) {
-      if (data.new_password.length < 6) {
-        throw new Error("A nova senha deve ter pelo menos 6 caracteres.");
-      }
-      const { error: authError } = await adminClient.auth.admin.updateUserById(
-        data.target_user_id,
-        { password: data.new_password }
-      );
-      if (authError) {
-        throw new Error(`Erro ao redefinir senha: ${authError.message}`);
-      }
-    }
-
-    // Update auth user (email)
-    if (data.new_email) {
-      const emailTrim = data.new_email.trim();
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(emailTrim)) {
-        throw new Error("E-mail inválido.");
-      }
-      const { error: emailError } = await adminClient.auth.admin.updateUserById(
-        data.target_user_id,
-        { email: emailTrim, email_confirm: true }
-      );
-      if (emailError) {
-        throw new Error(`Erro ao atualizar e-mail: ${emailError.message}`);
+        return { success: false, error: `Erro ao atualizar perfil: ${profileError.message}` };
       }
     }
 
@@ -88,14 +94,14 @@ export const updateUserFn = createServerFn({ method: "POST" })
         .delete()
         .eq("user_id", data.target_user_id);
       if (delRoleError) {
-        throw new Error(`Erro ao limpar perfis: ${delRoleError.message}`);
+        return { success: false, error: `Erro ao limpar perfis: ${delRoleError.message}` };
       }
 
       const { error: insRoleError } = await adminClient
         .from("user_roles")
         .insert({ user_id: data.target_user_id, role: data.role });
       if (insRoleError) {
-        throw new Error(`Erro ao atribuir novo perfil: ${insRoleError.message}`);
+        return { success: false, error: `Erro ao atribuir novo perfil: ${insRoleError.message}` };
       }
     }
 
@@ -106,7 +112,7 @@ export const updateUserFn = createServerFn({ method: "POST" })
         .delete()
         .eq("user_id", data.target_user_id);
       if (delLinkError) {
-        throw new Error(`Erro ao limpar vínculos: ${delLinkError.message}`);
+        return { success: false, error: `Erro ao limpar vínculos: ${delLinkError.message}` };
       }
 
       if (data.empresa_ids.length > 0) {
@@ -118,7 +124,7 @@ export const updateUserFn = createServerFn({ method: "POST" })
           .from("empresa_usuarios")
           .insert(rows);
         if (insLinkError) {
-          throw new Error(`Erro ao criar vínculos: ${insLinkError.message}`);
+          return { success: false, error: `Erro ao criar vínculos: ${insLinkError.message}` };
         }
       }
     }
