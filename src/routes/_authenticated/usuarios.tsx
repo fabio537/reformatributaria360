@@ -400,6 +400,19 @@ function UsuariosPage() {
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="edit-email">E-mail *</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                placeholder="email@exemplo.com"
+              />
+              <p className="text-xs text-muted-foreground">
+                Alterar o e-mail muda também o login do usuário.
+              </p>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="edit-telefone">Telefone</Label>
               <Input
                 id="edit-telefone"
