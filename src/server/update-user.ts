@@ -11,6 +11,7 @@ export const updateUserFn = createServerFn({ method: "POST" })
       role?: "admin" | "funcionario" | "cliente";
       empresa_ids?: string[]; // full set of linked empresas (replaces existing)
       new_password?: string;
+      new_email?: string;
     }) => input
   )
   .handler(async ({ data, context }) => {
