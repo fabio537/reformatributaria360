@@ -592,10 +592,12 @@ function gerarAlertas(input: SimulacaoInput): string[] {
     }
   }
 
-  if (empresa.optante_simples_mei) {
+  if (empresa.optante_simples_mei || empresa.regime_tributario === "simples_nacional") {
     alertas.push(
-      "Empresa optante pelo Simples Nacional/MEI: a simulação do sistema atual usa a tabela DAS (alíquota efetiva por faixa). " +
-      "No novo sistema, poderá optar por recolher IBS/CBS dentro do Simples ou migrar para o regime geral."
+      "Empresa optante pelo Simples Nacional/MEI: até 2026 o DAS é mantido integralmente (tabela por faixa). " +
+      "A partir de 2027, as parcelas de PIS e COFINS são EXCLUÍDAS do DAS e a empresa passa a recolher a CBS POR FORA, " +
+      "à alíquota plena (8,8% × fator do regime), sobre o faturamento. ICMS/ISS continuam dentro do DAS (regime do Simples). " +
+      "Opcionalmente, a empresa pode aderir ao regime regular do IBS/CBS para aproveitar créditos integrais."
     );
   }
 
