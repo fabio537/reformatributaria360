@@ -484,7 +484,7 @@ function SimulacaoCompletaProdutoTab() {
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               <div className="space-y-2">
                 <Label>Valor mensal (R$) *</Label>
-                <Input value={valorMensal} onChange={(e) => setValorMensal(e.target.value)} inputMode="decimal" />
+                <CurrencyInput value={valorMensal} onValueChange={setValorMensal} />
               </div>
               <div className="space-y-2">
                 <Label>Quantidade mensal</Label>
