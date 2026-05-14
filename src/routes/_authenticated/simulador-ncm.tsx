@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { AlertTriangle, BadgePercent, PackageSearch } from "lucide-react";
+import { AlertTriangle, BadgePercent, PackageSearch, Calculator } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,14 +8,28 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { simularAliquotaPorNcm, type RegimeDiferenciado } from "@/lib/tax-engine";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  simularAliquotaPorNcm,
+  executarSimulacao,
+  CRONOGRAMA_TRANSICAO,
+  type RegimeDiferenciado,
+  type EscopoReforma,
+  type IrpjCsllConfig,
+  type ResultadoSimulacao,
+  type SimulacaoInput,
+} from "@/lib/tax-engine";
 import { formatCurrency } from "@/lib/format";
+import { SimulacaoResultado } from "@/components/SimulacaoResultado";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/simulador-ncm")({
   head: () => ({
     meta: [
       { title: "Simulador por NCM — Reforma Tributária" },
-      { name: "description", content: "Consulte a alíquota estimada por NCM e o cronograma de descontinuidade dos tributos." },
+      { name: "description", content: "Consulte a alíquota estimada por NCM e simule o impacto da reforma em um produto específico." },
     ],
   }),
   component: SimuladorNcmPage,
@@ -34,6 +48,36 @@ function formatPct(value: number) {
 }
 
 function SimuladorNcmPage() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
+          <PackageSearch className="h-7 w-7" />
+          Simulador por NCM
+        </h1>
+        <p className="mt-1 text-muted-foreground">
+          Consulte a alíquota estimada de CBS/IBS ou rode a simulação completa do impacto da reforma para um produto.
+        </p>
+      </div>
+
+      <Tabs defaultValue="consulta">
+        <TabsList>
+          <TabsTrigger value="consulta">Consulta rápida</TabsTrigger>
+          <TabsTrigger value="completa">Simulação completa do produto</TabsTrigger>
+        </TabsList>
+        <TabsContent value="consulta" className="mt-6">
+          <ConsultaRapidaTab />
+        </TabsContent>
+        <TabsContent value="completa" className="mt-6">
+          <SimulacaoCompletaProdutoTab />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+// ─── Aba 1: Consulta rápida (conteúdo original) ────────────────────────────
+function ConsultaRapidaTab() {
   const [ncm, setNcm] = useState("");
   const [descricao, setDescricao] = useState("");
   const [valor, setValor] = useState("1000");
@@ -44,7 +88,6 @@ function SimuladorNcmPage() {
 
   const resultado = useMemo(() => {
     if (!resultadoVisivel || !ncm.trim()) return null;
-
     return simularAliquotaPorNcm({
       ncm,
       descricao,
@@ -57,16 +100,6 @@ function SimuladorNcmPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
-          <PackageSearch className="h-7 w-7" />
-          Simulador por NCM
-        </h1>
-        <p className="mt-1 text-muted-foreground">
-          Consulte a alíquota estimada de CBS/IBS e visualize, ano a ano, os tributos que deixam de incidir.
-        </p>
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Consulta rápida de produto</CardTitle>
@@ -214,6 +247,361 @@ function SimuladorNcmPage() {
             </CardContent>
           </Card>
         </>
+      )}
+    </div>
+  );
+}
+
+// ─── Aba 2: Simulação completa do produto ──────────────────────────────────
+type RegimeTrib = "simples_nacional" | "lucro_presumido" | "lucro_real";
+
+function SimulacaoCompletaProdutoTab() {
+  const ANOS_CRONOGRAMA = CRONOGRAMA_TRANSICAO.map((t) => t.ano);
+
+  // Identificação
+  const [ncm, setNcm] = useState("");
+  const [descricao, setDescricao] = useState("");
+  const [regimeDif, setRegimeDif] = useState<RegimeDiferenciado>("padrao");
+  const [tipoOperacao, setTipoOperacao] = useState("revenda");
+  const [destinoOperacao, setDestinoOperacao] = useState("mercado_interno");
+  const [sujeitoIS, setSujeitoIS] = useState(false);
+  const [aliquotaIS, setAliquotaIS] = useState("0");
+
+  // Valores e alíquotas atuais
+  const [valorMensal, setValorMensal] = useState("10000");
+  const [quantidadeMensal, setQuantidadeMensal] = useState("0");
+  const [aliquotaPis, setAliquotaPis] = useState("1.65");
+  const [aliquotaCofins, setAliquotaCofins] = useState("7.6");
+  const [aliquotaIpi, setAliquotaIpi] = useState("0");
+  const [aliquotaIcms, setAliquotaIcms] = useState("18");
+
+  // Cenário da empresa
+  const [regimeTrib, setRegimeTrib] = useState<RegimeTrib>("lucro_real");
+  const [faturamentoAnual, setFaturamentoAnual] = useState("");
+  const [irpjCsll, setIrpjCsll] = useState<IrpjCsllConfig>({
+    incluir: false,
+    presuncao_comercio: 8,
+    presuncao_servicos: 32,
+    lucro_real_anual: 0,
+  });
+
+  // Cenário da reforma
+  const [escopoReforma, setEscopoReforma] = useState<EscopoReforma>("cbs_ibs");
+  const [anosSelecionados, setAnosSelecionados] = useState<number[]>(ANOS_CRONOGRAMA);
+
+  const [resultado, setResultado] = useState<ResultadoSimulacao | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const simular = () => {
+    if (!ncm.trim() || !valorMensal) return;
+    setLoading(true);
+
+    try {
+      const valorMensalNum = Number(valorMensal) || 0;
+      const fatAnualNum = Number(faturamentoAnual) || valorMensalNum * 12;
+
+      const input: SimulacaoInput = {
+        empresa: {
+          razao_social: descricao || `Produto NCM ${ncm}`,
+          cnpj: "—",
+          regime_tributario: regimeTrib,
+          uf: null,
+          municipio: null,
+          faturamento_anual: fatAnualNum,
+          optante_simples_mei: regimeTrib === "simples_nacional",
+          irpj_csll: irpjCsll,
+        },
+        produtos: [
+          {
+            descricao: descricao || "Produto",
+            ncm,
+            valor_mensal: valorMensalNum,
+            quantidade_mensal: Number(quantidadeMensal) || 0,
+            regime_diferenciado: regimeDif,
+            tipo_operacao: tipoOperacao,
+            destino_operacao: destinoOperacao,
+            sujeito_imposto_seletivo: sujeitoIS,
+            aliquota_is: Number(aliquotaIS) || 0,
+            aliquota_ipi: Number(aliquotaIpi) || 0,
+            aliquota_pis: Number(aliquotaPis) || 0,
+            aliquota_cofins: Number(aliquotaCofins) || 0,
+            aliquota_icms: Number(aliquotaIcms) || 0,
+          },
+        ],
+        servicos: [],
+        creditos: [],
+        escopo_reforma: escopoReforma,
+        anos_selecionados: anosSelecionados.length > 0 ? anosSelecionados : undefined,
+      };
+
+      const res = executarSimulacao(input);
+      setResultado(res);
+      toast.success("Simulação do produto concluída!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao simular produto");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const apenasCbs = escopoReforma === "somente_cbs";
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calculator className="h-5 w-5" />
+            Parâmetros do produto
+          </CardTitle>
+          <CardDescription>
+            Configure um produto isolado e rode a mesma simulação do motor geral, ano a ano, para visualizar o impacto da reforma.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Identificação */}
+          <div className="space-y-3 border rounded-lg p-4">
+            <h3 className="text-sm font-semibold">Identificação do produto</h3>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <div className="space-y-2">
+                <Label>NCM *</Label>
+                <Input value={ncm} onChange={(e) => setNcm(e.target.value)} placeholder="Ex.: 85171231" />
+              </div>
+              <div className="space-y-2 xl:col-span-2">
+                <Label>Descrição</Label>
+                <Input value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Ex.: Smartphone" />
+              </div>
+              <div className="space-y-2">
+                <Label>Regime diferenciado</Label>
+                <Select value={regimeDif} onValueChange={(v) => setRegimeDif(v as RegimeDiferenciado)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {regimeOptions.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Tipo de operação</Label>
+                <Select value={tipoOperacao} onValueChange={setTipoOperacao}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="revenda">Revenda</SelectItem>
+                    <SelectItem value="industrializacao">Industrialização</SelectItem>
+                    <SelectItem value="importacao">Importação</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Destino</Label>
+                <Select value={destinoOperacao} onValueChange={setDestinoOperacao}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mercado_interno">Mercado interno</SelectItem>
+                    <SelectItem value="exportacao">Exportação</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Alíquota do IS (%)</Label>
+                <Input
+                  value={aliquotaIS}
+                  onChange={(e) => setAliquotaIS(e.target.value)}
+                  inputMode="decimal"
+                  disabled={!sujeitoIS}
+                />
+              </div>
+              <div className="flex items-end xl:col-span-2">
+                <label className="flex items-center gap-3 text-sm">
+                  <Checkbox checked={sujeitoIS} onCheckedChange={(c) => setSujeitoIS(Boolean(c))} />
+                  Produto sujeito ao Imposto Seletivo
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Valores e alíquotas atuais */}
+          <div className="space-y-3 border rounded-lg p-4">
+            <h3 className="text-sm font-semibold">Valores e alíquotas atuais</h3>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div className="space-y-2">
+                <Label>Valor mensal (R$) *</Label>
+                <Input value={valorMensal} onChange={(e) => setValorMensal(e.target.value)} inputMode="decimal" />
+              </div>
+              <div className="space-y-2">
+                <Label>Quantidade mensal</Label>
+                <Input value={quantidadeMensal} onChange={(e) => setQuantidadeMensal(e.target.value)} inputMode="decimal" />
+              </div>
+              <div />
+              <div className="space-y-2">
+                <Label>PIS (%)</Label>
+                <Input value={aliquotaPis} onChange={(e) => setAliquotaPis(e.target.value)} inputMode="decimal" />
+              </div>
+              <div className="space-y-2">
+                <Label>COFINS (%)</Label>
+                <Input value={aliquotaCofins} onChange={(e) => setAliquotaCofins(e.target.value)} inputMode="decimal" />
+              </div>
+              <div className="space-y-2">
+                <Label>IPI (%)</Label>
+                <Input value={aliquotaIpi} onChange={(e) => setAliquotaIpi(e.target.value)} inputMode="decimal" />
+              </div>
+              <div className="space-y-2">
+                <Label>ICMS (%)</Label>
+                <Input value={aliquotaIcms} onChange={(e) => setAliquotaIcms(e.target.value)} inputMode="decimal" />
+              </div>
+            </div>
+          </div>
+
+          {/* Cenário da empresa */}
+          <div className="space-y-3 border rounded-lg p-4">
+            <h3 className="text-sm font-semibold">Cenário da empresa (sintético)</h3>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div className="space-y-2">
+                <Label>Regime tributário</Label>
+                <Select value={regimeTrib} onValueChange={(v) => setRegimeTrib(v as RegimeTrib)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="simples_nacional">Simples Nacional</SelectItem>
+                    <SelectItem value="lucro_presumido">Lucro Presumido</SelectItem>
+                    <SelectItem value="lucro_real">Lucro Real</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Faturamento anual (R$)</Label>
+                <Input
+                  value={faturamentoAnual}
+                  onChange={(e) => setFaturamentoAnual(e.target.value)}
+                  inputMode="decimal"
+                  placeholder={`Padrão: valor mensal × 12 = ${formatCurrency((Number(valorMensal) || 0) * 12)}`}
+                />
+              </div>
+            </div>
+
+            <div className="border-t pt-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-semibold">Tributação sobre o lucro (IRPJ/CSLL)</h4>
+                  <p className="text-xs text-muted-foreground">Inclua para visualizar a tributação federal total.</p>
+                </div>
+                <Switch
+                  checked={irpjCsll.incluir}
+                  disabled={regimeTrib === "simples_nacional"}
+                  onCheckedChange={(v) => setIrpjCsll((s) => ({ ...s, incluir: v }))}
+                />
+              </div>
+
+              {regimeTrib === "simples_nacional" && (
+                <p className="text-xs text-warning-foreground bg-warning/10 border border-warning/30 rounded-md p-2">
+                  IRPJ e CSLL já estão incluídos no DAS do Simples Nacional — opção indisponível.
+                </p>
+              )}
+
+              {irpjCsll.incluir && regimeTrib === "lucro_presumido" && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Presunção comércio (%)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={irpjCsll.presuncao_comercio ?? 8}
+                      onChange={(e) => setIrpjCsll((s) => ({ ...s, presuncao_comercio: Number(e.target.value) }))}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Presunção serviços (%)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={irpjCsll.presuncao_servicos ?? 32}
+                      onChange={(e) => setIrpjCsll((s) => ({ ...s, presuncao_servicos: Number(e.target.value) }))}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {irpjCsll.incluir && regimeTrib === "lucro_real" && (
+                <div className="space-y-1 max-w-sm">
+                  <Label className="text-xs">Lucro tributável anual estimado (R$)</Label>
+                  <Input
+                    type="number"
+                    step="1000"
+                    value={irpjCsll.lucro_real_anual ?? 0}
+                    onChange={(e) => setIrpjCsll((s) => ({ ...s, lucro_real_anual: Number(e.target.value) }))}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Cenário da reforma */}
+          <div className="space-y-3 border rounded-lg p-4">
+            <h3 className="text-sm font-semibold">Escopo da reforma</h3>
+            <RadioGroup
+              value={escopoReforma}
+              onValueChange={(v) => setEscopoReforma(v as EscopoReforma)}
+              className="flex flex-col gap-2 sm:flex-row sm:gap-6"
+            >
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <RadioGroupItem value="cbs_ibs" id="prod-esc-cbs-ibs" />
+                CBS + IBS (padrão)
+              </label>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <RadioGroupItem value="somente_cbs" id="prod-esc-cbs" />
+                Somente CBS (federal)
+              </label>
+            </RadioGroup>
+          </div>
+
+          <div className="space-y-3 border rounded-lg p-4">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h3 className="text-sm font-semibold">Anos a simular</h3>
+              <div className="flex gap-1 flex-wrap">
+                <Button type="button" variant="outline" size="sm" onClick={() => setAnosSelecionados(ANOS_CRONOGRAMA)}>Todos</Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setAnosSelecionados([2026, 2027, 2028])}>Transição (2026–2028)</Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setAnosSelecionados([2033])}>Pleno (2033)</Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setAnosSelecionados([])}>Limpar</Button>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {ANOS_CRONOGRAMA.map((ano) => {
+                const checked = anosSelecionados.includes(ano);
+                return (
+                  <label key={ano} className="flex items-center gap-2 text-sm cursor-pointer border rounded-md px-3 py-1.5 hover:bg-muted/50">
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={(v) => {
+                        setAnosSelecionados((prev) =>
+                          v ? [...prev, ano].sort((a, b) => a - b) : prev.filter((a) => a !== ano)
+                        );
+                      }}
+                    />
+                    {ano}
+                  </label>
+                );
+              })}
+            </div>
+            {anosSelecionados.length === 0 && (
+              <p className="text-xs text-destructive">Selecione pelo menos um ano para habilitar a simulação.</p>
+            )}
+          </div>
+
+          <div className="flex justify-end">
+            <Button
+              onClick={simular}
+              disabled={!ncm.trim() || !valorMensal || anosSelecionados.length === 0 || loading}
+            >
+              <Calculator className="h-4 w-4 mr-1" />
+              {loading ? "Calculando…" : "Simular produto"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {resultado && (
+        <SimulacaoResultado resultado={resultado} escopoSomenteCbs={apenasCbs} />
       )}
     </div>
   );
