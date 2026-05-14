@@ -264,6 +264,13 @@ export interface CreditoInput {
   aliquota_icms: number;
 }
 
+export interface IrpjCsllConfig {
+  incluir: boolean;
+  presuncao_comercio?: number; // % (Lucro Presumido) — default 8
+  presuncao_servicos?: number; // % (Lucro Presumido) — default 32
+  lucro_real_anual?: number;   // R$ (Lucro Real)
+}
+
 export interface EmpresaInput {
   razao_social: string;
   cnpj: string;
@@ -272,13 +279,18 @@ export interface EmpresaInput {
   municipio: string | null;
   faturamento_anual: number;
   optante_simples_mei: boolean;
+  irpj_csll?: IrpjCsllConfig;
 }
+
+export type EscopoReforma = "cbs_ibs" | "somente_cbs";
 
 export interface SimulacaoInput {
   empresa: EmpresaInput;
   produtos: ProdutoInput[];
   servicos: ServicoInput[];
   creditos: CreditoInput[];
+  escopo_reforma?: EscopoReforma;
+  anos_selecionados?: number[];
 }
 
 // ─── Tipos de Saída ────────────────────────────────────────────────────────
