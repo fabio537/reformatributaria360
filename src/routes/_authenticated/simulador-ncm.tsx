@@ -406,7 +406,55 @@ function SimulacaoCompletaProdutoTab() {
     }
   };
 
+  const salvarSimulacao = async () => {
+    if (!resultado || !auth.user || !linkedEmpresa.empresaId || !simulacaoInput) return;
+    setSaving(true);
+    try {
+      const nome = `Produto NCM ${ncm}${descricao ? ` — ${descricao}` : ""} — ${new Date().toLocaleDateString("pt-BR")}`;
+      const parametros = {
+        ...simulacaoInput,
+        tipo: "produto_ncm",
+        produto: { ncm, descricao, valor_mensal: parseNumBR(valorMensal) },
+      };
+      const { data, error } = await supabase.from("simulacoes").insert({
+        nome,
+        empresa_id: linkedEmpresa.empresaId,
+        user_id: auth.user.id,
+        ano_inicio: anosSelecionados[0] ?? 2026,
+        ano_fim: anosSelecionados[anosSelecionados.length - 1] ?? 2033,
+        parametros: parametros as unknown as Json,
+        resultados: resultado as unknown as Json,
+      }).select("id").single();
+      if (error) throw error;
+      setSimulacaoSalvaId(data.id);
+      toast.success("Simulação salva no histórico da empresa!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao salvar simulação");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const apenasCbs = escopoReforma === "somente_cbs";
+  const insumosMensaisBruto = creditos.reduce((acc, c) => acc + parseNumBR(c.valor_mensal), 0);
+
+  const pdfContexto: RelatorioContexto | undefined = resultado
+    ? {
+        tipo: "produto",
+        ncm,
+        descricao: descricao || `Produto NCM ${ncm}`,
+        regime: regimeTrib,
+        valor_mensal: parseNumBR(valorMensal),
+        aliquotas_atuais: {
+          pis: parseNumBR(aliquotaPis),
+          cofins: parseNumBR(aliquotaCofins),
+          ipi: parseNumBR(aliquotaIpi),
+          icms: parseNumBR(aliquotaIcms),
+        },
+        insumos_anuais: insumosMensaisBruto * 12,
+      }
+    : undefined;
 
   return (
     <div className="space-y-6">
@@ -677,7 +725,26 @@ function SimulacaoCompletaProdutoTab() {
       </Card>
 
       {resultado && (
-        <SimulacaoResultado resultado={resultado} escopoSomenteCbs={apenasCbs} />
+        <>
+          <SimulacaoProdutoResultado
+            resultado={resultado}
+            valorMensalProduto={parseNumBR(valorMensal)}
+            insumosMensaisBruto={insumosMensaisBruto}
+          />
+          <SimulacaoResultado
+            resultado={resultado}
+            escopoSomenteCbs={apenasCbs}
+            pdfContexto={pdfContexto}
+            onSalvar={linkedEmpresa.empresaId ? salvarSimulacao : undefined}
+            salvando={saving}
+            salvado={!!simulacaoSalvaId}
+          />
+          {!linkedEmpresa.empresaId && (
+            <p className="text-xs text-muted-foreground text-right">
+              Vincule uma empresa para salvar esta simulação no histórico.
+            </p>
+          )}
+        </>
       )}
     </div>
   );
