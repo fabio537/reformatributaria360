@@ -515,12 +515,16 @@ function SimulacaoCompletaProdutoTab() {
             </div>
           </div>
 
-          {/* Cenário da empresa */}
+          {/* Regime tributário aplicável ao produto */}
           <div className="space-y-3 border rounded-lg p-4">
-            <h3 className="text-sm font-semibold">Cenário da empresa (sintético)</h3>
+            <h3 className="text-sm font-semibold">Regime tributário aplicável ao produto</h3>
+            <p className="text-xs text-muted-foreground">
+              Define como os tributos atuais incidem sobre este item (DAS no Simples; PIS/COFINS/IPI/ICMS nos demais).
+              Para Simples Nacional, a alíquota DAS é estimada considerando o item isolado (valor mensal × 12).
+            </p>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               <div className="space-y-2">
-                <Label>Regime tributário</Label>
+                <Label>Regime</Label>
                 <Select value={regimeTrib} onValueChange={(v) => setRegimeTrib(v as RegimeTrib)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -530,69 +534,11 @@ function SimulacaoCompletaProdutoTab() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>Faturamento anual (R$)</Label>
-                <CurrencyInput
-                  value={faturamentoAnual}
-                  onValueChange={setFaturamentoAnual}
-                  placeholder={`Padrão: valor mensal × 12 = ${formatCurrency(parseNumBR(valorMensal) * 12)}`}
-                />
-              </div>
-            </div>
-
-            <div className="border-t pt-3 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-semibold">Tributação sobre o lucro (IRPJ/CSLL)</h4>
-                  <p className="text-xs text-muted-foreground">Inclua para visualizar a tributação federal total.</p>
-                </div>
-                <Switch
-                  checked={irpjCsll.incluir}
-                  disabled={regimeTrib === "simples_nacional"}
-                  onCheckedChange={(v) => setIrpjCsll((s) => ({ ...s, incluir: v }))}
-                />
-              </div>
-
-              {regimeTrib === "simples_nacional" && (
-                <p className="text-xs text-warning-foreground bg-warning/10 border border-warning/30 rounded-md p-2">
-                  IRPJ e CSLL já estão incluídos no DAS do Simples Nacional — opção indisponível.
+              <div className="space-y-2 md:col-span-2 flex items-end">
+                <p className="text-xs text-muted-foreground">
+                  Receita anual considerada: <strong>{formatCurrency(parseNumBR(valorMensal) * 12)}</strong> (12× valor mensal do item).
                 </p>
-              )}
-
-              {irpjCsll.incluir && regimeTrib === "lucro_presumido" && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Presunção comércio (%)</Label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      value={irpjCsll.presuncao_comercio ?? 8}
-                      onChange={(e) => setIrpjCsll((s) => ({ ...s, presuncao_comercio: Number(e.target.value) }))}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Presunção serviços (%)</Label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      value={irpjCsll.presuncao_servicos ?? 32}
-                      onChange={(e) => setIrpjCsll((s) => ({ ...s, presuncao_servicos: Number(e.target.value) }))}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {irpjCsll.incluir && regimeTrib === "lucro_real" && (
-                <div className="space-y-1 max-w-sm">
-                  <Label className="text-xs">Lucro tributável anual estimado (R$)</Label>
-                  <Input
-                    type="number"
-                    step="1000"
-                    value={irpjCsll.lucro_real_anual ?? 0}
-                    onChange={(e) => setIrpjCsll((s) => ({ ...s, lucro_real_anual: Number(e.target.value) }))}
-                  />
-                </div>
-              )}
+              </div>
             </div>
           </div>
 
