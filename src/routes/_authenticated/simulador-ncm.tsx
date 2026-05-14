@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { AlertTriangle, BadgePercent, PackageSearch, Calculator } from "lucide-react";
+import { AlertTriangle, BadgePercent, PackageSearch, Calculator, Plus, Trash2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
