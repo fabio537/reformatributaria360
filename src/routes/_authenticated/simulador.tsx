@@ -682,28 +682,14 @@ function SimuladorPage() {
       </Card>
 
       {resultado && (
-        <>
-          {/* Alertas */}
-          {resultado.alertas.length > 0 && (
-            <Card className="border-warning/30 bg-warning/10">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2 text-warning-foreground">
-                  <AlertTriangle className="h-4 w-4" />
-                  Observações da Simulação
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {resultado.alertas.map((a, i) => (
-                    <li key={i} className="text-sm text-muted-foreground flex gap-2">
-                      <Info className="h-4 w-4 mt-0.5 shrink-0 text-warning-foreground" />
-                      {a}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
+        <SimulacaoResultado
+          resultado={resultado}
+          escopoSomenteCbs={apenasCbs}
+          onSalvar={salvarSimulacao}
+          salvando={saving}
+          salvado={!!simulacaoSalvaId}
+        />
+      )}
 
           {/* Resumo */}
           <div className="grid gap-4 md:grid-cols-4">
