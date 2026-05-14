@@ -746,7 +746,7 @@ function SimuladorPage() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>Variação em 2033</CardDescription>
+                <CardDescription>Variação no último ano simulado{resultado.anos.length > 0 ? ` (${resultado.anos[resultado.anos.length - 1].ano})` : ""}</CardDescription>
               </CardHeader>
               <CardContent>
                 {resultado.anos.length > 0 && (() => {
