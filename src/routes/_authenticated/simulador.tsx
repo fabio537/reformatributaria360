@@ -565,6 +565,134 @@ function SimuladorPage() {
               )}
             </div>
           )}
+
+          {/* ─── Cenário: Escopo da Reforma ─── */}
+          <div className="border rounded-lg p-4 space-y-3">
+            <h3 className="text-sm font-semibold">Escopo da Reforma</h3>
+            <RadioGroup
+              value={escopoReforma}
+              onValueChange={(v) => setEscopoReforma(v as EscopoReforma)}
+              className="flex flex-col gap-2 sm:flex-row sm:gap-6"
+            >
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <RadioGroupItem value="cbs_ibs" id="esc-cbs-ibs" />
+                CBS + IBS (padrão)
+              </label>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <RadioGroupItem value="somente_cbs" id="esc-cbs" />
+                Somente CBS (federal)
+              </label>
+            </RadioGroup>
+            <p className="text-xs text-muted-foreground">
+              Use "Somente CBS" para isolar o impacto federal da reforma, removendo o IBS dos cálculos.
+            </p>
+          </div>
+
+          {/* ─── Cenário: IRPJ/CSLL na carga atual ─── */}
+          <div className="border rounded-lg p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold">Tributação sobre o lucro (IRPJ/CSLL)</h3>
+                <p className="text-xs text-muted-foreground">
+                  Inclua IRPJ e CSLL para visualizar a tributação federal total na carga atual.
+                </p>
+              </div>
+              <Switch
+                checked={irpjCsll.incluir}
+                disabled={resumoEmpresa?.regime_tributario === "simples_nacional"}
+                onCheckedChange={(v) => setIrpjCsll((s) => ({ ...s, incluir: v }))}
+              />
+            </div>
+
+            {resumoEmpresa?.regime_tributario === "simples_nacional" && (
+              <p className="text-xs text-warning-foreground bg-warning/10 border border-warning/30 rounded-md p-2">
+                IRPJ e CSLL já estão incluídos no DAS do Simples Nacional — opção indisponível.
+              </p>
+            )}
+
+            {irpjCsll.incluir && resumoEmpresa?.regime_tributario === "lucro_presumido" && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Presunção comércio (%)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={irpjCsll.presuncao_comercio ?? 8}
+                    onChange={(e) =>
+                      setIrpjCsll((s) => ({ ...s, presuncao_comercio: Number(e.target.value) }))
+                    }
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Presunção serviços (%)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={irpjCsll.presuncao_servicos ?? 32}
+                    onChange={(e) =>
+                      setIrpjCsll((s) => ({ ...s, presuncao_servicos: Number(e.target.value) }))
+                    }
+                  />
+                </div>
+              </div>
+            )}
+
+            {irpjCsll.incluir && resumoEmpresa?.regime_tributario === "lucro_real" && (
+              <div className="space-y-1 max-w-sm">
+                <Label className="text-xs">Lucro tributável anual estimado (R$)</Label>
+                <Input
+                  type="number"
+                  step="1000"
+                  value={irpjCsll.lucro_real_anual ?? 0}
+                  onChange={(e) =>
+                    setIrpjCsll((s) => ({ ...s, lucro_real_anual: Number(e.target.value) }))
+                  }
+                />
+              </div>
+            )}
+          </div>
+
+          {/* ─── Cenário: Anos a simular ─── */}
+          <div className="border rounded-lg p-4 space-y-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h3 className="text-sm font-semibold">Anos a simular</h3>
+              <div className="flex gap-1 flex-wrap">
+                <Button type="button" variant="outline" size="sm" onClick={() => setAnosSelecionados(ANOS_CRONOGRAMA)}>
+                  Todos
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setAnosSelecionados([2026, 2027, 2028])}>
+                  Transição (2026–2028)
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setAnosSelecionados([2033])}>
+                  Pleno (2033)
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setAnosSelecionados([])}>
+                  Limpar
+                </Button>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {ANOS_CRONOGRAMA.map((ano) => {
+                const checked = anosSelecionados.includes(ano);
+                return (
+                  <label key={ano} className="flex items-center gap-2 text-sm cursor-pointer border rounded-md px-3 py-1.5 hover:bg-muted/50">
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={(v) => {
+                        setAnosSelecionados((prev) =>
+                          v ? [...prev, ano].sort((a, b) => a - b) : prev.filter((a) => a !== ano)
+                        );
+                      }}
+                    />
+                    {ano}
+                  </label>
+                );
+              })}
+            </div>
+            {anosSelecionados.length === 0 && (
+              <p className="text-xs text-destructive">Selecione pelo menos um ano para habilitar a simulação.</p>
+            )}
+          </div>
         </CardContent>
       </Card>
 
