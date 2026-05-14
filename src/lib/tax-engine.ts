@@ -302,6 +302,8 @@ export interface DetalheTributoAtual {
   icms: number;
   iss: number;
   das: number; // Para Simples Nacional
+  irpj: number;
+  csll: number;
   total: number;
 }
 
