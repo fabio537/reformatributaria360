@@ -9,6 +9,7 @@ import { AlertTriangle, TrendingDown, TrendingUp, Info, Save, FileText } from "l
 import { toast } from "sonner";
 import { useState } from "react";
 import type { ResultadoSimulacao } from "@/lib/tax-engine";
+import type { RelatorioContexto } from "@/lib/relatorio-pdf";
 
 function formatBRL(value: number): string {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -27,6 +28,8 @@ interface SimulacaoResultadoProps {
   onSalvar?: () => Promise<void> | void;
   salvando?: boolean;
   salvado?: boolean;
+  /** Contexto opcional para customizar o PDF (ex.: relatório por produto) */
+  pdfContexto?: RelatorioContexto;
 }
 
 export function SimulacaoResultado({
@@ -35,6 +38,7 @@ export function SimulacaoResultado({
   onSalvar,
   salvando = false,
   salvado = false,
+  pdfContexto,
 }: SimulacaoResultadoProps) {
   const [generatingPdf, setGeneratingPdf] = useState(false);
 
@@ -68,7 +72,7 @@ export function SimulacaoResultado({
     setGeneratingPdf(true);
     try {
       const { gerarRelatorioPDF } = await import("@/lib/relatorio-pdf");
-      await gerarRelatorioPDF(resultado);
+      await gerarRelatorioPDF(resultado, pdfContexto);
       toast.success("Relatório PDF gerado com sucesso!");
     } catch (err) {
       console.error(err);
