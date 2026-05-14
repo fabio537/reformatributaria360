@@ -116,6 +116,17 @@ function SimuladorPage() {
   const [simulacaoSalvaId, setSimulacaoSalvaId] = useState<string | null>(null);
   const [resumoEmpresa, setResumoEmpresa] = useState<EmpresaResumo | null>(null);
 
+  // Novos parâmetros de cenário
+  const ANOS_CRONOGRAMA = CRONOGRAMA_TRANSICAO.map((t) => t.ano);
+  const [escopoReforma, setEscopoReforma] = useState<EscopoReforma>("cbs_ibs");
+  const [anosSelecionados, setAnosSelecionados] = useState<number[]>(ANOS_CRONOGRAMA);
+  const [irpjCsll, setIrpjCsll] = useState<IrpjCsllConfig>({
+    incluir: false,
+    presuncao_comercio: 8,
+    presuncao_servicos: 32,
+    lucro_real_anual: 0,
+  });
+
   useEffect(() => {
     supabase.from("empresas").select("id, razao_social, cnpj").order("razao_social").then(({ data }) => {
       const empresasDisponiveis = auth.hasRole("cliente") && linkedEmpresa.empresaId
