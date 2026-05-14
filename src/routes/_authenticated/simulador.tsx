@@ -476,7 +476,7 @@ function SimuladorPage() {
                 </Select>
               )}
             </div>
-            <Button onClick={simular} disabled={!empresaId || loading}>
+            <Button onClick={simular} disabled={!empresaId || loading || anosSelecionados.length === 0}>
               {loading ? "Calculando…" : "Simular"}
             </Button>
             {resultado && (
