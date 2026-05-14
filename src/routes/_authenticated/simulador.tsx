@@ -32,6 +32,10 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   AreaChart, Area,
 } from "recharts";
+import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import {
   executarSimulacao,
   ALIQUOTA_CBS_REF,
@@ -46,6 +50,8 @@ import {
   type CreditoInput,
   type EmpresaInput,
   type RegimeDiferenciado,
+  type EscopoReforma,
+  type IrpjCsllConfig,
 } from "@/lib/tax-engine";
 import { AlertTriangle, TrendingDown, TrendingUp, Info, Calculator, BookOpen, Package, Briefcase, Receipt, ExternalLink, Save, FileText } from "lucide-react";
 import { toast } from "sonner";
@@ -109,6 +115,17 @@ function SimuladorPage() {
   const [simulacaoInput, setSimulacaoInput] = useState<SimulacaoInput | null>(null);
   const [simulacaoSalvaId, setSimulacaoSalvaId] = useState<string | null>(null);
   const [resumoEmpresa, setResumoEmpresa] = useState<EmpresaResumo | null>(null);
+
+  // Novos parâmetros de cenário
+  const ANOS_CRONOGRAMA = CRONOGRAMA_TRANSICAO.map((t) => t.ano);
+  const [escopoReforma, setEscopoReforma] = useState<EscopoReforma>("cbs_ibs");
+  const [anosSelecionados, setAnosSelecionados] = useState<number[]>(ANOS_CRONOGRAMA);
+  const [irpjCsll, setIrpjCsll] = useState<IrpjCsllConfig>({
+    incluir: false,
+    presuncao_comercio: 8,
+    presuncao_servicos: 32,
+    lucro_real_anual: 0,
+  });
 
   useEffect(() => {
     supabase.from("empresas").select("id, razao_social, cnpj").order("razao_social").then(({ data }) => {
@@ -180,6 +197,7 @@ function SimuladorPage() {
         municipio: empresa.municipio,
         faturamento_anual: Number(empresa.faturamento_anual) || 0,
         optante_simples_mei: empresa.optante_simples_mei || false,
+        irpj_csll: irpjCsll,
       };
 
       const produtosInput: ProdutoInput[] = (produtos || []).map((p: any) => ({
@@ -226,6 +244,8 @@ function SimuladorPage() {
         produtos: produtosInput,
         servicos: servicosInput,
         creditos: creditosInput,
+        escopo_reforma: escopoReforma,
+        anos_selecionados: anosSelecionados.length > 0 ? anosSelecionados : undefined,
       };
 
       const res = executarSimulacao(input);
@@ -294,10 +314,18 @@ function SimuladorPage() {
     "IPI": Math.round(a.tributos_atuais_bruto.ipi),
     "ICMS": Math.round(a.tributos_atuais_bruto.icms),
     "ISS": Math.round(a.tributos_atuais_bruto.iss),
+    "IRPJ": Math.round(a.tributos_atuais_bruto.irpj),
+    "CSLL": Math.round(a.tributos_atuais_bruto.csll),
     "CBS": Math.round(a.ibs_cbs_bruto.cbs),
     "IBS": Math.round(a.ibs_cbs_bruto.ibs),
     "IS": Math.round(a.ibs_cbs_bruto.is),
   })) || [];
+
+  const incluiIrpjCsll = !!resultado?.anos.some(
+    (a) => a.tributos_atuais_bruto.irpj > 0 || a.tributos_atuais_bruto.csll > 0
+  );
+  const apenasCbs = escopoReforma === "somente_cbs";
+
 
   const dadosCargaLiquida = resultado?.anos.map((a) => ({
     ano: a.ano,
@@ -448,7 +476,7 @@ function SimuladorPage() {
                 </Select>
               )}
             </div>
-            <Button onClick={simular} disabled={!empresaId || loading}>
+            <Button onClick={simular} disabled={!empresaId || loading || anosSelecionados.length === 0}>
               {loading ? "Calculando…" : "Simular"}
             </Button>
             {resultado && (
@@ -537,6 +565,134 @@ function SimuladorPage() {
               )}
             </div>
           )}
+
+          {/* ─── Cenário: Escopo da Reforma ─── */}
+          <div className="border rounded-lg p-4 space-y-3">
+            <h3 className="text-sm font-semibold">Escopo da Reforma</h3>
+            <RadioGroup
+              value={escopoReforma}
+              onValueChange={(v) => setEscopoReforma(v as EscopoReforma)}
+              className="flex flex-col gap-2 sm:flex-row sm:gap-6"
+            >
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <RadioGroupItem value="cbs_ibs" id="esc-cbs-ibs" />
+                CBS + IBS (padrão)
+              </label>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <RadioGroupItem value="somente_cbs" id="esc-cbs" />
+                Somente CBS (federal)
+              </label>
+            </RadioGroup>
+            <p className="text-xs text-muted-foreground">
+              Use "Somente CBS" para isolar o impacto federal da reforma, removendo o IBS dos cálculos.
+            </p>
+          </div>
+
+          {/* ─── Cenário: IRPJ/CSLL na carga atual ─── */}
+          <div className="border rounded-lg p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold">Tributação sobre o lucro (IRPJ/CSLL)</h3>
+                <p className="text-xs text-muted-foreground">
+                  Inclua IRPJ e CSLL para visualizar a tributação federal total na carga atual.
+                </p>
+              </div>
+              <Switch
+                checked={irpjCsll.incluir}
+                disabled={resumoEmpresa?.regime_tributario === "simples_nacional"}
+                onCheckedChange={(v) => setIrpjCsll((s) => ({ ...s, incluir: v }))}
+              />
+            </div>
+
+            {resumoEmpresa?.regime_tributario === "simples_nacional" && (
+              <p className="text-xs text-warning-foreground bg-warning/10 border border-warning/30 rounded-md p-2">
+                IRPJ e CSLL já estão incluídos no DAS do Simples Nacional — opção indisponível.
+              </p>
+            )}
+
+            {irpjCsll.incluir && resumoEmpresa?.regime_tributario === "lucro_presumido" && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Presunção comércio (%)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={irpjCsll.presuncao_comercio ?? 8}
+                    onChange={(e) =>
+                      setIrpjCsll((s) => ({ ...s, presuncao_comercio: Number(e.target.value) }))
+                    }
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Presunção serviços (%)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={irpjCsll.presuncao_servicos ?? 32}
+                    onChange={(e) =>
+                      setIrpjCsll((s) => ({ ...s, presuncao_servicos: Number(e.target.value) }))
+                    }
+                  />
+                </div>
+              </div>
+            )}
+
+            {irpjCsll.incluir && resumoEmpresa?.regime_tributario === "lucro_real" && (
+              <div className="space-y-1 max-w-sm">
+                <Label className="text-xs">Lucro tributável anual estimado (R$)</Label>
+                <Input
+                  type="number"
+                  step="1000"
+                  value={irpjCsll.lucro_real_anual ?? 0}
+                  onChange={(e) =>
+                    setIrpjCsll((s) => ({ ...s, lucro_real_anual: Number(e.target.value) }))
+                  }
+                />
+              </div>
+            )}
+          </div>
+
+          {/* ─── Cenário: Anos a simular ─── */}
+          <div className="border rounded-lg p-4 space-y-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h3 className="text-sm font-semibold">Anos a simular</h3>
+              <div className="flex gap-1 flex-wrap">
+                <Button type="button" variant="outline" size="sm" onClick={() => setAnosSelecionados(ANOS_CRONOGRAMA)}>
+                  Todos
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setAnosSelecionados([2026, 2027, 2028])}>
+                  Transição (2026–2028)
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setAnosSelecionados([2033])}>
+                  Pleno (2033)
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setAnosSelecionados([])}>
+                  Limpar
+                </Button>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {ANOS_CRONOGRAMA.map((ano) => {
+                const checked = anosSelecionados.includes(ano);
+                return (
+                  <label key={ano} className="flex items-center gap-2 text-sm cursor-pointer border rounded-md px-3 py-1.5 hover:bg-muted/50">
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={(v) => {
+                        setAnosSelecionados((prev) =>
+                          v ? [...prev, ano].sort((a, b) => a - b) : prev.filter((a) => a !== ano)
+                        );
+                      }}
+                    />
+                    {ano}
+                  </label>
+                );
+              })}
+            </div>
+            {anosSelecionados.length === 0 && (
+              <p className="text-xs text-destructive">Selecione pelo menos um ano para habilitar a simulação.</p>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -590,7 +746,7 @@ function SimuladorPage() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardDescription>Variação em 2033</CardDescription>
+                <CardDescription>Variação no último ano simulado{resultado.anos.length > 0 ? ` (${resultado.anos[resultado.anos.length - 1].ano})` : ""}</CardDescription>
               </CardHeader>
               <CardContent>
                 {resultado.anos.length > 0 && (() => {
@@ -642,8 +798,10 @@ function SimuladorPage() {
                     <Bar dataKey="IPI" fill="var(--color-chart-2)" stackId="a" />
                     <Bar dataKey="ICMS" fill="var(--color-chart-3)" stackId="a" />
                     <Bar dataKey="ISS" fill="var(--color-chart-4)" stackId="a" />
+                    {incluiIrpjCsll && <Bar dataKey="IRPJ" fill="var(--color-chart-6)" stackId="a" />}
+                    {incluiIrpjCsll && <Bar dataKey="CSLL" fill="var(--color-chart-7)" stackId="a" />}
                     <Bar dataKey="CBS" fill="var(--color-chart-5)" stackId="b" />
-                     <Bar dataKey="IBS" fill="var(--color-chart-2)" stackId="b" />
+                    {!apenasCbs && <Bar dataKey="IBS" fill="var(--color-chart-2)" stackId="b" />}
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -685,6 +843,7 @@ function SimuladorPage() {
                     <th className="text-left py-2 px-2">Ano</th>
                     <th className="text-left py-2 px-2">Fase</th>
                     <th className="text-right py-2 px-2">Trib. Atuais</th>
+                    {incluiIrpjCsll && <th className="text-right py-2 px-2">IRPJ/CSLL</th>}
                     <th className="text-right py-2 px-2">IBS/CBS</th>
                     <th className="text-right py-2 px-2">Créditos</th>
                     <th className="text-right py-2 px-2">Carga Total</th>
@@ -699,6 +858,11 @@ function SimuladorPage() {
                         <Badge variant="outline" className="text-xs whitespace-nowrap">{a.fase}</Badge>
                       </td>
                       <td className="py-2 px-2 text-right tabular-nums">{formatBRL(a.tributos_atuais_bruto.total)}</td>
+                      {incluiIrpjCsll && (
+                        <td className="py-2 px-2 text-right tabular-nums">
+                          {formatBRL(a.tributos_atuais_bruto.irpj + a.tributos_atuais_bruto.csll)}
+                        </td>
+                      )}
                       <td className="py-2 px-2 text-right tabular-nums">{formatBRL(a.ibs_cbs_bruto.total)}</td>
                       <td className="py-2 px-2 text-right tabular-nums text-green-600">
                         -{formatBRL(a.creditos.creditos_atuais + a.creditos.creditos_ibs_cbs)}

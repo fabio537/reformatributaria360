@@ -116,7 +116,7 @@ export async function gerarRelatorioPDF(resultado: ResultadoSimulacao): Promise<
 
   autoTable(doc, {
     startY: y,
-    head: [["Ano", "PIS", "COFINS", "IPI", "ICMS", "ISS", "DAS", "CBS", "IBS", "IS"]],
+    head: [["Ano", "PIS", "COFINS", "IPI", "ICMS", "ISS", "IRPJ", "CSLL", "DAS", "CBS", "IBS", "IS"]],
     body: resultado.anos.map((a) => [
       String(a.ano),
       formatBRL(a.tributos_atuais_bruto.pis),
@@ -124,6 +124,8 @@ export async function gerarRelatorioPDF(resultado: ResultadoSimulacao): Promise<
       formatBRL(a.tributos_atuais_bruto.ipi),
       formatBRL(a.tributos_atuais_bruto.icms),
       formatBRL(a.tributos_atuais_bruto.iss),
+      formatBRL(a.tributos_atuais_bruto.irpj),
+      formatBRL(a.tributos_atuais_bruto.csll),
       formatBRL(a.tributos_atuais_bruto.das),
       formatBRL(a.ibs_cbs_bruto.cbs),
       formatBRL(a.ibs_cbs_bruto.ibs),
