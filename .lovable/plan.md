@@ -1,111 +1,94 @@
+## Objetivo
+Adicionar três controles de cenário ao Simulador Tributário:
+1. **Escopo da Reforma**: rodar com apenas a CBS ou CBS + IBS.
+2. **IRPJ/CSLL**: opção de incluir a tributação federal sobre o lucro na carga atual.
+3. **Anos da simulação**: usuário escolhe quais anos do cronograma 2026–2033 entram no resultado.
 
-## Plano de implementação
+Nenhum altera base legal/cronograma — apenas mudam a composição exibida e somada.
 
-### Objetivo
-Reorganizar a navegação para clientes com foco exclusivo na empresa vinculada e adicionar um novo simulador de alíquotas por produto/NCM no menu principal, sempre respeitando o vínculo usuário → empresa.
+---
 
-### 1. Reorganizar a navegação para perfil cliente
-- Ajustar o menu lateral para ter comportamento diferente entre equipe interna e cliente.
-- Para cliente, exibir uma navegação simplificada, orientada à própria empresa:
-  - Dashboard
-  - Minha Empresa
-  - Checklist
-  - Simulações
-  - Simulador por NCM
-  - Base Legal
-  - Atualizações
-- Para equipe interna, manter a visão administrativa atual, incluindo Empresas e Usuários.
-- Renomear e reposicionar itens para reduzir a dependência de entrar em “Empresas” para acessar funcionalidades operacionais.
+## 1. Escopo da Reforma (CBS only vs. CBS + IBS)
 
-### 2. Centralizar a lógica de “empresa vinculada do cliente”
-- Criar uma camada reutilizável para descobrir a empresa vinculada ao usuário autenticado.
-- Usar essa lógica para:
-  - direcionar o cliente à própria empresa;
-  - filtrar telas que hoje dependem de seleção manual;
-  - impedir que cliente navegue para dados de outra empresa.
-- Revisar a proteção das rotas autenticadas para evitar exposição momentânea de conteúdo antes do redirecionamento.
+### UX
+- Novo grupo "Escopo da Reforma" no card "Parâmetros da Simulação", com `RadioGroup`:
+  - "CBS + IBS (padrão)" — comportamento atual.
+  - "Somente CBS (federal)" — zera o IBS em todo o cronograma.
+- Reflete em gráfico, tabela e PDF.
 
-### 3. Transformar o checklist em item principal do menu
-- Criar uma rota principal dedicada ao checklist do cliente, usando automaticamente a empresa vinculada.
-- Reaproveitar o componente existente do checklist.
-- Manter a visualização contextual por empresa para staff, mas dar acesso direto ao cliente pelo menu principal.
-- Exibir progresso geral e mensagens de contexto da empresa atual.
+### Motor (`src/lib/tax-engine.ts`)
+- Campo `escopo_reforma: "cbs_ibs" | "somente_cbs"` em `SimulacaoInput` (default `cbs_ibs`).
+- No loop anual: se `somente_cbs`, força `ibsAno = 0` e remove o componente IBS dos créditos novos.
+- Para Simples, o ICMS/ISS dentro do DAS segue inalterado (a opção só afeta o lado novo).
+- Alerta automático identificando o cenário.
 
-### 4. Melhorar a experiência “Minha Empresa”
-- Criar uma rota principal “Minha Empresa” para clientes, levando diretamente ao detalhe da empresa vinculada.
-- Para clientes, ocultar ações administrativas que não façam sentido.
-- Para staff, manter a gestão completa por lista de empresas e detalhe individual.
+---
 
-### 5. Criar o novo “Simulador por NCM” no menu principal
-- Adicionar uma nova página dedicada ao simulador de produto.
-- Fluxo principal:
-  - cliente informa NCM;
-  - informa opcionalmente descrição, valor do produto e regime diferenciado;
-  - sistema avalia enquadramento;
-  - retorna alíquota estimada e cronograma de descontinuidade dos tributos atuais.
-- O resultado deve mostrar, no mínimo:
-  - alíquota estimada de CBS;
-  - alíquota estimada de IBS;
-  - alíquota total prevista;
-  - manutenção/extinção de PIS, COFINS, IPI, ICMS e ISS por ano;
-  - observações sobre IPI/ZFM quando aplicável;
-  - alertas de limitação quando o NCM não permitir enquadramento confiável.
+## 2. Inclusão opcional de IRPJ/CSLL na carga atual
 
-### 6. Reaproveitar e expandir o motor tributário
-- Extrair do motor atual funções menores para cálculo unitário por produto/NCM.
-- Aproveitar as regras já existentes de:
-  - cronograma 2026–2033;
-  - manutenção/extinção de tributos;
-  - validação de NCM para IPI/ZFM;
-  - regimes diferenciados.
-- Criar uma saída específica para consulta rápida por produto, sem depender da simulação completa da empresa.
+### UX
+- Bloco "Tributação sobre o lucro (IRPJ/CSLL)" com switch "Incluir IRPJ/CSLL".
+- Campos por regime:
+  - **Lucro Presumido**: presunção comércio (default 8%) e serviços (default 32%). IRPJ 15% + adicional 10% sobre lucro presumido acima de R$ 240.000/ano. CSLL 9% sobre presunção 12% (comércio) / 32% (serviços).
+  - **Lucro Real**: campo "Lucro tributável anual estimado (R$)". IRPJ 15% + adicional 10% (acima de R$ 240k) e CSLL 9%.
+  - **Simples Nacional**: opção desabilitada com aviso ("já incluídos no DAS").
 
-### 7. Ajustar permissões para clientes operarem o que é da própria empresa
-- Revisar as políticas de acesso para garantir que o cliente possa:
-  - visualizar seus dados;
-  - acessar suas simulações;
-  - usar checklist da própria empresa;
-  - eventualmente registrar observações/checks, se esse for o comportamento esperado da tela principal.
-- Manter o isolamento total entre empresas pelo vínculo existente.
+### Motor
+- Estender `EmpresaInput` com `irpj_csll: { incluir, presuncao_comercio?, presuncao_servicos?, lucro_real_anual? }`.
+- Função `calcularIrpjCsllAnual(...)` retornando `{ irpj, csll }`.
+- Estender `DetalheTributoAtual` com `irpj` e `csll`, somando ao `total`.
+- IRPJ/CSLL **constantes em todos os anos** (a reforma do consumo não os afeta).
 
-### 8. Refinar a tela de simulações para perfil cliente
-- Simplificar a página atual do simulador completo para clientes:
-  - pré-selecionar automaticamente a empresa vinculada;
-  - remover seleção de empresa quando houver apenas uma empresa permitida;
-  - manter histórico apenas da própria empresa.
-- Staff continua com capacidade de simular qualquer empresa permitida pelo papel.
+---
 
-### 9. Ajustes de UX
-- Melhorar a hierarquia visual do menu e dos atalhos principais.
-- Destacar claramente em cada tela qual empresa está sendo consultada.
-- Reduzir cliques para cliente chegar em:
-  - checklist;
-  - dados da empresa;
-  - simulações;
-  - consulta por NCM.
+## 3. Seleção de anos da simulação
 
-## Arquivos e áreas afetadas
-- `src/components/AppSidebar.tsx`
-- `src/routes/_authenticated.tsx`
-- `src/routes/_authenticated/empresas.index.tsx`
-- `src/routes/_authenticated/empresas.$empresaId.tsx`
-- `src/routes/_authenticated/simulador.tsx`
-- `src/lib/tax-engine.ts`
-- novo hook/helper para resolver empresa do usuário autenticado
-- novas rotas dedicadas para:
-  - checklist principal
-  - minha empresa
-  - simulador por NCM
-- possível migration para ajustar permissões do checklist, se necessário
+### UX
+- Novo bloco "Anos a simular" no card de parâmetros, com:
+  - Conjunto de checkboxes (toggles) para 2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033.
+  - Atalhos: "Selecionar todos", "Limpar", e presets "Transição (2026–2028)", "Pleno (2033)".
+  - Validação: pelo menos 1 ano selecionado para habilitar o botão "Simular".
+
+### Motor
+- Adicionar `anos_selecionados?: number[]` em `SimulacaoInput` (default = todos os anos do cronograma).
+- Em `executarSimulacao`, filtrar `CRONOGRAMA_TRANSICAO` pelos anos escolhidos antes do loop.
+- Recalcular `carga_atual_anual` / `carga_nova_anual` apenas para o escopo escolhido — manter os valores brutos "100%" como referência separada para o cabeçalho.
+
+### UI / Resultado
+- Gráficos, tabela e PDF passam a renderizar somente os anos selecionados.
+- "Variação em 2033" passa a ser "Variação no último ano simulado" (rótulo dinâmico).
+- Cabeçalho do PDF identifica o intervalo simulado.
+
+---
+
+## 4. Exibição dos novos valores
+
+### Página Simulador (`src/routes/_authenticated/simulador.tsx`)
+- Card "Carga Atual": linha extra "IRPJ/CSLL" quando incluído.
+- Tabela "Detalhamento por Ano": coluna condicional "IRPJ/CSLL".
+- Gráfico "Tributos Brutos": novas barras "IRPJ" e "CSLL" no stack atual (cores `chart-6/7` em `src/styles.css` se não existirem).
+- `escopo = somente_cbs`: oculta barra/coluna "IBS".
+- Tudo respeita os anos selecionados.
+
+### Relatório PDF (`src/lib/relatorio-pdf.ts`)
+- Colunas IRPJ/CSLL na composição anual.
+- Cabeçalho com escopo escolhido, status IRPJ/CSLL e lista dos anos simulados.
+
+---
+
+## 5. Persistência
+- `simulacoes.parametros` já é JSON livre — `escopo_reforma`, `irpj_csll` e `anos_selecionados` entram sem migration.
+
+---
 
 ## Detalhes técnicos
-- A navegação do cliente passará a ser orientada por contexto da empresa vinculada, não pela lista completa de empresas.
-- O novo simulador por NCM será uma consulta rápida e independente da simulação completa, mas reutilizará o mesmo cronograma tributário já existente no motor.
-- O comportamento de IPI continuará considerando a validação especial por NCM/ZFM já implementada.
-- Caso o cliente deva marcar o checklist diretamente, será necessário ajustar a política de acesso do checklist para permitir atualização apenas na própria empresa vinculada.
+- **Arquivos editados**: `src/lib/tax-engine.ts`, `src/routes/_authenticated/simulador.tsx`, `src/lib/relatorio-pdf.ts`, possivelmente `src/styles.css`.
+- **Sem migrations**.
+- **Compatibilidade**: defaults preservam o comportamento atual (CBS+IBS, IRPJ/CSLL off, todos os anos).
+
+---
 
 ## Resultado esperado
-- Cliente entra no sistema e vê apenas conteúdos da própria empresa.
-- Checklist passa a ser acessível diretamente no menu principal.
-- Existe um novo simulador de produto por NCM no menu principal.
-- O sistema retorna a alíquota prevista e mostra, ano a ano, quais tributos deixam de incidir ou permanecem aplicáveis.
+- Usuário roda a simulação com "Somente CBS" para isolar o impacto federal.
+- Ativa IRPJ/CSLL e visualiza a tributação federal total no card de carga atual, na tabela anual e no PDF.
+- Escolhe os anos (ex.: só 2026–2028) e gráficos/tabela/PDF passam a refletir somente esse intervalo.
