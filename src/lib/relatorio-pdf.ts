@@ -10,7 +10,22 @@ const regimeTributarioLabels: Record<string, string> = {
   lucro_real: "Lucro Real",
 };
 
-export async function gerarRelatorioPDF(resultado: ResultadoSimulacao): Promise<void> {
+export interface RelatorioContextoProduto {
+  tipo: "produto";
+  ncm: string;
+  descricao: string;
+  regime: string;
+  valor_mensal: number;
+  aliquotas_atuais: { pis: number; cofins: number; ipi: number; icms: number };
+  insumos_anuais: number;
+}
+
+export type RelatorioContexto = RelatorioContextoProduto;
+
+export async function gerarRelatorioPDF(
+  resultado: ResultadoSimulacao,
+  contexto?: RelatorioContexto
+): Promise<void> {
   const { default: jsPDF } = await import("jspdf");
   const autoTable = (await import("jspdf-autotable")).default;
 
