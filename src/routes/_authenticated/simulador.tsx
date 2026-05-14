@@ -244,6 +244,8 @@ function SimuladorPage() {
         produtos: produtosInput,
         servicos: servicosInput,
         creditos: creditosInput,
+        escopo_reforma: escopoReforma,
+        anos_selecionados: anosSelecionados.length > 0 ? anosSelecionados : undefined,
       };
 
       const res = executarSimulacao(input);
