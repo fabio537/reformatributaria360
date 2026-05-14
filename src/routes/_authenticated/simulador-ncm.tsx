@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { AlertTriangle, BadgePercent, PackageSearch, Calculator } from "lucide-react";
+import { AlertTriangle, BadgePercent, PackageSearch, Calculator, Plus, Trash2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,7 +23,43 @@ import {
 } from "@/lib/tax-engine";
 import { formatCurrency } from "@/lib/format";
 import { SimulacaoResultado } from "@/components/SimulacaoResultado";
+import { CurrencyInput } from "@/components/CurrencyInput";
+
 import { toast } from "sonner";
+
+/** Aceita "10000", "10.000", "10000,50", "10.000,50" e retorna number. */
+function parseNumBR(v: string | number | null | undefined): number {
+  if (v === null || v === undefined) return 0;
+  if (typeof v === "number") return Number.isFinite(v) ? v : 0;
+  const s = String(v).trim();
+  if (!s) return 0;
+  // Se tem vírgula, assume formato BR: remove pontos, troca vírgula por ponto
+  const norm = s.includes(",") ? s.replace(/\./g, "").replace(",", ".") : s.replace(/\.(?=\d{3}(\D|$))/g, "");
+  const n = Number(norm);
+  return Number.isFinite(n) ? n : 0;
+}
+
+type CreditoLinha = {
+  id: string;
+  fornecedor: string;
+  valor_mensal: string;
+  regime_diferenciado_fornecedor: RegimeDiferenciado;
+  aliquota_icms: string;
+  aliquota_pis: string;
+  aliquota_cofins: string;
+  aliquota_ipi: string;
+};
+
+const novaCreditoLinha = (): CreditoLinha => ({
+  id: Math.random().toString(36).slice(2),
+  fornecedor: "",
+  valor_mensal: "",
+  regime_diferenciado_fornecedor: "padrao",
+  aliquota_icms: "",
+  aliquota_pis: "",
+  aliquota_cofins: "",
+  aliquota_ipi: "",
+});
 
 export const Route = createFileRoute("/_authenticated/simulador-ncm")({
   head: () => ({
@@ -289,6 +325,14 @@ function SimulacaoCompletaProdutoTab() {
   const [escopoReforma, setEscopoReforma] = useState<EscopoReforma>("cbs_ibs");
   const [anosSelecionados, setAnosSelecionados] = useState<number[]>(ANOS_CRONOGRAMA);
 
+  // Créditos de aquisição (insumos / mercadorias compradas)
+  const [creditos, setCreditos] = useState<CreditoLinha[]>([]);
+
+  const addCredito = () => setCreditos((prev) => [...prev, novaCreditoLinha()]);
+  const removeCredito = (id: string) => setCreditos((prev) => prev.filter((c) => c.id !== id));
+  const updateCredito = (id: string, patch: Partial<CreditoLinha>) =>
+    setCreditos((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+
   const [resultado, setResultado] = useState<ResultadoSimulacao | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -297,8 +341,8 @@ function SimulacaoCompletaProdutoTab() {
     setLoading(true);
 
     try {
-      const valorMensalNum = Number(valorMensal) || 0;
-      const fatAnualNum = Number(faturamentoAnual) || valorMensalNum * 12;
+      const valorMensalNum = parseNumBR(valorMensal);
+      const fatAnualNum = parseNumBR(faturamentoAnual) || valorMensalNum * 12;
 
       const input: SimulacaoInput = {
         empresa: {
@@ -316,20 +360,32 @@ function SimulacaoCompletaProdutoTab() {
             descricao: descricao || "Produto",
             ncm,
             valor_mensal: valorMensalNum,
-            quantidade_mensal: Number(quantidadeMensal) || 0,
+            quantidade_mensal: parseNumBR(quantidadeMensal),
             regime_diferenciado: regimeDif,
             tipo_operacao: tipoOperacao,
             destino_operacao: destinoOperacao,
             sujeito_imposto_seletivo: sujeitoIS,
-            aliquota_is: Number(aliquotaIS) || 0,
-            aliquota_ipi: Number(aliquotaIpi) || 0,
-            aliquota_pis: Number(aliquotaPis) || 0,
-            aliquota_cofins: Number(aliquotaCofins) || 0,
-            aliquota_icms: Number(aliquotaIcms) || 0,
+            aliquota_is: parseNumBR(aliquotaIS),
+            aliquota_ipi: parseNumBR(aliquotaIpi),
+            aliquota_pis: parseNumBR(aliquotaPis),
+            aliquota_cofins: parseNumBR(aliquotaCofins),
+            aliquota_icms: parseNumBR(aliquotaIcms),
           },
         ],
         servicos: [],
-        creditos: [],
+        creditos: creditos
+          .filter((c) => parseNumBR(c.valor_mensal) > 0)
+          .map((c) => ({
+            fornecedor: c.fornecedor || "Fornecedor",
+            descricao: null,
+            ncm: null,
+            valor_mensal: parseNumBR(c.valor_mensal),
+            regime_diferenciado_fornecedor: c.regime_diferenciado_fornecedor,
+            aliquota_ipi: parseNumBR(c.aliquota_ipi),
+            aliquota_pis: parseNumBR(c.aliquota_pis),
+            aliquota_cofins: parseNumBR(c.aliquota_cofins),
+            aliquota_icms: parseNumBR(c.aliquota_icms),
+          })),
         escopo_reforma: escopoReforma,
         anos_selecionados: anosSelecionados.length > 0 ? anosSelecionados : undefined,
       };
@@ -428,7 +484,7 @@ function SimulacaoCompletaProdutoTab() {
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               <div className="space-y-2">
                 <Label>Valor mensal (R$) *</Label>
-                <Input value={valorMensal} onChange={(e) => setValorMensal(e.target.value)} inputMode="decimal" />
+                <CurrencyInput value={valorMensal} onValueChange={setValorMensal} />
               </div>
               <div className="space-y-2">
                 <Label>Quantidade mensal</Label>
@@ -471,11 +527,10 @@ function SimulacaoCompletaProdutoTab() {
               </div>
               <div className="space-y-2">
                 <Label>Faturamento anual (R$)</Label>
-                <Input
+                <CurrencyInput
                   value={faturamentoAnual}
-                  onChange={(e) => setFaturamentoAnual(e.target.value)}
-                  inputMode="decimal"
-                  placeholder={`Padrão: valor mensal × 12 = ${formatCurrency((Number(valorMensal) || 0) * 12)}`}
+                  onValueChange={setFaturamentoAnual}
+                  placeholder={`Padrão: valor mensal × 12 = ${formatCurrency(parseNumBR(valorMensal) * 12)}`}
                 />
               </div>
             </div>
@@ -534,6 +589,76 @@ function SimulacaoCompletaProdutoTab() {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Aquisições que geram crédito */}
+          <div className="space-y-3 border rounded-lg p-4">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <h3 className="text-sm font-semibold">Aquisições que geram crédito</h3>
+                <p className="text-xs text-muted-foreground">
+                  Insumos / mercadorias compradas para obter este produto. Geram crédito de ICMS, PIS/COFINS, IPI (regime atual) e CBS/IBS (regime novo, conforme o regime do fornecedor).
+                </p>
+              </div>
+              <Button type="button" size="sm" variant="outline" onClick={addCredito}>
+                <Plus className="h-4 w-4 mr-1" /> Adicionar aquisição
+              </Button>
+            </div>
+
+            {creditos.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">Nenhuma aquisição informada — créditos serão considerados zero.</p>
+            ) : (
+              <div className="space-y-3">
+                {creditos.map((c) => (
+                  <div key={c.id} className="grid gap-2 md:grid-cols-12 items-end border rounded-md p-3 bg-muted/20">
+                    <div className="md:col-span-3 space-y-1">
+                      <Label className="text-xs">Fornecedor</Label>
+                      <Input value={c.fornecedor} onChange={(e) => updateCredito(c.id, { fornecedor: e.target.value })} placeholder="Fornecedor X" />
+                    </div>
+                    <div className="md:col-span-2 space-y-1">
+                      <Label className="text-xs">Valor mensal (R$)</Label>
+                      <CurrencyInput value={c.valor_mensal} onValueChange={(v) => updateCredito(c.id, { valor_mensal: v })} />
+                    </div>
+                    <div className="md:col-span-2 space-y-1">
+                      <Label className="text-xs">Regime fornecedor</Label>
+                      <Select
+                        value={c.regime_diferenciado_fornecedor}
+                        onValueChange={(v) => updateCredito(c.id, { regime_diferenciado_fornecedor: v as RegimeDiferenciado })}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="padrao">Padrão (100%)</SelectItem>
+                          <SelectItem value="reducao_30">Redução 30%</SelectItem>
+                          <SelectItem value="reducao_60">Redução 60%</SelectItem>
+                          <SelectItem value="aliquota_zero">Alíquota zero</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="md:col-span-1 space-y-1">
+                      <Label className="text-xs">ICMS %</Label>
+                      <Input inputMode="decimal" value={c.aliquota_icms} onChange={(e) => updateCredito(c.id, { aliquota_icms: e.target.value })} />
+                    </div>
+                    <div className="md:col-span-1 space-y-1">
+                      <Label className="text-xs">PIS %</Label>
+                      <Input inputMode="decimal" value={c.aliquota_pis} onChange={(e) => updateCredito(c.id, { aliquota_pis: e.target.value })} />
+                    </div>
+                    <div className="md:col-span-1 space-y-1">
+                      <Label className="text-xs">COFINS %</Label>
+                      <Input inputMode="decimal" value={c.aliquota_cofins} onChange={(e) => updateCredito(c.id, { aliquota_cofins: e.target.value })} />
+                    </div>
+                    <div className="md:col-span-1 space-y-1">
+                      <Label className="text-xs">IPI %</Label>
+                      <Input inputMode="decimal" value={c.aliquota_ipi} onChange={(e) => updateCredito(c.id, { aliquota_ipi: e.target.value })} />
+                    </div>
+                    <div className="md:col-span-1 flex justify-end">
+                      <Button type="button" variant="ghost" size="icon" onClick={() => removeCredito(c.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Cenário da reforma */}
