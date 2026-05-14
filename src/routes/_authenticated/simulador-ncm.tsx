@@ -446,6 +446,7 @@ function SimulacaoCompletaProdutoTab() {
         descricao: descricao || `Produto NCM ${ncm}`,
         regime: regimeTrib,
         valor_mensal: parseNumBR(valorMensal),
+        quantidade_mensal: parseNumBR(quantidadeMensal),
         aliquotas_atuais: {
           pis: parseNumBR(aliquotaPis),
           cofins: parseNumBR(aliquotaCofins),
@@ -730,20 +731,36 @@ function SimulacaoCompletaProdutoTab() {
             resultado={resultado}
             valorMensalProduto={parseNumBR(valorMensal)}
             insumosMensaisBruto={insumosMensaisBruto}
+            quantidadeMensal={parseNumBR(quantidadeMensal)}
           />
-          <SimulacaoResultado
-            resultado={resultado}
-            escopoSomenteCbs={apenasCbs}
-            pdfContexto={pdfContexto}
-            onSalvar={linkedEmpresa.empresaId ? salvarSimulacao : undefined}
-            salvando={saving}
-            salvado={!!simulacaoSalvaId}
-          />
-          {!linkedEmpresa.empresaId && (
-            <p className="text-xs text-muted-foreground text-right">
-              Vincule uma empresa para salvar esta simulação no histórico.
-            </p>
-          )}
+
+          <details className="group rounded-lg border bg-muted/20">
+            <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between hover:bg-muted/40 transition-colors">
+              <div>
+                <h3 className="text-sm font-semibold">Visão anual consolidada (referência)</h3>
+                <p className="text-xs text-muted-foreground">
+                  Totais anuais do item, gráficos por tributo e ações de salvar/PDF.
+                </p>
+              </div>
+              <span className="text-xs text-muted-foreground group-open:hidden">Expandir ▾</span>
+              <span className="text-xs text-muted-foreground hidden group-open:inline">Recolher ▴</span>
+            </summary>
+            <div className="p-4 pt-2">
+              <SimulacaoResultado
+                resultado={resultado}
+                escopoSomenteCbs={apenasCbs}
+                pdfContexto={pdfContexto}
+                onSalvar={linkedEmpresa.empresaId ? salvarSimulacao : undefined}
+                salvando={saving}
+                salvado={!!simulacaoSalvaId}
+              />
+              {!linkedEmpresa.empresaId && (
+                <p className="text-xs text-muted-foreground text-right mt-2">
+                  Vincule uma empresa para salvar esta simulação no histórico.
+                </p>
+              )}
+            </div>
+          </details>
         </>
       )}
     </div>

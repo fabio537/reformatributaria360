@@ -1,66 +1,60 @@
 
 ## Objetivo
 
-Tornar a aba **"Simulação completa do produto"** (em `/simulador-ncm`) uma simulação focada **no item** — alíquotas efetivas, carga por unidade, variação por produto, e **margem após impostos e insumos** — com a possibilidade de **salvar no histórico da empresa**, **gerar dashboard** e **relatório PDF** específicos do produto.
+Na **Simulação completa do produto** (`/simulador-ncm` → aba "Simulação completa do produto"), o foco da apresentação deve ser o **resultado tributário e econômico do item** — alíquotas efetivas, carga por unidade, margem unitária e variação percentual ao longo da transição — e **não** os valores anualizados de faturamento e carga.
+
+Os totais anuais continuam sendo calculados internamente (o motor precisa deles para DAS, IRPJ/CSLL etc. e para o PDF), mas **deixam de ser o destaque visual**.
 
 ## Mudanças
 
-### 1. Refoco da simulação no produto (não no faturamento da empresa)
+### 1. Novo painel "Resultado por item" — substitui `SimulacaoProdutoResultado`
 
-Em `src/routes/_authenticated/simulador-ncm.tsx`, na aba "Simulação completa do produto":
+Reescrever `src/components/SimulacaoProdutoResultado.tsx` para apresentar tudo em base **unitária e percentual**, considerando o ano-base (primeiro ano simulado) e o ano-alvo (último ano simulado, normalmente 2033):
 
-- **Remover** os campos hoje voltados ao todo da empresa: `faturamento anual`, configuração de IRPJ/CSLL e a noção de "regime da empresa".
-- **Manter apenas o regime tributário aplicável ao produto** (Simples Nacional / Lucro Presumido / Lucro Real) — afeta DAS vs PIS/COFINS/ICMS/IPI no cálculo do item.
-- Para Simples Nacional, derivar `faturamento_anual` do próprio item (`valor_mensal * 12`) — assim a alíquota DAS reflete o item isoladamente. Adicionar nota explicativa.
-- Os créditos de aquisição passam a ser apresentados como **"Insumos/aquisições vinculados a este produto"**, mantendo a estrutura atual.
+**Quatro KPIs (ano-alvo):**
+- **Preço de venda do item** (R$/unid.) — `valor_mensal / quantidade_mensal`. Quando `quantidade_mensal = 0`, exibir como "por operação" usando `valor_mensal` cheio.
+- **Carga tributária do item** (R$/unid. e % sobre o preço) — `carga_total_ano / (quantidade_mensal × 12)`.
+- **Insumos por item** (R$/unid., líquido de créditos) — `(insumos_brutos − créditos) / (quantidade × 12)`.
+- **Margem por item** (R$/unid. e % sobre o preço) — `preço − carga_unit − insumos_unit`.
 
-### 2. Painel "Resultado por produto" (margem)
+Cada KPI mostra a **variação vs. ano-base** em pontos percentuais (alíquota efetiva) e em R$/unid. (margem). Ícones de tendência (`TrendingUp`/`Down`) com cor semântica.
 
-Criar `src/components/SimulacaoProdutoResultado.tsx`, exibido **acima** do `<SimulacaoResultado />` quando há resultado:
+**Gráfico principal — "Alíquota efetiva sobre o item" (linha, %):**
+- Eixo Y em **%** (carga_total / venda).
+- Linhas: "Tributos atuais (efetivo)", "IBS/CBS (efetivo)", "Carga total efetiva".
+- Permite ver a curva de migração ao longo de 2026–2033 sem depender da escala em R$.
 
-Para cada ano simulado (e em destaque para o último ano):
-- **Valor de venda** — receita anual do item (`valor_mensal × 12`, ou com IPI somado quando aplicável, conforme já é feito no engine).
-- **Impostos** — carga total líquida do item naquele ano (`carga_total` do `ResultadoAno`).
-- **Insumos** — soma das aquisições vinculadas (`Σ valor_mensal × 12`) **líquida dos créditos** do ano (créditos atuais + IBS/CBS), refletindo o custo real de insumos.
-- **Margem após Impostos e Insumos diretos** — `Valor de venda − Impostos − Insumos líquidos`, em R$ e em % sobre o valor de venda.
+**Gráfico secundário — "Composição do preço unitário" (barras empilhadas, R$/unid.):**
+- Para cada ano: Margem · Insumos (líq.) · Impostos.
+- Fica claro qual fatia do preço unitário é tributo, insumo e margem em cada ano.
 
-Visual:
-- Quatro cartões de KPI no topo (valores do **último ano simulado**) com setas de variação contra o ano-base.
-- Tabela ano a ano com as colunas: Ano · Valor de venda · Impostos · Insumos (líq.) · Margem (R$) · Margem (%).
-- Mini-gráfico de linha mostrando a margem ao longo do cronograma.
+**Tabela ano a ano (por unidade / %):**
+| Ano | Fase | Preço (R$/unid.) | Impostos (R$/unid.) | Alíq. efetiva | Insumos (R$/unid.) | Margem (R$/unid.) | Margem (%) | Δ Margem vs base |
 
-Reaproveitar o `<SimulacaoResultado />` existente para o restante do dashboard (gráficos e detalhamento por tributo).
+Remover do painel as colunas/cards que mostram totais anuais brutos do produto (Valor de venda anual, Impostos anuais R$ etc.). Esses dados continuam aparecendo no `<SimulacaoResultado />` abaixo, agora rotulado como "Visão anual consolidada (referência)".
 
-### 3. Salvar no histórico da empresa
+### 2. Pequenos ajustes de UX em `simulador-ncm.tsx`
 
-- Importar `useLinkedEmpresa` e `useAuth`, e usar `supabase.from("simulacoes").insert(...)` no mesmo padrão de `simulador.tsx`.
-- Marcar o registro incluindo no `parametros` JSON: `tipo: "produto_ncm"`, `produto: { ncm, descricao }`.
-- `nome`: `"Produto NCM <ncm> — <descricao> — <data>"`.
-- Passar `onSalvar`/`salvando`/`salvado` ao `<SimulacaoResultado />` (props já existentes).
-- Sem empresa vinculada → botão Salvar desabilitado com tooltip explicativo.
-- Histórico aparece automaticamente em `empresas.$empresaId.tsx` / `dashboard.tsx`.
+- Tornar `quantidade_mensal` o input principal junto a `valor_mensal` (mesmo bloco "Valores e alíquotas atuais"), com texto de apoio: *"Necessário para calcular preço unitário, carga por unidade e margem por item."* Se ficar em 0, o painel cai para modo "por operação".
+- Reordenar a tela de resultado para colocar `<SimulacaoProdutoResultado />` como destaque e o `<SimulacaoResultado />` recolhido em um `<details>`/seção secundária com o título *"Visão anual consolidada (referência)"*.
+- Sem mudança no `executarSimulacao`, no `tax-engine.ts` ou em migrações.
 
-### 4. Relatório PDF do produto
+### 3. PDF do produto
 
-Em `src/lib/relatorio-pdf.ts`, adicionar parâmetro opcional `contexto?: { tipo: "produto"; ncm: string; descricao: string; insumosAnuais: number }`:
-
-- Título → **"Relatório de Simulação por Produto"**.
-- Substituir "Dados da Empresa" por **"Identificação do Produto"** (NCM, descrição, regime, valor mensal, alíquotas atuais).
-- Adicionar nova seção **"Resultado financeiro por ano"** com Valor de venda · Impostos · Insumos (líq.) · Margem (R$) · Margem (%).
-- Manter as seções existentes de resumo, detalhamento anual e composição tributária.
-
-Em `SimulacaoResultado.tsx`, aceitar prop opcional `pdfContexto` repassada para `gerarRelatorioPDF`.
+Em `src/lib/relatorio-pdf.ts`, quando `contexto.tipo === "produto"`:
+- Antes da seção atual "Resultado Financeiro por Ano", inserir **"Resultado por item"** com Preço unitário · Carga unit. · Alíq. efetiva · Insumos unit. · Margem unit. · Margem %.
+- Manter as seções subsequentes como referência anual.
+- Adicionar `quantidade_mensal` ao `RelatorioContextoProduto` (campo opcional). Em `simulador-ncm.tsx`, repassar `quantidade_mensal` ao montar o `pdfContexto`.
 
 ## Detalhes técnicos
 
-- Nenhuma alteração no `tax-engine.ts`. O motor já trabalha com 1 produto e os créditos por ano já vêm em `ResultadoAno.creditos`.
-- Nenhuma migração de banco — `simulacoes.parametros` e `simulacoes.resultados` são `jsonb`.
-- Cálculo da margem fica no front (componente novo), a partir de `ResultadoSimulacao` + total de insumos brutos informados.
-- A consulta rápida (Aba 1) **não muda**.
+- Cálculos por unidade ficam todos no front (`SimulacaoProdutoResultado.tsx` e `relatorio-pdf.ts`), derivando de `ResultadoSimulacao.anos[].carga_total`, `creditos` e do `valor_mensal` / `quantidade_mensal` informados.
+- Alíquota efetiva = `carga_total / (valor_mensal × 12)` — invariante a unidades, então funciona mesmo quando `quantidade_mensal = 0`.
+- Quando `quantidade_mensal = 0`, os KPIs e a tabela exibem "R$ / operação" (usando `valor_mensal`) em vez de "R$ / unidade", e o card de preço unitário muda o rótulo. Sem branch novo no engine.
+- Nenhum campo novo no banco; `parametros` JSON já carrega `quantidade_mensal`.
 
 ## Arquivos
 
-- editar `src/routes/_authenticated/simulador-ncm.tsx`
-- criar `src/components/SimulacaoProdutoResultado.tsx`
-- editar `src/components/SimulacaoResultado.tsx` (prop `pdfContexto`)
-- editar `src/lib/relatorio-pdf.ts` (parâmetro `contexto`)
+- editar `src/components/SimulacaoProdutoResultado.tsx` (reescrita do painel)
+- editar `src/routes/_authenticated/simulador-ncm.tsx` (destaque do painel + repassar `quantidade_mensal` ao PDF)
+- editar `src/lib/relatorio-pdf.ts` (nova seção "Resultado por item" + campo opcional `quantidade_mensal`)
