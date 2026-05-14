@@ -16,6 +16,8 @@ export interface RelatorioContextoProduto {
   descricao: string;
   regime: string;
   valor_mensal: number;
+  /** Quantidade mensal vendida. Se 0/omitido, o relatório usa modo "por operação". */
+  quantidade_mensal?: number;
   aliquotas_atuais: { pis: number; cofins: number; ipi: number; icms: number };
   insumos_anuais: number;
 }
