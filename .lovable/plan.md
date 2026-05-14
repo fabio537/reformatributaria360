@@ -1,110 +1,66 @@
+
 ## Objetivo
 
-Adicionar, na página **Simulador por NCM**, uma segunda aba — **"Simulação completa do produto"** — que executa o mesmo motor da Simulação Geral (`executarSimulacao`) só que para **um único produto**, devolvendo resumo, tabela ano a ano, gráfico, alertas e PDF — no mesmo formato da Simulação Geral.
+Tornar a aba **"Simulação completa do produto"** (em `/simulador-ncm`) uma simulação focada **no item** — alíquotas efetivas, carga por unidade, variação por produto, e **margem após impostos e insumos** — com a possibilidade de **salvar no histórico da empresa**, **gerar dashboard** e **relatório PDF** específicos do produto.
 
-A aba já existente vira **"Consulta rápida por NCM"** (alíquotas + cronograma de tributos), sem alterações.
+## Mudanças
 
----
+### 1. Refoco da simulação no produto (não no faturamento da empresa)
 
-## UX
+Em `src/routes/_authenticated/simulador-ncm.tsx`, na aba "Simulação completa do produto":
 
-### Estrutura da página `simulador-ncm.tsx`
-Envolver o conteúdo atual em um `Tabs` (shadcn):
+- **Remover** os campos hoje voltados ao todo da empresa: `faturamento anual`, configuração de IRPJ/CSLL e a noção de "regime da empresa".
+- **Manter apenas o regime tributário aplicável ao produto** (Simples Nacional / Lucro Presumido / Lucro Real) — afeta DAS vs PIS/COFINS/ICMS/IPI no cálculo do item.
+- Para Simples Nacional, derivar `faturamento_anual` do próprio item (`valor_mensal * 12`) — assim a alíquota DAS reflete o item isoladamente. Adicionar nota explicativa.
+- Os créditos de aquisição passam a ser apresentados como **"Insumos/aquisições vinculados a este produto"**, mantendo a estrutura atual.
 
-```text
-┌──────────────────────────────────────────────────────────────┐
-│ Simulador por NCM                                            │
-├──────────────────────────────────────────────────────────────┤
-│ [ Consulta rápida ] [ Simulação completa do produto ]        │
-└──────────────────────────────────────────────────────────────┘
-```
+### 2. Painel "Resultado por produto" (margem)
 
-### Aba "Simulação completa do produto"
+Criar `src/components/SimulacaoProdutoResultado.tsx`, exibido **acima** do `<SimulacaoResultado />` quando há resultado:
 
-Card de parâmetros (mesma linguagem visual do simulador geral):
+Para cada ano simulado (e em destaque para o último ano):
+- **Valor de venda** — receita anual do item (`valor_mensal × 12`, ou com IPI somado quando aplicável, conforme já é feito no engine).
+- **Impostos** — carga total líquida do item naquele ano (`carga_total` do `ResultadoAno`).
+- **Insumos** — soma das aquisições vinculadas (`Σ valor_mensal × 12`) **líquida dos créditos** do ano (créditos atuais + IBS/CBS), refletindo o custo real de insumos.
+- **Margem após Impostos e Insumos diretos** — `Valor de venda − Impostos − Insumos líquidos`, em R$ e em % sobre o valor de venda.
 
-1. **Identificação do produto**
-   - NCM, descrição, regime diferenciado, tipo de operação, destino, IS + alíquota IS.
-2. **Valores e alíquotas atuais**
-   - Valor mensal (R$), quantidade mensal.
-   - Alíquotas atuais: PIS, COFINS, IPI, ICMS.
-3. **Cenário da empresa (sintético)**
-   - Regime tributário (Simples / Presumido / Real).
-   - Faturamento anual (default = `valor_mensal × 12`, editável — necessário para faixa do Simples e nota de IPI sem inclusão).
-   - Toggle IRPJ/CSLL com mesmas opções da simulação geral.
-4. **Cenário da reforma**
-   - RadioGroup escopo: CBS+IBS / Somente CBS.
-   - Checkboxes de anos (2026–2033) com mesmos presets.
+Visual:
+- Quatro cartões de KPI no topo (valores do **último ano simulado**) com setas de variação contra o ano-base.
+- Tabela ano a ano com as colunas: Ano · Valor de venda · Impostos · Insumos (líq.) · Margem (R$) · Margem (%).
+- Mini-gráfico de linha mostrando a margem ao longo do cronograma.
 
-Botão **"Simular produto"** habilita quando NCM + valor estiverem preenchidos.
+Reaproveitar o `<SimulacaoResultado />` existente para o restante do dashboard (gráficos e detalhamento por tributo).
 
-### Resultado (mesmo formato da Simulação Geral)
-- Card de resumo: carga atual anual, carga nova anual em 2033, variação no último ano, créditos.
-- Tabela "Detalhamento por Ano" (PIS, COFINS, IPI, ICMS, IRPJ, CSLL, CBS, IBS, IS, créditos, carga total, variação).
-- Gráfico de barras empilhadas (mesmo do simulador geral).
-- Lista de alertas.
-- Botão **"Baixar PDF"** reutilizando `gerarRelatorioPDF`.
+### 3. Salvar no histórico da empresa
 
----
+- Importar `useLinkedEmpresa` e `useAuth`, e usar `supabase.from("simulacoes").insert(...)` no mesmo padrão de `simulador.tsx`.
+- Marcar o registro incluindo no `parametros` JSON: `tipo: "produto_ncm"`, `produto: { ncm, descricao }`.
+- `nome`: `"Produto NCM <ncm> — <descricao> — <data>"`.
+- Passar `onSalvar`/`salvando`/`salvado` ao `<SimulacaoResultado />` (props já existentes).
+- Sem empresa vinculada → botão Salvar desabilitado com tooltip explicativo.
+- Histórico aparece automaticamente em `empresas.$empresaId.tsx` / `dashboard.tsx`.
 
-## Implementação
+### 4. Relatório PDF do produto
 
-### Reaproveitamento de componentes
-Hoje o resultado da Simulação Geral está inline em `src/routes/_authenticated/simulador.tsx`. Para evitar duplicação, **extrair o bloco de resultado** em um componente novo:
+Em `src/lib/relatorio-pdf.ts`, adicionar parâmetro opcional `contexto?: { tipo: "produto"; ncm: string; descricao: string; insumosAnuais: number }`:
 
-- `src/components/SimulacaoResultado.tsx` — recebe `resultado: ResultadoSimulacao`, opções de exibição (`mostrarIrpjCsll`, `escopoSomenteCbs`) e renderiza resumo + tabela + gráfico + alertas + botão PDF.
-- `simulador.tsx` passa a importar e usar esse componente.
-- A nova aba do simulador NCM usa o mesmo componente, garantindo paridade visual.
+- Título → **"Relatório de Simulação por Produto"**.
+- Substituir "Dados da Empresa" por **"Identificação do Produto"** (NCM, descrição, regime, valor mensal, alíquotas atuais).
+- Adicionar nova seção **"Resultado financeiro por ano"** com Valor de venda · Impostos · Insumos (líq.) · Margem (R$) · Margem (%).
+- Manter as seções existentes de resumo, detalhamento anual e composição tributária.
 
-### Construção do input
-Na nova aba, montar um `SimulacaoInput` sintético:
+Em `SimulacaoResultado.tsx`, aceitar prop opcional `pdfContexto` repassada para `gerarRelatorioPDF`.
 
-```ts
-const input: SimulacaoInput = {
-  empresa: {
-    razao_social: descricao || `Produto NCM ${ncm}`,
-    cnpj: "—",
-    regime_tributario,
-    uf: null, municipio: null,
-    faturamento_anual,
-    optante_simples_mei: regime_tributario === "simples_nacional",
-    irpj_csll,
-  },
-  produtos: [{
-    descricao, ncm,
-    valor_mensal, quantidade_mensal,
-    regime_diferenciado, tipo_operacao, destino_operacao,
-    sujeito_imposto_seletivo, aliquota_is,
-    aliquota_ipi, aliquota_pis, aliquota_cofins, aliquota_icms,
-  }],
-  servicos: [],
-  creditos: [],
-  escopo_reforma,
-  anos_selecionados,
-};
-const resultado = executarSimulacao(input);
-```
+## Detalhes técnicos
 
-### Nada novo no motor
-`executarSimulacao` já lida corretamente com 1 produto, sem serviços e sem créditos. Não precisa alterar `tax-engine.ts`.
+- Nenhuma alteração no `tax-engine.ts`. O motor já trabalha com 1 produto e os créditos por ano já vêm em `ResultadoAno.creditos`.
+- Nenhuma migração de banco — `simulacoes.parametros` e `simulacoes.resultados` são `jsonb`.
+- Cálculo da margem fica no front (componente novo), a partir de `ResultadoSimulacao` + total de insumos brutos informados.
+- A consulta rápida (Aba 1) **não muda**.
 
-### Persistência
-A simulação por produto é **transitória** (não salva em `simulacoes`). Botão "Salvar" não faz parte desta aba (o usuário usa a Simulação Geral para isso). Sem migrations.
+## Arquivos
 
----
-
-## Arquivos editados / criados
-
-- **Criar** `src/components/SimulacaoResultado.tsx` — bloco de resultado compartilhado.
-- **Editar** `src/routes/_authenticated/simulador.tsx` — substituir o bloco inline de resultado pelo novo componente.
-- **Editar** `src/routes/_authenticated/simulador-ncm.tsx` — envolver em `Tabs`, criar a aba "Simulação completa do produto" com formulário e resultado.
-
-Sem alterações em `tax-engine.ts`, `relatorio-pdf.ts` ou banco de dados.
-
----
-
-## Resultado esperado
-
-- O usuário entra em **/simulador-ncm**, vê duas abas.
-- A aba **"Consulta rápida"** continua exatamente como está hoje.
-- A aba **"Simulação completa do produto"** permite rodar a mesma simulação ano a ano que a Simulação Geral faz, mas para 1 produto isolado — útil para precificação, decisão de mix de produtos e para apresentar ao cliente o impacto de um SKU específico.
+- editar `src/routes/_authenticated/simulador-ncm.tsx`
+- criar `src/components/SimulacaoProdutoResultado.tsx`
+- editar `src/components/SimulacaoResultado.tsx` (prop `pdfContexto`)
+- editar `src/lib/relatorio-pdf.ts` (parâmetro `contexto`)
