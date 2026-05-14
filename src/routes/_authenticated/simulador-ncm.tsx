@@ -325,6 +325,14 @@ function SimulacaoCompletaProdutoTab() {
   const [escopoReforma, setEscopoReforma] = useState<EscopoReforma>("cbs_ibs");
   const [anosSelecionados, setAnosSelecionados] = useState<number[]>(ANOS_CRONOGRAMA);
 
+  // Créditos de aquisição (insumos / mercadorias compradas)
+  const [creditos, setCreditos] = useState<CreditoLinha[]>([]);
+
+  const addCredito = () => setCreditos((prev) => [...prev, novaCreditoLinha()]);
+  const removeCredito = (id: string) => setCreditos((prev) => prev.filter((c) => c.id !== id));
+  const updateCredito = (id: string, patch: Partial<CreditoLinha>) =>
+    setCreditos((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+
   const [resultado, setResultado] = useState<ResultadoSimulacao | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -333,8 +341,8 @@ function SimulacaoCompletaProdutoTab() {
     setLoading(true);
 
     try {
-      const valorMensalNum = Number(valorMensal) || 0;
-      const fatAnualNum = Number(faturamentoAnual) || valorMensalNum * 12;
+      const valorMensalNum = parseNumBR(valorMensal);
+      const fatAnualNum = parseNumBR(faturamentoAnual) || valorMensalNum * 12;
 
       const input: SimulacaoInput = {
         empresa: {
@@ -352,20 +360,32 @@ function SimulacaoCompletaProdutoTab() {
             descricao: descricao || "Produto",
             ncm,
             valor_mensal: valorMensalNum,
-            quantidade_mensal: Number(quantidadeMensal) || 0,
+            quantidade_mensal: parseNumBR(quantidadeMensal),
             regime_diferenciado: regimeDif,
             tipo_operacao: tipoOperacao,
             destino_operacao: destinoOperacao,
             sujeito_imposto_seletivo: sujeitoIS,
-            aliquota_is: Number(aliquotaIS) || 0,
-            aliquota_ipi: Number(aliquotaIpi) || 0,
-            aliquota_pis: Number(aliquotaPis) || 0,
-            aliquota_cofins: Number(aliquotaCofins) || 0,
-            aliquota_icms: Number(aliquotaIcms) || 0,
+            aliquota_is: parseNumBR(aliquotaIS),
+            aliquota_ipi: parseNumBR(aliquotaIpi),
+            aliquota_pis: parseNumBR(aliquotaPis),
+            aliquota_cofins: parseNumBR(aliquotaCofins),
+            aliquota_icms: parseNumBR(aliquotaIcms),
           },
         ],
         servicos: [],
-        creditos: [],
+        creditos: creditos
+          .filter((c) => parseNumBR(c.valor_mensal) > 0)
+          .map((c) => ({
+            fornecedor: c.fornecedor || "Fornecedor",
+            descricao: null,
+            ncm: null,
+            valor_mensal: parseNumBR(c.valor_mensal),
+            regime_diferenciado_fornecedor: c.regime_diferenciado_fornecedor,
+            aliquota_ipi: parseNumBR(c.aliquota_ipi),
+            aliquota_pis: parseNumBR(c.aliquota_pis),
+            aliquota_cofins: parseNumBR(c.aliquota_cofins),
+            aliquota_icms: parseNumBR(c.aliquota_icms),
+          })),
         escopo_reforma: escopoReforma,
         anos_selecionados: anosSelecionados.length > 0 ? anosSelecionados : undefined,
       };
