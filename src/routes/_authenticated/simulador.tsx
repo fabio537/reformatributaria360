@@ -843,6 +843,7 @@ function SimuladorPage() {
                     <th className="text-left py-2 px-2">Ano</th>
                     <th className="text-left py-2 px-2">Fase</th>
                     <th className="text-right py-2 px-2">Trib. Atuais</th>
+                    {incluiIrpjCsll && <th className="text-right py-2 px-2">IRPJ/CSLL</th>}
                     <th className="text-right py-2 px-2">IBS/CBS</th>
                     <th className="text-right py-2 px-2">Créditos</th>
                     <th className="text-right py-2 px-2">Carga Total</th>
@@ -857,6 +858,11 @@ function SimuladorPage() {
                         <Badge variant="outline" className="text-xs whitespace-nowrap">{a.fase}</Badge>
                       </td>
                       <td className="py-2 px-2 text-right tabular-nums">{formatBRL(a.tributos_atuais_bruto.total)}</td>
+                      {incluiIrpjCsll && (
+                        <td className="py-2 px-2 text-right tabular-nums">
+                          {formatBRL(a.tributos_atuais_bruto.irpj + a.tributos_atuais_bruto.csll)}
+                        </td>
+                      )}
                       <td className="py-2 px-2 text-right tabular-nums">{formatBRL(a.ibs_cbs_bruto.total)}</td>
                       <td className="py-2 px-2 text-right tabular-nums text-green-600">
                         -{formatBRL(a.creditos.creditos_atuais + a.creditos.creditos_ibs_cbs)}
