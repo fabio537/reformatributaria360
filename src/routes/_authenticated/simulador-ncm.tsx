@@ -591,6 +591,76 @@ function SimulacaoCompletaProdutoTab() {
             </div>
           </div>
 
+          {/* Aquisições que geram crédito */}
+          <div className="space-y-3 border rounded-lg p-4">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <h3 className="text-sm font-semibold">Aquisições que geram crédito</h3>
+                <p className="text-xs text-muted-foreground">
+                  Insumos / mercadorias compradas para obter este produto. Geram crédito de ICMS, PIS/COFINS, IPI (regime atual) e CBS/IBS (regime novo, conforme o regime do fornecedor).
+                </p>
+              </div>
+              <Button type="button" size="sm" variant="outline" onClick={addCredito}>
+                <Plus className="h-4 w-4 mr-1" /> Adicionar aquisição
+              </Button>
+            </div>
+
+            {creditos.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">Nenhuma aquisição informada — créditos serão considerados zero.</p>
+            ) : (
+              <div className="space-y-3">
+                {creditos.map((c) => (
+                  <div key={c.id} className="grid gap-2 md:grid-cols-12 items-end border rounded-md p-3 bg-muted/20">
+                    <div className="md:col-span-3 space-y-1">
+                      <Label className="text-xs">Fornecedor</Label>
+                      <Input value={c.fornecedor} onChange={(e) => updateCredito(c.id, { fornecedor: e.target.value })} placeholder="Fornecedor X" />
+                    </div>
+                    <div className="md:col-span-2 space-y-1">
+                      <Label className="text-xs">Valor mensal (R$)</Label>
+                      <CurrencyInput value={c.valor_mensal} onValueChange={(v) => updateCredito(c.id, { valor_mensal: v })} />
+                    </div>
+                    <div className="md:col-span-2 space-y-1">
+                      <Label className="text-xs">Regime fornecedor</Label>
+                      <Select
+                        value={c.regime_diferenciado_fornecedor}
+                        onValueChange={(v) => updateCredito(c.id, { regime_diferenciado_fornecedor: v as RegimeDiferenciado })}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="padrao">Padrão (100%)</SelectItem>
+                          <SelectItem value="reducao_30">Redução 30%</SelectItem>
+                          <SelectItem value="reducao_60">Redução 60%</SelectItem>
+                          <SelectItem value="aliquota_zero">Alíquota zero</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="md:col-span-1 space-y-1">
+                      <Label className="text-xs">ICMS %</Label>
+                      <Input inputMode="decimal" value={c.aliquota_icms} onChange={(e) => updateCredito(c.id, { aliquota_icms: e.target.value })} />
+                    </div>
+                    <div className="md:col-span-1 space-y-1">
+                      <Label className="text-xs">PIS %</Label>
+                      <Input inputMode="decimal" value={c.aliquota_pis} onChange={(e) => updateCredito(c.id, { aliquota_pis: e.target.value })} />
+                    </div>
+                    <div className="md:col-span-1 space-y-1">
+                      <Label className="text-xs">COFINS %</Label>
+                      <Input inputMode="decimal" value={c.aliquota_cofins} onChange={(e) => updateCredito(c.id, { aliquota_cofins: e.target.value })} />
+                    </div>
+                    <div className="md:col-span-1 space-y-1">
+                      <Label className="text-xs">IPI %</Label>
+                      <Input inputMode="decimal" value={c.aliquota_ipi} onChange={(e) => updateCredito(c.id, { aliquota_ipi: e.target.value })} />
+                    </div>
+                    <div className="md:col-span-1 flex justify-end">
+                      <Button type="button" variant="ghost" size="icon" onClick={() => removeCredito(c.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Cenário da reforma */}
           <div className="space-y-3 border rounded-lg p-4">
             <h3 className="text-sm font-semibold">Escopo da reforma</h3>
