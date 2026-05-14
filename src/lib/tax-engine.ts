@@ -400,7 +400,7 @@ function calcularTributosAtuaisProdutos(
   produtos: ProdutoInput[],
   regime: string,
   faturamentoAnual: number,
-): Omit<DetalheTributoAtual, "iss" | "total"> & {
+): Omit<DetalheTributoAtual, "iss" | "total" | "irpj" | "csll"> & {
   faturamento: number;
   ipi_zfm: number;
   ipi_nao_zfm: number;
