@@ -136,7 +136,6 @@ export async function gerarRelatorioPDF(
     doc.text("Resultado Anual Consolidado (referência)", 14, y);
     y += 7;
 
-    const venda = contexto.valor_mensal * 12;
     autoTable(doc, {
       startY: y,
       head: [["Ano", "Valor de venda", "Impostos", "Insumos (líq.)", "Margem (R$)", "Margem (%)"]],
