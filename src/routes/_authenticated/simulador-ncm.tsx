@@ -24,7 +24,7 @@ import {
 import { formatCurrency } from "@/lib/format";
 import { SimulacaoResultado } from "@/components/SimulacaoResultado";
 import { CurrencyInput } from "@/components/CurrencyInput";
-import { Plus, Trash2 } from "lucide-react";
+
 import { toast } from "sonner";
 
 /** Aceita "10000", "10.000", "10000,50", "10.000,50" e retorna number. */
