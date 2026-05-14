@@ -10,7 +10,22 @@ const regimeTributarioLabels: Record<string, string> = {
   lucro_real: "Lucro Real",
 };
 
-export async function gerarRelatorioPDF(resultado: ResultadoSimulacao): Promise<void> {
+export interface RelatorioContextoProduto {
+  tipo: "produto";
+  ncm: string;
+  descricao: string;
+  regime: string;
+  valor_mensal: number;
+  aliquotas_atuais: { pis: number; cofins: number; ipi: number; icms: number };
+  insumos_anuais: number;
+}
+
+export type RelatorioContexto = RelatorioContextoProduto;
+
+export async function gerarRelatorioPDF(
+  resultado: ResultadoSimulacao,
+  contexto?: RelatorioContexto
+): Promise<void> {
   const { default: jsPDF } = await import("jspdf");
   const autoTable = (await import("jspdf-autotable")).default;
 
@@ -20,7 +35,10 @@ export async function gerarRelatorioPDF(resultado: ResultadoSimulacao): Promise<
 
   doc.setFontSize(18);
   doc.setFont("helvetica", "bold");
-  doc.text("Relatório de Simulação Tributária", pageWidth / 2, y, { align: "center" });
+  const titulo = contexto?.tipo === "produto"
+    ? "Relatório de Simulação por Produto"
+    : "Relatório de Simulação Tributária";
+  doc.text(titulo, pageWidth / 2, y, { align: "center" });
   y += 8;
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
@@ -35,25 +53,73 @@ export async function gerarRelatorioPDF(resultado: ResultadoSimulacao): Promise<
 
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
-  doc.text("Dados da Empresa", 14, y);
+  doc.text(contexto?.tipo === "produto" ? "Identificação do Produto" : "Dados da Empresa", 14, y);
   y += 7;
 
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  const empresaData = [
-    ["Razão Social", resultado.empresa],
-    ["CNPJ", resultado.cnpj],
-    ["Regime Tributário", regimeTributarioLabels[resultado.regime_tributario] || resultado.regime_tributario],
-    ["Faturamento Anual", formatBRL(resultado.faturamento_anual)],
-  ];
-  empresaData.forEach(([label, value]) => {
+  const dados: [string, string][] = contexto?.tipo === "produto"
+    ? [
+        ["NCM", contexto.ncm],
+        ["Descrição", contexto.descricao],
+        ["Regime aplicado", regimeTributarioLabels[contexto.regime] || contexto.regime],
+        ["Valor mensal", formatBRL(contexto.valor_mensal)],
+        ["Valor de venda anual", formatBRL(contexto.valor_mensal * 12)],
+        ["Insumos anuais (bruto)", formatBRL(contexto.insumos_anuais)],
+        [
+          "Alíquotas atuais",
+          `PIS ${contexto.aliquotas_atuais.pis}% • COFINS ${contexto.aliquotas_atuais.cofins}% • IPI ${contexto.aliquotas_atuais.ipi}% • ICMS ${contexto.aliquotas_atuais.icms}%`,
+        ],
+      ]
+    : [
+        ["Razão Social", resultado.empresa],
+        ["CNPJ", resultado.cnpj],
+        ["Regime Tributário", regimeTributarioLabels[resultado.regime_tributario] || resultado.regime_tributario],
+        ["Faturamento Anual", formatBRL(resultado.faturamento_anual)],
+      ];
+  dados.forEach(([label, value]) => {
     doc.setFont("helvetica", "bold");
     doc.text(`${label}: `, 14, y);
     doc.setFont("helvetica", "normal");
-    doc.text(value, 60, y);
-    y += 5;
+    const wrapped = doc.splitTextToSize(value, pageWidth - 70);
+    doc.text(wrapped, 60, y);
+    y += 5 * Math.max(1, wrapped.length);
   });
   y += 5;
+
+  // Resultado financeiro por ano (apenas relatório de produto)
+  if (contexto?.tipo === "produto") {
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Resultado Financeiro por Ano", 14, y);
+    y += 7;
+
+    const venda = contexto.valor_mensal * 12;
+    autoTable(doc, {
+      startY: y,
+      head: [["Ano", "Valor de venda", "Impostos", "Insumos (líq.)", "Margem (R$)", "Margem (%)"]],
+      body: resultado.anos.map((a) => {
+        const insumosLiq = Math.max(0, contexto.insumos_anuais - (a.creditos.creditos_atuais + a.creditos.creditos_ibs_cbs));
+        const margem = venda - a.carga_total - insumosLiq;
+        const margemPct = venda > 0 ? (margem / venda) * 100 : 0;
+        return [
+          String(a.ano),
+          formatBRL(venda),
+          formatBRL(a.carga_total),
+          formatBRL(insumosLiq),
+          formatBRL(margem),
+          `${margemPct.toFixed(1)}%`,
+        ];
+      }),
+      theme: "grid",
+      headStyles: { fillColor: [41, 98, 255], textColor: 255 },
+      styles: { fontSize: 8 },
+      margin: { left: 14, right: 14 },
+    });
+
+    y = (doc as any).lastAutoTable.finalY + 10;
+  }
+
 
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");

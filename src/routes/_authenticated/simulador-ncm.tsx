@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   simularAliquotaPorNcm,
@@ -17,13 +16,18 @@ import {
   CRONOGRAMA_TRANSICAO,
   type RegimeDiferenciado,
   type EscopoReforma,
-  type IrpjCsllConfig,
   type ResultadoSimulacao,
   type SimulacaoInput,
 } from "@/lib/tax-engine";
 import { formatCurrency } from "@/lib/format";
 import { SimulacaoResultado } from "@/components/SimulacaoResultado";
+import { SimulacaoProdutoResultado } from "@/components/SimulacaoProdutoResultado";
 import { CurrencyInput } from "@/components/CurrencyInput";
+import { useAuth } from "@/hooks/AuthContext";
+import { useLinkedEmpresa } from "@/hooks/useLinkedEmpresa";
+import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
+import type { RelatorioContexto } from "@/lib/relatorio-pdf";
 
 import { toast } from "sonner";
 
@@ -293,6 +297,8 @@ type RegimeTrib = "simples_nacional" | "lucro_presumido" | "lucro_real";
 
 function SimulacaoCompletaProdutoTab() {
   const ANOS_CRONOGRAMA = CRONOGRAMA_TRANSICAO.map((t) => t.ano);
+  const auth = useAuth();
+  const linkedEmpresa = useLinkedEmpresa();
 
   // Identificação
   const [ncm, setNcm] = useState("");
@@ -311,15 +317,8 @@ function SimulacaoCompletaProdutoTab() {
   const [aliquotaIpi, setAliquotaIpi] = useState("0");
   const [aliquotaIcms, setAliquotaIcms] = useState("18");
 
-  // Cenário da empresa
+  // Regime tributário aplicável ao produto (afeta DAS vs PIS/COFINS/ICMS/IPI)
   const [regimeTrib, setRegimeTrib] = useState<RegimeTrib>("lucro_real");
-  const [faturamentoAnual, setFaturamentoAnual] = useState("");
-  const [irpjCsll, setIrpjCsll] = useState<IrpjCsllConfig>({
-    incluir: false,
-    presuncao_comercio: 8,
-    presuncao_servicos: 32,
-    lucro_real_anual: 0,
-  });
 
   // Cenário da reforma
   const [escopoReforma, setEscopoReforma] = useState<EscopoReforma>("cbs_ibs");
@@ -335,6 +334,9 @@ function SimulacaoCompletaProdutoTab() {
 
   const [resultado, setResultado] = useState<ResultadoSimulacao | null>(null);
   const [loading, setLoading] = useState(false);
+  const [simulacaoInput, setSimulacaoInput] = useState<SimulacaoInput | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [simulacaoSalvaId, setSimulacaoSalvaId] = useState<string | null>(null);
 
   const simular = () => {
     if (!ncm.trim() || !valorMensal) return;
@@ -342,7 +344,8 @@ function SimulacaoCompletaProdutoTab() {
 
     try {
       const valorMensalNum = parseNumBR(valorMensal);
-      const fatAnualNum = parseNumBR(faturamentoAnual) || valorMensalNum * 12;
+      // Faturamento sintético = item isolado (12× valor mensal). Mantém DAS coerente para SN.
+      const fatAnualNum = valorMensalNum * 12;
 
       const input: SimulacaoInput = {
         empresa: {
@@ -353,7 +356,7 @@ function SimulacaoCompletaProdutoTab() {
           municipio: null,
           faturamento_anual: fatAnualNum,
           optante_simples_mei: regimeTrib === "simples_nacional",
-          irpj_csll: irpjCsll,
+          irpj_csll: { incluir: false },
         },
         produtos: [
           {
@@ -392,6 +395,8 @@ function SimulacaoCompletaProdutoTab() {
 
       const res = executarSimulacao(input);
       setResultado(res);
+      setSimulacaoInput(input);
+      setSimulacaoSalvaId(null);
       toast.success("Simulação do produto concluída!");
     } catch (err) {
       console.error(err);
@@ -401,7 +406,55 @@ function SimulacaoCompletaProdutoTab() {
     }
   };
 
+  const salvarSimulacao = async () => {
+    if (!resultado || !auth.user || !linkedEmpresa.empresaId || !simulacaoInput) return;
+    setSaving(true);
+    try {
+      const nome = `Produto NCM ${ncm}${descricao ? ` — ${descricao}` : ""} — ${new Date().toLocaleDateString("pt-BR")}`;
+      const parametros = {
+        ...simulacaoInput,
+        tipo: "produto_ncm",
+        produto: { ncm, descricao, valor_mensal: parseNumBR(valorMensal) },
+      };
+      const { data, error } = await supabase.from("simulacoes").insert({
+        nome,
+        empresa_id: linkedEmpresa.empresaId,
+        user_id: auth.user.id,
+        ano_inicio: anosSelecionados[0] ?? 2026,
+        ano_fim: anosSelecionados[anosSelecionados.length - 1] ?? 2033,
+        parametros: parametros as unknown as Json,
+        resultados: resultado as unknown as Json,
+      }).select("id").single();
+      if (error) throw error;
+      setSimulacaoSalvaId(data.id);
+      toast.success("Simulação salva no histórico da empresa!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao salvar simulação");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const apenasCbs = escopoReforma === "somente_cbs";
+  const insumosMensaisBruto = creditos.reduce((acc, c) => acc + parseNumBR(c.valor_mensal), 0);
+
+  const pdfContexto: RelatorioContexto | undefined = resultado
+    ? {
+        tipo: "produto",
+        ncm,
+        descricao: descricao || `Produto NCM ${ncm}`,
+        regime: regimeTrib,
+        valor_mensal: parseNumBR(valorMensal),
+        aliquotas_atuais: {
+          pis: parseNumBR(aliquotaPis),
+          cofins: parseNumBR(aliquotaCofins),
+          ipi: parseNumBR(aliquotaIpi),
+          icms: parseNumBR(aliquotaIcms),
+        },
+        insumos_anuais: insumosMensaisBruto * 12,
+      }
+    : undefined;
 
   return (
     <div className="space-y-6">
@@ -510,12 +563,16 @@ function SimulacaoCompletaProdutoTab() {
             </div>
           </div>
 
-          {/* Cenário da empresa */}
+          {/* Regime tributário aplicável ao produto */}
           <div className="space-y-3 border rounded-lg p-4">
-            <h3 className="text-sm font-semibold">Cenário da empresa (sintético)</h3>
+            <h3 className="text-sm font-semibold">Regime tributário aplicável ao produto</h3>
+            <p className="text-xs text-muted-foreground">
+              Define como os tributos atuais incidem sobre este item (DAS no Simples; PIS/COFINS/IPI/ICMS nos demais).
+              Para Simples Nacional, a alíquota DAS é estimada considerando o item isolado (valor mensal × 12).
+            </p>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               <div className="space-y-2">
-                <Label>Regime tributário</Label>
+                <Label>Regime</Label>
                 <Select value={regimeTrib} onValueChange={(v) => setRegimeTrib(v as RegimeTrib)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -525,69 +582,11 @@ function SimulacaoCompletaProdutoTab() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>Faturamento anual (R$)</Label>
-                <CurrencyInput
-                  value={faturamentoAnual}
-                  onValueChange={setFaturamentoAnual}
-                  placeholder={`Padrão: valor mensal × 12 = ${formatCurrency(parseNumBR(valorMensal) * 12)}`}
-                />
-              </div>
-            </div>
-
-            <div className="border-t pt-3 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-semibold">Tributação sobre o lucro (IRPJ/CSLL)</h4>
-                  <p className="text-xs text-muted-foreground">Inclua para visualizar a tributação federal total.</p>
-                </div>
-                <Switch
-                  checked={irpjCsll.incluir}
-                  disabled={regimeTrib === "simples_nacional"}
-                  onCheckedChange={(v) => setIrpjCsll((s) => ({ ...s, incluir: v }))}
-                />
-              </div>
-
-              {regimeTrib === "simples_nacional" && (
-                <p className="text-xs text-warning-foreground bg-warning/10 border border-warning/30 rounded-md p-2">
-                  IRPJ e CSLL já estão incluídos no DAS do Simples Nacional — opção indisponível.
+              <div className="space-y-2 md:col-span-2 flex items-end">
+                <p className="text-xs text-muted-foreground">
+                  Receita anual considerada: <strong>{formatCurrency(parseNumBR(valorMensal) * 12)}</strong> (12× valor mensal do item).
                 </p>
-              )}
-
-              {irpjCsll.incluir && regimeTrib === "lucro_presumido" && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Presunção comércio (%)</Label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      value={irpjCsll.presuncao_comercio ?? 8}
-                      onChange={(e) => setIrpjCsll((s) => ({ ...s, presuncao_comercio: Number(e.target.value) }))}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Presunção serviços (%)</Label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      value={irpjCsll.presuncao_servicos ?? 32}
-                      onChange={(e) => setIrpjCsll((s) => ({ ...s, presuncao_servicos: Number(e.target.value) }))}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {irpjCsll.incluir && regimeTrib === "lucro_real" && (
-                <div className="space-y-1 max-w-sm">
-                  <Label className="text-xs">Lucro tributável anual estimado (R$)</Label>
-                  <Input
-                    type="number"
-                    step="1000"
-                    value={irpjCsll.lucro_real_anual ?? 0}
-                    onChange={(e) => setIrpjCsll((s) => ({ ...s, lucro_real_anual: Number(e.target.value) }))}
-                  />
-                </div>
-              )}
+              </div>
             </div>
           </div>
 
@@ -726,7 +725,26 @@ function SimulacaoCompletaProdutoTab() {
       </Card>
 
       {resultado && (
-        <SimulacaoResultado resultado={resultado} escopoSomenteCbs={apenasCbs} />
+        <>
+          <SimulacaoProdutoResultado
+            resultado={resultado}
+            valorMensalProduto={parseNumBR(valorMensal)}
+            insumosMensaisBruto={insumosMensaisBruto}
+          />
+          <SimulacaoResultado
+            resultado={resultado}
+            escopoSomenteCbs={apenasCbs}
+            pdfContexto={pdfContexto}
+            onSalvar={linkedEmpresa.empresaId ? salvarSimulacao : undefined}
+            salvando={saving}
+            salvado={!!simulacaoSalvaId}
+          />
+          {!linkedEmpresa.empresaId && (
+            <p className="text-xs text-muted-foreground text-right">
+              Vincule uma empresa para salvar esta simulação no histórico.
+            </p>
+          )}
+        </>
       )}
     </div>
   );
