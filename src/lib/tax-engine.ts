@@ -808,14 +808,64 @@ export function simularAliquotaPorNcm(input: SimulacaoNcmInput): ResultadoSimula
   };
 }
 
+/**
+ * Calcula IRPJ + CSLL anuais conforme regime.
+ * - Lucro Presumido: presunção sobre receita (comércio/serviços), IRPJ 15% +
+ *   adicional 10% sobre lucro presumido acima de R$ 240.000/ano. CSLL 9% sobre
+ *   presunção (12% comércio / 32% serviços).
+ * - Lucro Real: aplica IRPJ 15% + adicional 10% (acima de R$ 240k) e CSLL 9%
+ *   sobre o lucro tributável anual informado.
+ * - Simples Nacional: já incluso no DAS — retorna zero.
+ */
+function calcularIrpjCsllAnual(
+  empresa: EmpresaInput,
+  faturamentoProdutosAnual: number,
+  faturamentoServicosAnual: number,
+): { irpj: number; csll: number } {
+  const cfg = empresa.irpj_csll;
+  if (!cfg || !cfg.incluir) return { irpj: 0, csll: 0 };
+  if (empresa.regime_tributario === "simples_nacional") return { irpj: 0, csll: 0 };
+
+  const ADICIONAL_LIMITE = 240000;
+
+  if (empresa.regime_tributario === "lucro_presumido") {
+    const presComercio = (cfg.presuncao_comercio ?? 8) / 100;
+    const presServicos = (cfg.presuncao_servicos ?? 32) / 100;
+    const lucroPresumidoIRPJ =
+      faturamentoProdutosAnual * presComercio + faturamentoServicosAnual * presServicos;
+    // CSLL: presunção fixa 12% comércio / 32% serviços
+    const baseCsll =
+      faturamentoProdutosAnual * 0.12 + faturamentoServicosAnual * 0.32;
+
+    const irpj =
+      lucroPresumidoIRPJ * 0.15 +
+      Math.max(0, lucroPresumidoIRPJ - ADICIONAL_LIMITE) * 0.10;
+    const csll = baseCsll * 0.09;
+    return { irpj, csll };
+  }
+
+  // Lucro Real
+  const lucro = Math.max(0, cfg.lucro_real_anual ?? 0);
+  const irpj = lucro * 0.15 + Math.max(0, lucro - ADICIONAL_LIMITE) * 0.10;
+  const csll = lucro * 0.09;
+  return { irpj, csll };
+}
+
 // ─── Função Principal ──────────────────────────────────────────────────────
 
 export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
   const { empresa, produtos, servicos, creditos } = input;
+  const escopo: EscopoReforma = input.escopo_reforma ?? "cbs_ibs";
+  const apenasCbs = escopo === "somente_cbs";
 
   // 1. Calcular tributos mensais no sistema atual (base 100%)
   const tribProd = calcularTributosAtuaisProdutos(produtos, empresa.regime_tributario, empresa.faturamento_anual);
   const tribServ = calcularTributosAtuaisServicos(servicos, empresa.regime_tributario, empresa.faturamento_anual);
+
+  // IRPJ/CSLL anual (constante em todos os anos — não afetado pela reforma do consumo)
+  const fatProdAnual = tribProd.faturamento * 12;
+  const fatServAnual = tribServ.faturamento * 12;
+  const irpjCsll = calcularIrpjCsllAnual(empresa, fatProdAnual, fatServAnual);
 
   const tributosAtuaisMensal: DetalheTributoAtual = {
     pis: tribProd.pis + tribServ.pis,
@@ -824,6 +874,8 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
     icms: tribProd.icms,
     iss: tribServ.iss,
     das: tribProd.das + tribServ.das,
+    irpj: irpjCsll.irpj / 12,
+    csll: irpjCsll.csll / 12,
     total: 0,
   };
   tributosAtuaisMensal.total =
@@ -832,7 +884,9 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
     tributosAtuaisMensal.ipi +
     tributosAtuaisMensal.icms +
     tributosAtuaisMensal.iss +
-    tributosAtuaisMensal.das;
+    tributosAtuaisMensal.das +
+    tributosAtuaisMensal.irpj +
+    tributosAtuaisMensal.csll;
 
   // 2. Calcular IBS/CBS mensal no sistema novo (alíquotas plenas)
   const ibsCbsProd = calcularIbsCbsProdutos(produtos);
@@ -840,7 +894,7 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
 
   const ibsCbsMensal: DetalheIbsCbs = {
     cbs: ibsCbsProd.cbs + ibsCbsServ.cbs,
-    ibs: ibsCbsProd.ibs + ibsCbsServ.ibs,
+    ibs: apenasCbs ? 0 : ibsCbsProd.ibs + ibsCbsServ.ibs,
     is: ibsCbsProd.is,
     total: 0,
   };
@@ -853,7 +907,8 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
   const cargaAtualAnual = tributosAtuaisMensal.total * 12;
   const cargaNovaAnual = ibsCbsMensal.total * 12;
   const creditosAtuaisAnual = (cred.atuais_mensal_pis_cofins + cred.atuais_mensal_icms + cred.atuais_mensal_ipi) * 12;
-  const creditosNovosAnual = (cred.novos_mensal_cbs + cred.novos_mensal_ibs) * 12;
+  const creditosNovosAnual =
+    (cred.novos_mensal_cbs + (apenasCbs ? 0 : cred.novos_mensal_ibs)) * 12;
   const cargaAtualLiquidaBase = cargaAtualAnual - creditosAtuaisAnual;
 
   // 5. Gerar resultados por ano da transição
@@ -867,16 +922,12 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
   const dasIcmsIssMensal = tribProd.das_icms + tribServ.das_iss;
   const dasOutrosMensal = tribProd.das_outros + tribServ.das_outros;
 
-  const anos: ResultadoAno[] = CRONOGRAMA_TRANSICAO.map((t) => {
-    // ── Tributos atuais no ano ──
-    // PIS/COFINS: mantidos com fator específico (extintos a partir de 2027)
-    // ICMS/ISS: mantidos com fator específico (reduzidos gradualmente 2029-2033)
-    // IPI: separado em ZFM (mantido) e não-ZFM (zerado a partir de 2027)
-    //
-    // SIMPLES NACIONAL: o DAS é recomposto a partir de suas parcelas internas:
-    //   - PIS/COFINS dentro do DAS seguem pis_cofins_fator (zerados em 2027 → CBS por fora)
-    //   - ICMS/ISS dentro do DAS seguem icms_iss_fator
-    //   - IRPJ/CSLL/CPP (outros) permanecem integralmente
+  // Filtrar anos selecionados (default: todos)
+  const anosFiltro = input.anos_selecionados && input.anos_selecionados.length > 0
+    ? CRONOGRAMA_TRANSICAO.filter((t) => input.anos_selecionados!.includes(t.ano))
+    : CRONOGRAMA_TRANSICAO;
+
+  const anos: ResultadoAno[] = anosFiltro.map((t) => {
     const ipiAno = (tribProd.ipi_zfm * 1.0 + tribProd.ipi_nao_zfm * t.ipi_fator) * 12;
 
     let dasAno: number;
@@ -898,17 +949,15 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
       icms: tributosAtuaisMensal.icms * t.icms_iss_fator * 12,
       iss: tributosAtuaisMensal.iss * t.icms_iss_fator * 12,
       das: dasAno,
+      irpj: irpjCsll.irpj,
+      csll: irpjCsll.csll,
       total: 0,
     };
     tribAtualAno.total =
       tribAtualAno.pis + tribAtualAno.cofins + tribAtualAno.ipi +
-      tribAtualAno.icms + tribAtualAno.iss + tribAtualAno.das;
+      tribAtualAno.icms + tribAtualAno.iss + tribAtualAno.das +
+      tribAtualAno.irpj + tribAtualAno.csll;
 
-    // ── IBS/CBS no ano ──
-    // Para Simples Nacional, a partir de 2027 (quando PIS/COFINS são extintos no DAS),
-    // a empresa passa a recolher CBS POR FORA do DAS, sobre o faturamento, à alíquota plena.
-    // O IBS, por padrão, segue dentro do DAS via parcela ICMS/ISS (regime do Simples).
-    // (A empresa pode optar pelo regime regular do IBS/CBS — não modelado aqui por padrão.)
     let cbsAno: number;
     if (t.cbs_teste) {
       cbsAno = fatMensal * t.cbs_pct * 12;
@@ -917,20 +966,19 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
     }
 
     let ibsAno: number;
-    if (t.ibs_teste) {
+    if (apenasCbs) {
+      ibsAno = 0;
+    } else if (t.ibs_teste) {
       ibsAno = fatMensal * t.ibs_pct * 12;
     } else if (isSimples) {
-      // No Simples, IBS continua dentro do DAS (parcela ICMS/ISS) — não cobrar por fora
       ibsAno = 0;
     } else {
-      ibsAno = ibsCbsMensal.ibs * t.ibs_pct * 12;
+      // ibsCbsMensal.ibs já está zerado em apenasCbs (tratado acima)
+      ibsAno = (ibsCbsProd.ibs + ibsCbsServ.ibs) * t.ibs_pct * 12;
     }
 
-    // IS: só incide quando CBS/IBS estão em vigor (não na fase teste)
     const isAno = ibsCbsMensal.is * (t.cbs_teste ? 0 : 1.0) * 12;
 
-    // Se sem_incidencia_real (2026), CBS/IBS teste são compensáveis com PIS/COFINS
-    // e NÃO geram carga tributária adicional
     const ibsCbsAno: DetalheIbsCbs = {
       cbs: t.sem_incidencia_real ? 0 : cbsAno,
       ibs: t.sem_incidencia_real ? 0 : ibsAno,
@@ -938,27 +986,21 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
       total: t.sem_incidencia_real ? 0 : (cbsAno + ibsAno + isAno),
     };
 
-
-    // ── Créditos no ano ──
-    // Créditos atuais: PIS/COFINS segue fator federal, ICMS/IPI segue fator estadual
     const creditosAtuaisAno =
       cred.atuais_mensal_pis_cofins * t.pis_cofins_fator * 12 +
       cred.atuais_mensal_icms * t.icms_iss_fator * 12 +
       cred.atuais_mensal_ipi * t.ipi_fator * 12;
 
-    // Créditos novos: proporcionais ao IBS/CBS efetivamente cobrado
-    // Em 2026 (sem_incidencia_real), não há créditos novos pois não há incidência real
     let creditosNovosAno: number;
+    const credIbsMensal = apenasCbs ? 0 : cred.novos_mensal_ibs;
     if (t.sem_incidencia_real) {
       creditosNovosAno = 0;
     } else if (t.ibs_teste) {
-      // CBS integral, IBS teste
       creditosNovosAno = (cred.novos_mensal_cbs * t.cbs_pct +
-        cred.novos_mensal_ibs * (t.ibs_pct / ALIQUOTA_IBS_REF)) * 12;
+        credIbsMensal * (t.ibs_pct / ALIQUOTA_IBS_REF)) * 12;
     } else {
-      // Ambos em regime normal (proporcional ao percentual)
       creditosNovosAno = (cred.novos_mensal_cbs * t.cbs_pct +
-        cred.novos_mensal_ibs * t.ibs_pct) * 12;
+        credIbsMensal * t.ibs_pct) * 12;
     }
 
     const creditosAno: CreditosDetalhe = {
@@ -987,6 +1029,14 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
     };
   });
 
+  const alertas = gerarAlertas(input);
+  if (apenasCbs) {
+    alertas.unshift("Cenário 'Somente CBS' selecionado — o IBS foi removido da simulação. Use para isolar o impacto federal da reforma.");
+  }
+  if (empresa.irpj_csll?.incluir && empresa.regime_tributario !== "simples_nacional") {
+    alertas.unshift("IRPJ/CSLL incluídos na carga atual para visualização da tributação federal total. Esses tributos não são afetados pela reforma do consumo (incidem sobre o lucro).");
+  }
+
   return {
     empresa: empresa.razao_social,
     cnpj: empresa.cnpj,
@@ -997,6 +1047,6 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
     creditos_atuais_anual: creditosAtuaisAnual,
     creditos_novos_anual: creditosNovosAnual,
     anos,
-    alertas: gerarAlertas(input),
+    alertas,
   };
 }
