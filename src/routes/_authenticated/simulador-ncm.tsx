@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   simularAliquotaPorNcm,
@@ -17,13 +16,18 @@ import {
   CRONOGRAMA_TRANSICAO,
   type RegimeDiferenciado,
   type EscopoReforma,
-  type IrpjCsllConfig,
   type ResultadoSimulacao,
   type SimulacaoInput,
 } from "@/lib/tax-engine";
 import { formatCurrency } from "@/lib/format";
 import { SimulacaoResultado } from "@/components/SimulacaoResultado";
+import { SimulacaoProdutoResultado } from "@/components/SimulacaoProdutoResultado";
 import { CurrencyInput } from "@/components/CurrencyInput";
+import { useAuth } from "@/hooks/AuthContext";
+import { useLinkedEmpresa } from "@/hooks/useLinkedEmpresa";
+import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
+import type { RelatorioContexto } from "@/lib/relatorio-pdf";
 
 import { toast } from "sonner";
 
