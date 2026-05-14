@@ -32,6 +32,10 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   AreaChart, Area,
 } from "recharts";
+import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import {
   executarSimulacao,
   ALIQUOTA_CBS_REF,
@@ -46,6 +50,8 @@ import {
   type CreditoInput,
   type EmpresaInput,
   type RegimeDiferenciado,
+  type EscopoReforma,
+  type IrpjCsllConfig,
 } from "@/lib/tax-engine";
 import { AlertTriangle, TrendingDown, TrendingUp, Info, Calculator, BookOpen, Package, Briefcase, Receipt, ExternalLink, Save, FileText } from "lucide-react";
 import { toast } from "sonner";
