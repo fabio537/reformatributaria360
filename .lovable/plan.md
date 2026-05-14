@@ -1,94 +1,110 @@
 ## Objetivo
-Adicionar três controles de cenário ao Simulador Tributário:
-1. **Escopo da Reforma**: rodar com apenas a CBS ou CBS + IBS.
-2. **IRPJ/CSLL**: opção de incluir a tributação federal sobre o lucro na carga atual.
-3. **Anos da simulação**: usuário escolhe quais anos do cronograma 2026–2033 entram no resultado.
 
-Nenhum altera base legal/cronograma — apenas mudam a composição exibida e somada.
+Adicionar, na página **Simulador por NCM**, uma segunda aba — **"Simulação completa do produto"** — que executa o mesmo motor da Simulação Geral (`executarSimulacao`) só que para **um único produto**, devolvendo resumo, tabela ano a ano, gráfico, alertas e PDF — no mesmo formato da Simulação Geral.
+
+A aba já existente vira **"Consulta rápida por NCM"** (alíquotas + cronograma de tributos), sem alterações.
 
 ---
 
-## 1. Escopo da Reforma (CBS only vs. CBS + IBS)
+## UX
 
-### UX
-- Novo grupo "Escopo da Reforma" no card "Parâmetros da Simulação", com `RadioGroup`:
-  - "CBS + IBS (padrão)" — comportamento atual.
-  - "Somente CBS (federal)" — zera o IBS em todo o cronograma.
-- Reflete em gráfico, tabela e PDF.
+### Estrutura da página `simulador-ncm.tsx`
+Envolver o conteúdo atual em um `Tabs` (shadcn):
 
-### Motor (`src/lib/tax-engine.ts`)
-- Campo `escopo_reforma: "cbs_ibs" | "somente_cbs"` em `SimulacaoInput` (default `cbs_ibs`).
-- No loop anual: se `somente_cbs`, força `ibsAno = 0` e remove o componente IBS dos créditos novos.
-- Para Simples, o ICMS/ISS dentro do DAS segue inalterado (a opção só afeta o lado novo).
-- Alerta automático identificando o cenário.
+```text
+┌──────────────────────────────────────────────────────────────┐
+│ Simulador por NCM                                            │
+├──────────────────────────────────────────────────────────────┤
+│ [ Consulta rápida ] [ Simulação completa do produto ]        │
+└──────────────────────────────────────────────────────────────┘
+```
 
----
+### Aba "Simulação completa do produto"
 
-## 2. Inclusão opcional de IRPJ/CSLL na carga atual
+Card de parâmetros (mesma linguagem visual do simulador geral):
 
-### UX
-- Bloco "Tributação sobre o lucro (IRPJ/CSLL)" com switch "Incluir IRPJ/CSLL".
-- Campos por regime:
-  - **Lucro Presumido**: presunção comércio (default 8%) e serviços (default 32%). IRPJ 15% + adicional 10% sobre lucro presumido acima de R$ 240.000/ano. CSLL 9% sobre presunção 12% (comércio) / 32% (serviços).
-  - **Lucro Real**: campo "Lucro tributável anual estimado (R$)". IRPJ 15% + adicional 10% (acima de R$ 240k) e CSLL 9%.
-  - **Simples Nacional**: opção desabilitada com aviso ("já incluídos no DAS").
+1. **Identificação do produto**
+   - NCM, descrição, regime diferenciado, tipo de operação, destino, IS + alíquota IS.
+2. **Valores e alíquotas atuais**
+   - Valor mensal (R$), quantidade mensal.
+   - Alíquotas atuais: PIS, COFINS, IPI, ICMS.
+3. **Cenário da empresa (sintético)**
+   - Regime tributário (Simples / Presumido / Real).
+   - Faturamento anual (default = `valor_mensal × 12`, editável — necessário para faixa do Simples e nota de IPI sem inclusão).
+   - Toggle IRPJ/CSLL com mesmas opções da simulação geral.
+4. **Cenário da reforma**
+   - RadioGroup escopo: CBS+IBS / Somente CBS.
+   - Checkboxes de anos (2026–2033) com mesmos presets.
 
-### Motor
-- Estender `EmpresaInput` com `irpj_csll: { incluir, presuncao_comercio?, presuncao_servicos?, lucro_real_anual? }`.
-- Função `calcularIrpjCsllAnual(...)` retornando `{ irpj, csll }`.
-- Estender `DetalheTributoAtual` com `irpj` e `csll`, somando ao `total`.
-- IRPJ/CSLL **constantes em todos os anos** (a reforma do consumo não os afeta).
+Botão **"Simular produto"** habilita quando NCM + valor estiverem preenchidos.
 
----
-
-## 3. Seleção de anos da simulação
-
-### UX
-- Novo bloco "Anos a simular" no card de parâmetros, com:
-  - Conjunto de checkboxes (toggles) para 2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033.
-  - Atalhos: "Selecionar todos", "Limpar", e presets "Transição (2026–2028)", "Pleno (2033)".
-  - Validação: pelo menos 1 ano selecionado para habilitar o botão "Simular".
-
-### Motor
-- Adicionar `anos_selecionados?: number[]` em `SimulacaoInput` (default = todos os anos do cronograma).
-- Em `executarSimulacao`, filtrar `CRONOGRAMA_TRANSICAO` pelos anos escolhidos antes do loop.
-- Recalcular `carga_atual_anual` / `carga_nova_anual` apenas para o escopo escolhido — manter os valores brutos "100%" como referência separada para o cabeçalho.
-
-### UI / Resultado
-- Gráficos, tabela e PDF passam a renderizar somente os anos selecionados.
-- "Variação em 2033" passa a ser "Variação no último ano simulado" (rótulo dinâmico).
-- Cabeçalho do PDF identifica o intervalo simulado.
+### Resultado (mesmo formato da Simulação Geral)
+- Card de resumo: carga atual anual, carga nova anual em 2033, variação no último ano, créditos.
+- Tabela "Detalhamento por Ano" (PIS, COFINS, IPI, ICMS, IRPJ, CSLL, CBS, IBS, IS, créditos, carga total, variação).
+- Gráfico de barras empilhadas (mesmo do simulador geral).
+- Lista de alertas.
+- Botão **"Baixar PDF"** reutilizando `gerarRelatorioPDF`.
 
 ---
 
-## 4. Exibição dos novos valores
+## Implementação
 
-### Página Simulador (`src/routes/_authenticated/simulador.tsx`)
-- Card "Carga Atual": linha extra "IRPJ/CSLL" quando incluído.
-- Tabela "Detalhamento por Ano": coluna condicional "IRPJ/CSLL".
-- Gráfico "Tributos Brutos": novas barras "IRPJ" e "CSLL" no stack atual (cores `chart-6/7` em `src/styles.css` se não existirem).
-- `escopo = somente_cbs`: oculta barra/coluna "IBS".
-- Tudo respeita os anos selecionados.
+### Reaproveitamento de componentes
+Hoje o resultado da Simulação Geral está inline em `src/routes/_authenticated/simulador.tsx`. Para evitar duplicação, **extrair o bloco de resultado** em um componente novo:
 
-### Relatório PDF (`src/lib/relatorio-pdf.ts`)
-- Colunas IRPJ/CSLL na composição anual.
-- Cabeçalho com escopo escolhido, status IRPJ/CSLL e lista dos anos simulados.
+- `src/components/SimulacaoResultado.tsx` — recebe `resultado: ResultadoSimulacao`, opções de exibição (`mostrarIrpjCsll`, `escopoSomenteCbs`) e renderiza resumo + tabela + gráfico + alertas + botão PDF.
+- `simulador.tsx` passa a importar e usar esse componente.
+- A nova aba do simulador NCM usa o mesmo componente, garantindo paridade visual.
+
+### Construção do input
+Na nova aba, montar um `SimulacaoInput` sintético:
+
+```ts
+const input: SimulacaoInput = {
+  empresa: {
+    razao_social: descricao || `Produto NCM ${ncm}`,
+    cnpj: "—",
+    regime_tributario,
+    uf: null, municipio: null,
+    faturamento_anual,
+    optante_simples_mei: regime_tributario === "simples_nacional",
+    irpj_csll,
+  },
+  produtos: [{
+    descricao, ncm,
+    valor_mensal, quantidade_mensal,
+    regime_diferenciado, tipo_operacao, destino_operacao,
+    sujeito_imposto_seletivo, aliquota_is,
+    aliquota_ipi, aliquota_pis, aliquota_cofins, aliquota_icms,
+  }],
+  servicos: [],
+  creditos: [],
+  escopo_reforma,
+  anos_selecionados,
+};
+const resultado = executarSimulacao(input);
+```
+
+### Nada novo no motor
+`executarSimulacao` já lida corretamente com 1 produto, sem serviços e sem créditos. Não precisa alterar `tax-engine.ts`.
+
+### Persistência
+A simulação por produto é **transitória** (não salva em `simulacoes`). Botão "Salvar" não faz parte desta aba (o usuário usa a Simulação Geral para isso). Sem migrations.
 
 ---
 
-## 5. Persistência
-- `simulacoes.parametros` já é JSON livre — `escopo_reforma`, `irpj_csll` e `anos_selecionados` entram sem migration.
+## Arquivos editados / criados
 
----
+- **Criar** `src/components/SimulacaoResultado.tsx` — bloco de resultado compartilhado.
+- **Editar** `src/routes/_authenticated/simulador.tsx` — substituir o bloco inline de resultado pelo novo componente.
+- **Editar** `src/routes/_authenticated/simulador-ncm.tsx` — envolver em `Tabs`, criar a aba "Simulação completa do produto" com formulário e resultado.
 
-## Detalhes técnicos
-- **Arquivos editados**: `src/lib/tax-engine.ts`, `src/routes/_authenticated/simulador.tsx`, `src/lib/relatorio-pdf.ts`, possivelmente `src/styles.css`.
-- **Sem migrations**.
-- **Compatibilidade**: defaults preservam o comportamento atual (CBS+IBS, IRPJ/CSLL off, todos os anos).
+Sem alterações em `tax-engine.ts`, `relatorio-pdf.ts` ou banco de dados.
 
 ---
 
 ## Resultado esperado
-- Usuário roda a simulação com "Somente CBS" para isolar o impacto federal.
-- Ativa IRPJ/CSLL e visualiza a tributação federal total no card de carga atual, na tabela anual e no PDF.
-- Escolhe os anos (ex.: só 2026–2028) e gráficos/tabela/PDF passam a refletir somente esse intervalo.
+
+- O usuário entra em **/simulador-ncm**, vê duas abas.
+- A aba **"Consulta rápida"** continua exatamente como está hoje.
+- A aba **"Simulação completa do produto"** permite rodar a mesma simulação ano a ano que a Simulação Geral faz, mas para 1 produto isolado — útil para precificação, decisão de mix de produtos e para apresentar ao cliente o impacto de um SKU específico.
