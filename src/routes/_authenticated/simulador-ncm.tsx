@@ -297,6 +297,8 @@ type RegimeTrib = "simples_nacional" | "lucro_presumido" | "lucro_real";
 
 function SimulacaoCompletaProdutoTab() {
   const ANOS_CRONOGRAMA = CRONOGRAMA_TRANSICAO.map((t) => t.ano);
+  const auth = useAuth();
+  const linkedEmpresa = useLinkedEmpresa();
 
   // Identificação
   const [ncm, setNcm] = useState("");
@@ -315,15 +317,8 @@ function SimulacaoCompletaProdutoTab() {
   const [aliquotaIpi, setAliquotaIpi] = useState("0");
   const [aliquotaIcms, setAliquotaIcms] = useState("18");
 
-  // Cenário da empresa
+  // Regime tributário aplicável ao produto (afeta DAS vs PIS/COFINS/ICMS/IPI)
   const [regimeTrib, setRegimeTrib] = useState<RegimeTrib>("lucro_real");
-  const [faturamentoAnual, setFaturamentoAnual] = useState("");
-  const [irpjCsll, setIrpjCsll] = useState<IrpjCsllConfig>({
-    incluir: false,
-    presuncao_comercio: 8,
-    presuncao_servicos: 32,
-    lucro_real_anual: 0,
-  });
 
   // Cenário da reforma
   const [escopoReforma, setEscopoReforma] = useState<EscopoReforma>("cbs_ibs");
@@ -339,6 +334,9 @@ function SimulacaoCompletaProdutoTab() {
 
   const [resultado, setResultado] = useState<ResultadoSimulacao | null>(null);
   const [loading, setLoading] = useState(false);
+  const [simulacaoInput, setSimulacaoInput] = useState<SimulacaoInput | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [simulacaoSalvaId, setSimulacaoSalvaId] = useState<string | null>(null);
 
   const simular = () => {
     if (!ncm.trim() || !valorMensal) return;
@@ -346,7 +344,8 @@ function SimulacaoCompletaProdutoTab() {
 
     try {
       const valorMensalNum = parseNumBR(valorMensal);
-      const fatAnualNum = parseNumBR(faturamentoAnual) || valorMensalNum * 12;
+      // Faturamento sintético = item isolado (12× valor mensal). Mantém DAS coerente para SN.
+      const fatAnualNum = valorMensalNum * 12;
 
       const input: SimulacaoInput = {
         empresa: {
