@@ -527,11 +527,10 @@ function SimulacaoCompletaProdutoTab() {
               </div>
               <div className="space-y-2">
                 <Label>Faturamento anual (R$)</Label>
-                <Input
+                <CurrencyInput
                   value={faturamentoAnual}
-                  onChange={(e) => setFaturamentoAnual(e.target.value)}
-                  inputMode="decimal"
-                  placeholder={`Padrão: valor mensal × 12 = ${formatCurrency((Number(valorMensal) || 0) * 12)}`}
+                  onValueChange={setFaturamentoAnual}
+                  placeholder={`Padrão: valor mensal × 12 = ${formatCurrency(parseNumBR(valorMensal) * 12)}`}
                 />
               </div>
             </div>
