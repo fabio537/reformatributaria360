@@ -314,10 +314,18 @@ function SimuladorPage() {
     "IPI": Math.round(a.tributos_atuais_bruto.ipi),
     "ICMS": Math.round(a.tributos_atuais_bruto.icms),
     "ISS": Math.round(a.tributos_atuais_bruto.iss),
+    "IRPJ": Math.round(a.tributos_atuais_bruto.irpj),
+    "CSLL": Math.round(a.tributos_atuais_bruto.csll),
     "CBS": Math.round(a.ibs_cbs_bruto.cbs),
     "IBS": Math.round(a.ibs_cbs_bruto.ibs),
     "IS": Math.round(a.ibs_cbs_bruto.is),
   })) || [];
+
+  const incluiIrpjCsll = !!resultado?.anos.some(
+    (a) => a.tributos_atuais_bruto.irpj > 0 || a.tributos_atuais_bruto.csll > 0
+  );
+  const apenasCbs = escopoReforma === "somente_cbs";
+
 
   const dadosCargaLiquida = resultado?.anos.map((a) => ({
     ano: a.ano,
