@@ -89,11 +89,51 @@ export async function gerarRelatorioPDF(
   });
   y += 5;
 
-  // Resultado financeiro por ano (apenas relatório de produto)
+  // Resultado por item + Resultado financeiro por ano (apenas relatório de produto)
   if (contexto?.tipo === "produto") {
+    const venda = contexto.valor_mensal * 12;
+    const qtdAnual = (contexto.quantidade_mensal ?? 0) > 0 ? (contexto.quantidade_mensal as number) * 12 : 12;
+    const porUnidade = (contexto.quantidade_mensal ?? 0) > 0;
+    const sufixo = porUnidade ? "/unid." : "/oper.";
+    const precoUnit = venda / qtdAnual;
+
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
-    doc.text("Resultado Financeiro por Ano", 14, y);
+    doc.text("Resultado por Item", 14, y);
+    y += 7;
+
+    autoTable(doc, {
+      startY: y,
+      head: [["Ano", `Preço${sufixo}`, `Impostos${sufixo}`, "Alíq. efet.", `Insumos${sufixo}`, `Margem${sufixo}`, "Margem %"]],
+      body: resultado.anos.map((a) => {
+        const insumosLiqAnual = Math.max(0, contexto.insumos_anuais - (a.creditos.creditos_atuais + a.creditos.creditos_ibs_cbs));
+        const impUnit = a.carga_total / qtdAnual;
+        const insUnit = insumosLiqAnual / qtdAnual;
+        const margemUnit = precoUnit - impUnit - insUnit;
+        const aliqEf = venda > 0 ? (a.carga_total / venda) * 100 : 0;
+        const margemPct = precoUnit > 0 ? (margemUnit / precoUnit) * 100 : 0;
+        return [
+          String(a.ano),
+          formatBRL(precoUnit),
+          formatBRL(impUnit),
+          `${aliqEf.toFixed(1)}%`,
+          formatBRL(insUnit),
+          formatBRL(margemUnit),
+          `${margemPct.toFixed(1)}%`,
+        ];
+      }),
+      theme: "grid",
+      headStyles: { fillColor: [41, 98, 255], textColor: 255 },
+      styles: { fontSize: 8 },
+      margin: { left: 14, right: 14 },
+    });
+
+    y = (doc as any).lastAutoTable.finalY + 10;
+
+    if (y > 230) { doc.addPage(); y = 20; }
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Resultado Anual Consolidado (referência)", 14, y);
     y += 7;
 
     const venda = contexto.valor_mensal * 12;
