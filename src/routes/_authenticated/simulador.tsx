@@ -670,8 +670,10 @@ function SimuladorPage() {
                     <Bar dataKey="IPI" fill="var(--color-chart-2)" stackId="a" />
                     <Bar dataKey="ICMS" fill="var(--color-chart-3)" stackId="a" />
                     <Bar dataKey="ISS" fill="var(--color-chart-4)" stackId="a" />
+                    {incluiIrpjCsll && <Bar dataKey="IRPJ" fill="var(--color-chart-6)" stackId="a" />}
+                    {incluiIrpjCsll && <Bar dataKey="CSLL" fill="var(--color-chart-7)" stackId="a" />}
                     <Bar dataKey="CBS" fill="var(--color-chart-5)" stackId="b" />
-                     <Bar dataKey="IBS" fill="var(--color-chart-2)" stackId="b" />
+                    {!apenasCbs && <Bar dataKey="IBS" fill="var(--color-chart-2)" stackId="b" />}
                   </BarChart>
                 </ResponsiveContainer>
               </div>
