@@ -356,7 +356,7 @@ function SimulacaoCompletaProdutoTab() {
           municipio: null,
           faturamento_anual: fatAnualNum,
           optante_simples_mei: regimeTrib === "simples_nacional",
-          irpj_csll: irpjCsll,
+          irpj_csll: { incluir: false },
         },
         produtos: [
           {
@@ -395,6 +395,8 @@ function SimulacaoCompletaProdutoTab() {
 
       const res = executarSimulacao(input);
       setResultado(res);
+      setSimulacaoInput(input);
+      setSimulacaoSalvaId(null);
       toast.success("Simulação do produto concluída!");
     } catch (err) {
       console.error(err);
