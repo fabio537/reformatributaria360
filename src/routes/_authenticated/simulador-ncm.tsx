@@ -23,7 +23,43 @@ import {
 } from "@/lib/tax-engine";
 import { formatCurrency } from "@/lib/format";
 import { SimulacaoResultado } from "@/components/SimulacaoResultado";
+import { CurrencyInput } from "@/components/CurrencyInput";
+import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+
+/** Aceita "10000", "10.000", "10000,50", "10.000,50" e retorna number. */
+function parseNumBR(v: string | number | null | undefined): number {
+  if (v === null || v === undefined) return 0;
+  if (typeof v === "number") return Number.isFinite(v) ? v : 0;
+  const s = String(v).trim();
+  if (!s) return 0;
+  // Se tem vírgula, assume formato BR: remove pontos, troca vírgula por ponto
+  const norm = s.includes(",") ? s.replace(/\./g, "").replace(",", ".") : s.replace(/\.(?=\d{3}(\D|$))/g, "");
+  const n = Number(norm);
+  return Number.isFinite(n) ? n : 0;
+}
+
+type CreditoLinha = {
+  id: string;
+  fornecedor: string;
+  valor_mensal: string;
+  regime_diferenciado_fornecedor: RegimeDiferenciado;
+  aliquota_icms: string;
+  aliquota_pis: string;
+  aliquota_cofins: string;
+  aliquota_ipi: string;
+};
+
+const novaCreditoLinha = (): CreditoLinha => ({
+  id: Math.random().toString(36).slice(2),
+  fornecedor: "",
+  valor_mensal: "",
+  regime_diferenciado_fornecedor: "padrao",
+  aliquota_icms: "",
+  aliquota_pis: "",
+  aliquota_cofins: "",
+  aliquota_ipi: "",
+});
 
 export const Route = createFileRoute("/_authenticated/simulador-ncm")({
   head: () => ({
