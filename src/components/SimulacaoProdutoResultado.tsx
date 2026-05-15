@@ -15,36 +15,42 @@ function formatPct(value: number, digits = 1): string {
 
 interface Props {
   resultado: ResultadoSimulacao;
-  /** Valor mensal do produto (R$) — receita mensal do item */
+  /** Valor mensal de venda do produto SEM IPI (R$) */
   valorMensalProduto: number;
   /** Soma dos valores mensais brutos das aquisições/insumos vinculados (R$) */
   insumosMensaisBruto: number;
-  /** Quantidade vendida por mês. Se 0, o painel cai para modo "por operação". */
-  quantidadeMensal?: number;
+  /** Alíquota de IPI atual (%) — quando > 0, é somado "por fora" ao preço de venda */
+  aliquotaIpiAtual?: number;
 }
 
 export function SimulacaoProdutoResultado({
   resultado,
   valorMensalProduto,
   insumosMensaisBruto,
-  quantidadeMensal = 0,
+  aliquotaIpiAtual = 0,
 }: Props) {
-  const porUnidade = quantidadeMensal > 0;
-  const unidadeAnual = porUnidade ? quantidadeMensal * 12 : 12; // divisor para passar de "anual" para "por unidade" ou "por operação mensal"
-  const sufixo = porUnidade ? "/unid." : "/operação";
+  const sufixo = "/unid.";
+  const unidadeAnual = 12; // 1 unid./mês como referência → 12 unid./ano
 
-  const vendaAnual = valorMensalProduto * 12;
+  const vendaSemIpiAnual = valorMensalProduto * 12;
   const insumosAnuaisBruto = insumosMensaisBruto * 12;
-  const precoUnit = vendaAnual / unidadeAnual;
+  const precoSemIpi = vendaSemIpiAnual / unidadeAnual;
 
   const linhas = resultado.anos.map((a) => {
+    // IPI por fora: o IPI atual incidente naquele ano é somado ao preço de venda
+    const ipiAnual = a.tributos_atuais_bruto.ipi;
+    const vendaComIpiAnual = vendaSemIpiAnual + ipiAnual;
+    const precoUnit = vendaComIpiAnual / unidadeAnual;
+
     const insumosLiqAnual = Math.max(0, insumosAnuaisBruto - (a.creditos.creditos_atuais + a.creditos.creditos_ibs_cbs));
     const impostosUnit = a.carga_total / unidadeAnual;
     const insumosUnit = insumosLiqAnual / unidadeAnual;
+    // Margem = preço (com IPI por fora) − impostos (incluem IPI) − insumos líq.
+    // O IPI cancela: margem reflete o valor de venda sem IPI menos os demais tributos.
     const margemUnit = precoUnit - impostosUnit - insumosUnit;
-    const aliqEfetiva = vendaAnual > 0 ? (a.carga_total / vendaAnual) * 100 : 0;
-    const aliqAtuais = vendaAnual > 0 ? (a.tributos_atuais_bruto.total / vendaAnual) * 100 : 0;
-    const aliqIbsCbs = vendaAnual > 0 ? (a.ibs_cbs_bruto.total / vendaAnual) * 100 : 0;
+    const aliqEfetiva = vendaComIpiAnual > 0 ? (a.carga_total / vendaComIpiAnual) * 100 : 0;
+    const aliqAtuais = vendaComIpiAnual > 0 ? (a.tributos_atuais_bruto.total / vendaComIpiAnual) * 100 : 0;
+    const aliqIbsCbs = vendaComIpiAnual > 0 ? (a.ibs_cbs_bruto.total / vendaComIpiAnual) * 100 : 0;
     const margemPct = precoUnit > 0 ? (margemUnit / precoUnit) * 100 : 0;
     return {
       ano: a.ano,
