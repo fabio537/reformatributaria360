@@ -729,7 +729,7 @@ function SimulacaoCompletaProdutoTab() {
             resultado={resultado}
             valorMensalProduto={parseNumBR(valorMensal)}
             insumosMensaisBruto={insumosMensaisBruto}
-            quantidadeMensal={parseNumBR(quantidadeMensal)}
+            aliquotaIpiAtual={parseNumBR(aliquotaIpi)}
           />
 
           <details className="group rounded-lg border bg-muted/20">
