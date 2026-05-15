@@ -139,6 +139,7 @@ export async function gerarRelatorioPDF(
       startY: y,
       head: [["Ano", "Valor de venda", "Impostos", "Insumos (líq.)", "Margem (R$)", "Margem (%)"]],
       body: resultado.anos.map((a) => {
+        const venda = vendaSemIpi + a.tributos_atuais_bruto.ipi;
         const insumosLiq = Math.max(0, contexto.insumos_anuais - (a.creditos.creditos_atuais + a.creditos.creditos_ibs_cbs));
         const margem = venda - a.carga_total - insumosLiq;
         const margemPct = venda > 0 ? (margem / venda) * 100 : 0;
