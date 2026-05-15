@@ -311,7 +311,6 @@ function SimulacaoCompletaProdutoTab() {
 
   // Valores e alíquotas atuais
   const [valorMensal, setValorMensal] = useState("10000");
-  const [quantidadeMensal, setQuantidadeMensal] = useState("0");
   const [aliquotaPis, setAliquotaPis] = useState("1.65");
   const [aliquotaCofins, setAliquotaCofins] = useState("7.6");
   const [aliquotaIpi, setAliquotaIpi] = useState("0");
