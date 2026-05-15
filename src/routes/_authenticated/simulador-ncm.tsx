@@ -362,7 +362,7 @@ function SimulacaoCompletaProdutoTab() {
             descricao: descricao || "Produto",
             ncm,
             valor_mensal: valorMensalNum,
-            quantidade_mensal: parseNumBR(quantidadeMensal),
+            quantidade_mensal: 0,
             regime_diferenciado: regimeDif,
             tipo_operacao: tipoOperacao,
             destino_operacao: destinoOperacao,
