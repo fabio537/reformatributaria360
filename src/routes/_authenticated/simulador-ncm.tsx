@@ -445,7 +445,7 @@ function SimulacaoCompletaProdutoTab() {
         descricao: descricao || `Produto NCM ${ncm}`,
         regime: regimeTrib,
         valor_mensal: parseNumBR(valorMensal),
-        aliquota_ipi_atual: parseNumBR(aliquotaIpi),
+        
         aliquotas_atuais: {
           pis: parseNumBR(aliquotaPis),
           cofins: parseNumBR(aliquotaCofins),
