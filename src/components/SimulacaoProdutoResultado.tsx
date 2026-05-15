@@ -81,8 +81,11 @@ export function SimulacaoProdutoResultado({
         <CardHeader>
           <CardTitle>Resultado por item</CardTitle>
           <CardDescription>
-            Foco no impacto da reforma sobre <strong>uma {porUnidade ? "unidade" : "operação mensal"}</strong> do produto —
+            Foco no impacto da reforma sobre <strong>uma unidade</strong> do produto —
             comparando o ano-base ({base.ano}) com o ano-alvo ({ultimo.ano}).
+            {aliquotaIpiAtual > 0 && (
+              <> O IPI ({aliquotaIpiAtual.toFixed(2)}%) é calculado <strong>por fora</strong> e somado ao preço.</>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -96,7 +99,7 @@ export function SimulacaoProdutoResultado({
               <CardContent>
                 <div className="text-2xl font-bold tabular-nums">{formatBRL(ultimo.preco)}</div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {porUnidade ? `${quantidadeMensal.toLocaleString("pt-BR")} unid./mês` : "Receita mensal do item"}
+                  {aliquotaIpiAtual > 0 ? `Inclui IPI por fora (${aliquotaIpiAtual.toFixed(2)}%)` : "Sem IPI incidente"}
                 </p>
               </CardContent>
             </Card>
