@@ -311,7 +311,6 @@ function SimulacaoCompletaProdutoTab() {
 
   // Valores e alíquotas atuais
   const [valorMensal, setValorMensal] = useState("10000");
-  const [quantidadeMensal, setQuantidadeMensal] = useState("0");
   const [aliquotaPis, setAliquotaPis] = useState("1.65");
   const [aliquotaCofins, setAliquotaCofins] = useState("7.6");
   const [aliquotaIpi, setAliquotaIpi] = useState("0");
@@ -363,7 +362,7 @@ function SimulacaoCompletaProdutoTab() {
             descricao: descricao || "Produto",
             ncm,
             valor_mensal: valorMensalNum,
-            quantidade_mensal: parseNumBR(quantidadeMensal),
+            quantidade_mensal: 0,
             regime_diferenciado: regimeDif,
             tipo_operacao: tipoOperacao,
             destino_operacao: destinoOperacao,
@@ -446,7 +445,7 @@ function SimulacaoCompletaProdutoTab() {
         descricao: descricao || `Produto NCM ${ncm}`,
         regime: regimeTrib,
         valor_mensal: parseNumBR(valorMensal),
-        quantidade_mensal: parseNumBR(quantidadeMensal),
+        
         aliquotas_atuais: {
           pis: parseNumBR(aliquotaPis),
           cofins: parseNumBR(aliquotaCofins),
@@ -535,14 +534,13 @@ function SimulacaoCompletaProdutoTab() {
           {/* Valores e alíquotas atuais */}
           <div className="space-y-3 border rounded-lg p-4">
             <h3 className="text-sm font-semibold">Valores e alíquotas atuais</h3>
+            <p className="text-xs text-muted-foreground">
+              Informe o valor de venda <strong>sem IPI</strong>. Quando houver IPI, ele será calculado “por fora” e somado ao preço final.
+            </p>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <div className="space-y-2">
-                <Label>Valor mensal (R$) *</Label>
+              <div className="space-y-2 md:col-span-2">
+                <Label>Valor atual de venda do produto (R$) *</Label>
                 <CurrencyInput value={valorMensal} onValueChange={setValorMensal} />
-              </div>
-              <div className="space-y-2">
-                <Label>Quantidade mensal</Label>
-                <Input value={quantidadeMensal} onChange={(e) => setQuantidadeMensal(e.target.value)} inputMode="decimal" />
               </div>
               <div />
               <div className="space-y-2">
@@ -731,7 +729,7 @@ function SimulacaoCompletaProdutoTab() {
             resultado={resultado}
             valorMensalProduto={parseNumBR(valorMensal)}
             insumosMensaisBruto={insumosMensaisBruto}
-            quantidadeMensal={parseNumBR(quantidadeMensal)}
+            aliquotaIpiAtual={parseNumBR(aliquotaIpi)}
           />
 
           <details className="group rounded-lg border bg-muted/20">

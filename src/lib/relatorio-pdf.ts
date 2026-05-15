@@ -16,8 +16,6 @@ export interface RelatorioContextoProduto {
   descricao: string;
   regime: string;
   valor_mensal: number;
-  /** Quantidade mensal vendida. Se 0/omitido, o relatório usa modo "por operação". */
-  quantidade_mensal?: number;
   aliquotas_atuais: { pis: number; cofins: number; ipi: number; icms: number };
   insumos_anuais: number;
 }
@@ -91,11 +89,9 @@ export async function gerarRelatorioPDF(
 
   // Resultado por item + Resultado financeiro por ano (apenas relatório de produto)
   if (contexto?.tipo === "produto") {
-    const venda = contexto.valor_mensal * 12;
-    const qtdAnual = (contexto.quantidade_mensal ?? 0) > 0 ? (contexto.quantidade_mensal as number) * 12 : 12;
-    const porUnidade = (contexto.quantidade_mensal ?? 0) > 0;
-    const sufixo = porUnidade ? "/unid." : "/oper.";
-    const precoUnit = venda / qtdAnual;
+    const vendaSemIpi = contexto.valor_mensal * 12;
+    const qtdAnual = 12; // 1 unid./mês como referência
+    const sufixo = "/unid.";
 
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
@@ -106,11 +102,14 @@ export async function gerarRelatorioPDF(
       startY: y,
       head: [["Ano", `Preço${sufixo}`, `Impostos${sufixo}`, "Alíq. efet.", `Insumos${sufixo}`, `Margem${sufixo}`, "Margem %"]],
       body: resultado.anos.map((a) => {
+        // IPI por fora: somado ao preço de venda no ano em que incide
+        const vendaComIpi = vendaSemIpi + a.tributos_atuais_bruto.ipi;
+        const precoUnit = vendaComIpi / qtdAnual;
         const insumosLiqAnual = Math.max(0, contexto.insumos_anuais - (a.creditos.creditos_atuais + a.creditos.creditos_ibs_cbs));
         const impUnit = a.carga_total / qtdAnual;
         const insUnit = insumosLiqAnual / qtdAnual;
         const margemUnit = precoUnit - impUnit - insUnit;
-        const aliqEf = venda > 0 ? (a.carga_total / venda) * 100 : 0;
+        const aliqEf = vendaComIpi > 0 ? (a.carga_total / vendaComIpi) * 100 : 0;
         const margemPct = precoUnit > 0 ? (margemUnit / precoUnit) * 100 : 0;
         return [
           String(a.ano),
@@ -140,6 +139,7 @@ export async function gerarRelatorioPDF(
       startY: y,
       head: [["Ano", "Valor de venda", "Impostos", "Insumos (líq.)", "Margem (R$)", "Margem (%)"]],
       body: resultado.anos.map((a) => {
+        const venda = vendaSemIpi + a.tributos_atuais_bruto.ipi;
         const insumosLiq = Math.max(0, contexto.insumos_anuais - (a.creditos.creditos_atuais + a.creditos.creditos_ibs_cbs));
         const margem = venda - a.carga_total - insumosLiq;
         const margemPct = venda > 0 ? (margem / venda) * 100 : 0;
