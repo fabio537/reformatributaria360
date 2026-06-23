@@ -1,0 +1,14 @@
+# Reforma Tributária 360
+
+> Plataforma para empresas brasileiras simularem o impacto da Reforma Tributária (CBS, IBS, IS — LC 214/2025) sobre operações, produtos por NCM e margem econômica, durante a transição 2026–2033.
+
+Inclui simulador por faturamento, simulador por produto/NCM com resultado por unidade (preço, alíquota efetiva, insumos líquidos e margem), dashboard comparativo ano a ano, histórico de simulações por empresa, checklist de adequação, base legal e exportação em PDF.
+
+## Páginas
+
+- [Início](/): apresentação da plataforma e principais recursos.
+- [Login](/login): acesso de usuários cadastrados (e-mail/senha ou Google).
+
+## Opcional
+
+- [Baixar app](/baixar-app): instruções para instalar como PWA.
