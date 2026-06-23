@@ -32,9 +32,9 @@ import {
 import { UserPlus, Shield, Users, Eye, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { createUserFn } from "@/server/create-user";
-import { updateUserFn } from "@/server/update-user";
-import { listUserEmailsFn } from "@/server/list-user-emails";
+import { createUserFn } from "@/lib/create-user.functions";
+import { updateUserFn } from "@/lib/update-user.functions";
+import { listUserEmailsFn } from "@/lib/list-user-emails.functions";
 
 export const Route = createFileRoute("/_authenticated/usuarios")({
   head: () => ({
