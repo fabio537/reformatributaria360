@@ -979,11 +979,12 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
       tribAtualAno.icms + tribAtualAno.iss + tribAtualAno.das +
       tribAtualAno.irpj + tribAtualAno.csll;
 
+    const cbsFatorReducaoAno = t.cbs_reducao_pp > 0 ? 1 - t.cbs_reducao_pp / ALIQUOTA_CBS_REF : 1;
     let cbsAno: number;
     if (t.cbs_teste) {
       cbsAno = fatMensal * t.cbs_pct * 12;
     } else {
-      cbsAno = ibsCbsMensal.cbs * t.cbs_pct * 12;
+      cbsAno = ibsCbsMensal.cbs * t.cbs_pct * cbsFatorReducaoAno * 12;
     }
 
     let ibsAno: number;
@@ -1017,10 +1018,10 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
     if (t.sem_incidencia_real) {
       creditosNovosAno = 0;
     } else if (t.ibs_teste) {
-      creditosNovosAno = (cred.novos_mensal_cbs * t.cbs_pct +
+      creditosNovosAno = (cred.novos_mensal_cbs * t.cbs_pct * cbsFatorReducaoAno +
         credIbsMensal * (t.ibs_pct / ALIQUOTA_IBS_REF)) * 12;
     } else {
-      creditosNovosAno = (cred.novos_mensal_cbs * t.cbs_pct +
+      creditosNovosAno = (cred.novos_mensal_cbs * t.cbs_pct * cbsFatorReducaoAno +
         credIbsMensal * t.ibs_pct) * 12;
     }
 
