@@ -721,9 +721,9 @@ function gerarAlertas(input: SimulacaoInput): string[] {
   // Alerta sobre a transição
   alertas.push(
     "📅 Cronograma da transição: 2026 = teste sem incidência real (CBS 0,9% + IBS 0,1% compensáveis com PIS/COFINS); " +
-    "2027 = CBS 100%, PIS/COFINS e IPI extintos; " +
+    "2027-2028 = CBS reduzida em 0,1 p.p. (~8,7%) + IBS 0,1% efetivo (0,05% UF + 0,05% município) com crédito pleno, PIS/COFINS e IPI extintos (LC 214/2025, arts. 344 e 347); " +
     "2029-2032 = IBS progressivo (10%→75%), ICMS/ISS reduzidos; " +
-    "2033 = sistema novo integral."
+    "2033 = sistema novo integral (CBS 8,8% + IBS 17,7% = 26,5%)."
   );
 
   alertas.push(

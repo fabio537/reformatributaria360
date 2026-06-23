@@ -15,6 +15,7 @@ const CHECKLIST_ITEMS = [
       { key: "atualizacao_erp", label: "Atualização do ERP (bases de cálculo, alíquotas, CST, cClassTrib)" },
       { key: "notas_tecnicas_xml", label: "Atualização das notas técnicas XML" },
       { key: "parametros_erp", label: "Parâmetros no ERP (TES, Tabela Z, J1BTAX, TAXBRA)" },
+      { key: "destaque_aliquotas_nf", label: "Destaque obrigatório de IBS/CBS na NF a partir de ago/2026 (exceto Simples em 2026)" },
     ],
   },
   {
