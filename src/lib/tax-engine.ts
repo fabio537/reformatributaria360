@@ -740,7 +740,9 @@ function formatarBRL(v: number): string {
 
 function faseTransicao(t: TransicaoAno): string {
   if (t.sem_incidencia_real) return "Teste sem incidência real (CBS 0,9% + IBS 0,1% compensáveis)";
-  if (!t.cbs_teste && t.ibs_teste) return "CBS integral, IBS teste (0,1%). IPI zerado.";
+  if (t.cbs_reducao_pp > 0) {
+    return `CBS reduzida em ${(t.cbs_reducao_pp * 100).toFixed(1)} p.p. (~${((ALIQUOTA_CBS_REF - t.cbs_reducao_pp) * 100).toFixed(1)}%), IBS 0,1% efetivo com crédito pleno. IPI zerado (exceto ZFM).`;
+  }
   if (t.ibs_pct < 1.0) return `Transição (IBS ${(t.ibs_pct * 100).toFixed(0)}%, ICMS/ISS ${(t.icms_iss_fator * 100).toFixed(0)}%)`;
   return "Sistema novo integral";
 }
@@ -796,7 +798,8 @@ export function simularAliquotaPorNcm(input: SimulacaoNcmInput): ResultadoSimula
   }
 
   const cronograma = CRONOGRAMA_TRANSICAO.map((ano) => {
-    const aliquotaCbs = ano.cbs_teste ? ano.cbs_pct : aliquotas.cbs * ano.cbs_pct;
+    const cbsFatorReducao = ano.cbs_reducao_pp > 0 ? 1 - ano.cbs_reducao_pp / ALIQUOTA_CBS_REF : 1;
+    const aliquotaCbs = ano.cbs_teste ? ano.cbs_pct : aliquotas.cbs * ano.cbs_pct * cbsFatorReducao;
     const aliquotaIbs = ano.ibs_teste ? ano.ibs_pct : aliquotas.ibs * ano.ibs_pct;
     const { mantidos, descontinuados } = nomeTributosMantidos(ano, isZfm);
 
