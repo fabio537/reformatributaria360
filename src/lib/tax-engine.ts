@@ -1,15 +1,20 @@
 /**
  * Motor de Cálculo Tributário — Reforma Tributária
- * 
+ *
  * Baseado em:
  * - EC 132/2023 (Emenda Constitucional da Reforma Tributária)
- * - LC 214/2025 (Lei Complementar do IBS/CBS)
- * - LCP 227 (Comitê Gestor do IBS)
- * 
+ * - LC 214/2025 (Lei Complementar do IBS/CBS), com destaque para arts. 344 e 347
+ * - LC 227/2026 (Comitê Gestor do IBS — CGIBS, atualiza a LC 214/2025)
+ *
  * Alíquotas de referência conforme LC 214/2025:
  * - CBS (Contribuição sobre Bens e Serviços – federal): 8,8%
  * - IBS (Imposto sobre Bens e Serviços – estadual/municipal): 17,7%
  * - Total referência: 26,5%
+ *
+ * Regra de transição 2027–2028 (LC 214/2025, arts. 344 e 347):
+ * - CBS = alíquota de referência REDUZIDA em 0,1 ponto percentual (8,7%).
+ * - IBS = 0,1% com arrecadação efetiva (0,05% estadual + 0,05% municipal),
+ *   com direito a crédito pleno (não-cumulatividade).
  */
 
 import { verificarNcmZfm } from "./ncm-zfm";
@@ -19,6 +24,19 @@ import { verificarNcmZfm } from "./ncm-zfm";
 export const ALIQUOTA_CBS_REF = 0.088; // 8,8%
 export const ALIQUOTA_IBS_REF = 0.177; // 17,7%
 export const ALIQUOTA_TOTAL_REF = ALIQUOTA_CBS_REF + ALIQUOTA_IBS_REF; // 26,5%
+
+/**
+ * Redução de transição da CBS em 2027 e 2028 (LC 214/2025, art. 344).
+ * A CBS desses dois anos corresponde à alíquota de referência reduzida
+ * em 0,1 ponto percentual (8,7% em vez de 8,8%).
+ */
+export const CBS_REDUCAO_TRANSICAO_PP = 0.001;
+
+/**
+ * IBS de transição em 2027 e 2028 (LC 214/2025, art. 347): 0,1% efetivos
+ * (0,05% estadual + 0,05% municipal), com não-cumulatividade plena.
+ */
+export const IBS_TRANSICAO_2027_2028 = 0.001;
 
 // ─── Regimes Diferenciados (LC 214/2025, Arts. 257 a 312) ──────────────────
 
@@ -99,24 +117,19 @@ function aliquotaEfetivaDAS(rbt12: number, anexo: FaixaDAS[]): number {
   return (rbt12 * faixa.aliquota - faixa.deducao) / rbt12;
 }
 
-// ─── Cronograma de Transição (EC 132/2023, Art. 124 a 133) ─────────────────
-//
-// CRONOGRAMA CORRETO conforme EC 132/2023:
+// ─── Cronograma de Transição (EC 132/2023 + LC 214/2025 arts. 344 e 347) ───
 //
 // 2026: TESTE — CBS 0,9% + IBS 0,1% (compensáveis com PIS/COFINS).
-//        NÃO HÁ INCIDÊNCIA REAL — são alíquotas-teste sem impacto na carga tributária.
-//        Tributos atuais mantidos integralmente (PIS, COFINS, IPI, ICMS, ISS).
+//        NÃO HÁ INCIDÊNCIA REAL. Tributos atuais mantidos integralmente.
 //
-// 2027: CBS entra em vigor a 100% (8,8%). PIS e COFINS são EXTINTOS.
-//        IBS mantém alíquota-teste de 0,1%.
-//        ICMS e ISS mantidos integralmente.
-//        IPI REDUZIDO A ZERO (exceto produtos com incidência na Zona Franca de Manaus).
+// 2027 e 2028: início da arrecadação efetiva (LC 214/2025, arts. 344 e 347).
+//        CBS = alíquota de referência REDUZIDA em 0,1 p.p. (~8,7%).
+//        IBS = 0,1% efetivos (0,05% UF + 0,05% município), com crédito pleno.
+//        PIS e COFINS EXTINTOS. IPI ZERADO (exceto ZFM). ICMS/ISS mantidos.
+//        Imposto Seletivo (IS) instituído.
 //
-// 2028: Idem 2027.
-//
-// 2029-2032: CBS 100%. IBS em transição progressiva (10%, 25%, 50%, 75%).
-//        ICMS e ISS reduzidos proporcionalmente.
-//        IPI permanece zerado (exceto ZFM).
+// 2029-2032: CBS 100%. IBS em transição (10%, 25%, 50%, 75%).
+//        ICMS e ISS reduzidos proporcionalmente. IPI permanece zerado (exceto ZFM).
 //
 // 2033: IBS 100%. ICMS e ISS extintos. IPI zerado (exceto ZFM).
 
@@ -126,6 +139,8 @@ export interface TransicaoAno {
   cbs_pct: number;
   /** Se true, CBS é alíquota-teste fixa (não proporcional à alíquota de referência) */
   cbs_teste: boolean;
+  /** Redução em pontos percentuais da CBS (0,001 em 2027–2028, LC 214/2025 art. 344) */
+  cbs_reducao_pp: number;
   /** Percentual do IBS aplicado (0 a 1.0 da alíquota de referência 17,7%) */
   ibs_pct: number;
   /** Se true, IBS é alíquota-teste fixa */
@@ -140,32 +155,35 @@ export interface TransicaoAno {
   sem_incidencia_real: boolean;
 }
 
+// IBS 0,1% em 2027/2028 expresso como % da alíquota de referência
+const IBS_PCT_TRANSICAO = IBS_TRANSICAO_2027_2028 / ALIQUOTA_IBS_REF; // ≈ 0,00565
+
 export const CRONOGRAMA_TRANSICAO: TransicaoAno[] = [
-  // 2026: Teste — CBS 0,9%, IBS 0,1%. Sem incidência real (compensáveis). Tributos atuais 100%.
+  // 2026: Teste — CBS 0,9%, IBS 0,1%. Sem incidência real (compensáveis).
   {
     ano: 2026,
-    cbs_pct: 0.009, cbs_teste: true,
+    cbs_pct: 0.009, cbs_teste: true, cbs_reducao_pp: 0,
     ibs_pct: 0.001, ibs_teste: true,
     pis_cofins_fator: 1.0,
     icms_iss_fator: 1.0,
     ipi_fator: 1.0,
     sem_incidencia_real: true,
   },
-  // 2027: CBS 100%. PIS/COFINS EXTINTOS. IPI ZERADO (exceto ZFM). IBS 0,1% teste. ICMS/ISS mantidos.
+  // 2027: CBS = ref - 0,1 p.p. (~8,7%). IBS 0,1% efetivo com crédito pleno.
   {
     ano: 2027,
-    cbs_pct: 1.0, cbs_teste: false,
-    ibs_pct: 0.001, ibs_teste: true,
+    cbs_pct: 1.0, cbs_teste: false, cbs_reducao_pp: CBS_REDUCAO_TRANSICAO_PP,
+    ibs_pct: IBS_PCT_TRANSICAO, ibs_teste: false,
     pis_cofins_fator: 0.0,
     icms_iss_fator: 1.0,
     ipi_fator: 0.0,
     sem_incidencia_real: false,
   },
-  // 2028: Idem 2027.
+  // 2028: idem 2027.
   {
     ano: 2028,
-    cbs_pct: 1.0, cbs_teste: false,
-    ibs_pct: 0.001, ibs_teste: true,
+    cbs_pct: 1.0, cbs_teste: false, cbs_reducao_pp: CBS_REDUCAO_TRANSICAO_PP,
+    ibs_pct: IBS_PCT_TRANSICAO, ibs_teste: false,
     pis_cofins_fator: 0.0,
     icms_iss_fator: 1.0,
     ipi_fator: 0.0,
@@ -174,7 +192,7 @@ export const CRONOGRAMA_TRANSICAO: TransicaoAno[] = [
   // 2029: CBS 100%. IBS 10%. ICMS/ISS reduzidos 10%. IPI zerado.
   {
     ano: 2029,
-    cbs_pct: 1.0, cbs_teste: false,
+    cbs_pct: 1.0, cbs_teste: false, cbs_reducao_pp: 0,
     ibs_pct: 0.10, ibs_teste: false,
     pis_cofins_fator: 0.0,
     icms_iss_fator: 0.90,
@@ -184,7 +202,7 @@ export const CRONOGRAMA_TRANSICAO: TransicaoAno[] = [
   // 2030: CBS 100%. IBS 25%. ICMS/ISS reduzidos 25%. IPI zerado.
   {
     ano: 2030,
-    cbs_pct: 1.0, cbs_teste: false,
+    cbs_pct: 1.0, cbs_teste: false, cbs_reducao_pp: 0,
     ibs_pct: 0.25, ibs_teste: false,
     pis_cofins_fator: 0.0,
     icms_iss_fator: 0.75,
@@ -194,7 +212,7 @@ export const CRONOGRAMA_TRANSICAO: TransicaoAno[] = [
   // 2031: CBS 100%. IBS 50%. ICMS/ISS reduzidos 50%. IPI zerado.
   {
     ano: 2031,
-    cbs_pct: 1.0, cbs_teste: false,
+    cbs_pct: 1.0, cbs_teste: false, cbs_reducao_pp: 0,
     ibs_pct: 0.50, ibs_teste: false,
     pis_cofins_fator: 0.0,
     icms_iss_fator: 0.50,
@@ -204,7 +222,7 @@ export const CRONOGRAMA_TRANSICAO: TransicaoAno[] = [
   // 2032: CBS 100%. IBS 75%. ICMS/ISS reduzidos 75%. IPI zerado.
   {
     ano: 2032,
-    cbs_pct: 1.0, cbs_teste: false,
+    cbs_pct: 1.0, cbs_teste: false, cbs_reducao_pp: 0,
     ibs_pct: 0.75, ibs_teste: false,
     pis_cofins_fator: 0.0,
     icms_iss_fator: 0.25,
@@ -214,7 +232,7 @@ export const CRONOGRAMA_TRANSICAO: TransicaoAno[] = [
   // 2033: IBS 100%. ICMS/ISS extintos. IPI zerado.
   {
     ano: 2033,
-    cbs_pct: 1.0, cbs_teste: false,
+    cbs_pct: 1.0, cbs_teste: false, cbs_reducao_pp: 0,
     ibs_pct: 1.0, ibs_teste: false,
     pis_cofins_fator: 0.0,
     icms_iss_fator: 0.0,
@@ -703,9 +721,9 @@ function gerarAlertas(input: SimulacaoInput): string[] {
   // Alerta sobre a transição
   alertas.push(
     "📅 Cronograma da transição: 2026 = teste sem incidência real (CBS 0,9% + IBS 0,1% compensáveis com PIS/COFINS); " +
-    "2027 = CBS 100%, PIS/COFINS e IPI extintos; " +
+    "2027-2028 = CBS reduzida em 0,1 p.p. (~8,7%) + IBS 0,1% efetivo (0,05% UF + 0,05% município) com crédito pleno, PIS/COFINS e IPI extintos (LC 214/2025, arts. 344 e 347); " +
     "2029-2032 = IBS progressivo (10%→75%), ICMS/ISS reduzidos; " +
-    "2033 = sistema novo integral."
+    "2033 = sistema novo integral (CBS 8,8% + IBS 17,7% = 26,5%)."
   );
 
   alertas.push(
@@ -722,7 +740,9 @@ function formatarBRL(v: number): string {
 
 function faseTransicao(t: TransicaoAno): string {
   if (t.sem_incidencia_real) return "Teste sem incidência real (CBS 0,9% + IBS 0,1% compensáveis)";
-  if (!t.cbs_teste && t.ibs_teste) return "CBS integral, IBS teste (0,1%). IPI zerado.";
+  if (t.cbs_reducao_pp > 0) {
+    return `CBS reduzida em ${(t.cbs_reducao_pp * 100).toFixed(1)} p.p. (~${((ALIQUOTA_CBS_REF - t.cbs_reducao_pp) * 100).toFixed(1)}%), IBS 0,1% efetivo com crédito pleno. IPI zerado (exceto ZFM).`;
+  }
   if (t.ibs_pct < 1.0) return `Transição (IBS ${(t.ibs_pct * 100).toFixed(0)}%, ICMS/ISS ${(t.icms_iss_fator * 100).toFixed(0)}%)`;
   return "Sistema novo integral";
 }
@@ -778,7 +798,8 @@ export function simularAliquotaPorNcm(input: SimulacaoNcmInput): ResultadoSimula
   }
 
   const cronograma = CRONOGRAMA_TRANSICAO.map((ano) => {
-    const aliquotaCbs = ano.cbs_teste ? ano.cbs_pct : aliquotas.cbs * ano.cbs_pct;
+    const cbsFatorReducao = ano.cbs_reducao_pp > 0 ? 1 - ano.cbs_reducao_pp / ALIQUOTA_CBS_REF : 1;
+    const aliquotaCbs = ano.cbs_teste ? ano.cbs_pct : aliquotas.cbs * ano.cbs_pct * cbsFatorReducao;
     const aliquotaIbs = ano.ibs_teste ? ano.ibs_pct : aliquotas.ibs * ano.ibs_pct;
     const { mantidos, descontinuados } = nomeTributosMantidos(ano, isZfm);
 
@@ -958,11 +979,12 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
       tribAtualAno.icms + tribAtualAno.iss + tribAtualAno.das +
       tribAtualAno.irpj + tribAtualAno.csll;
 
+    const cbsFatorReducaoAno = t.cbs_reducao_pp > 0 ? 1 - t.cbs_reducao_pp / ALIQUOTA_CBS_REF : 1;
     let cbsAno: number;
     if (t.cbs_teste) {
       cbsAno = fatMensal * t.cbs_pct * 12;
     } else {
-      cbsAno = ibsCbsMensal.cbs * t.cbs_pct * 12;
+      cbsAno = ibsCbsMensal.cbs * t.cbs_pct * cbsFatorReducaoAno * 12;
     }
 
     let ibsAno: number;
@@ -996,10 +1018,10 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
     if (t.sem_incidencia_real) {
       creditosNovosAno = 0;
     } else if (t.ibs_teste) {
-      creditosNovosAno = (cred.novos_mensal_cbs * t.cbs_pct +
+      creditosNovosAno = (cred.novos_mensal_cbs * t.cbs_pct * cbsFatorReducaoAno +
         credIbsMensal * (t.ibs_pct / ALIQUOTA_IBS_REF)) * 12;
     } else {
-      creditosNovosAno = (cred.novos_mensal_cbs * t.cbs_pct +
+      creditosNovosAno = (cred.novos_mensal_cbs * t.cbs_pct * cbsFatorReducaoAno +
         credIbsMensal * t.ibs_pct) * 12;
     }
 
