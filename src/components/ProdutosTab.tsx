@@ -337,6 +337,7 @@ export function ProdutosTab({ empresaId }: { empresaId: string }) {
         open={importOpen}
         onOpenChange={setImportOpen}
         tableName="produtos"
+        entity="produtos"
         fields={importFields}
         extraData={{ empresa_id: empresaId }}
         onSuccess={fetchItems}
