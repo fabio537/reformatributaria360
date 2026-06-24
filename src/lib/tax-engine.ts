@@ -373,7 +373,10 @@ export interface DetalheIbsCbs {
 export interface CreditosDetalhe {
   creditos_atuais: number;
   creditos_ibs_cbs: number;
+  /** Origem do crédito IBS/CBS no novo regime. */
+  origem_credito_novo?: "real" | "estimado" | "nenhum";
 }
+
 
 export interface ResultadoAno {
   ano: number;
