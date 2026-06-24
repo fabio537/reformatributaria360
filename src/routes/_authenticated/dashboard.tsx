@@ -88,6 +88,10 @@ function DashboardPage() {
         ))}
       </div>
 
+      {linkedEmpresa.empresaId && (
+        <AnaliseEmpresaImportada empresaId={linkedEmpresa.empresaId} />
+      )}
+
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
