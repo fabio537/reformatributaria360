@@ -126,13 +126,13 @@ function SimuladorPage() {
 
   useEffect(() => {
     supabase.from("empresas").select("id, razao_social, cnpj").order("razao_social").then(({ data }) => {
-      const empresasDisponiveis = auth.hasRole("cliente") && linkedEmpresa.empresaId
+      const empresasDisponiveis = linkedEmpresa.empresaId
         ? (data || []).filter((empresa) => empresa.id === linkedEmpresa.empresaId)
         : (data || []);
 
       setEmpresas(empresasDisponiveis);
 
-      if (auth.hasRole("cliente") && linkedEmpresa.empresaId) {
+      if (linkedEmpresa.empresaId) {
         setEmpresaId(linkedEmpresa.empresaId);
       }
     });
