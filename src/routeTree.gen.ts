@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedSimuladorNcmRouteImport } from './routes/_authenticated/simulador-ncm'
 import { Route as AuthenticatedSimuladorRouteImport } from './routes/_authenticated/simulador'
+import { Route as AuthenticatedSimplesDasRouteImport } from './routes/_authenticated/simples-das'
 import { Route as AuthenticatedPrecificacaoRouteImport } from './routes/_authenticated/precificacao'
 import { Route as AuthenticatedMinhaEmpresaRouteImport } from './routes/_authenticated/minha-empresa'
 import { Route as AuthenticatedEmpresasRouteImport } from './routes/_authenticated/empresas'
@@ -54,6 +55,11 @@ const AuthenticatedSimuladorNcmRoute =
 const AuthenticatedSimuladorRoute = AuthenticatedSimuladorRouteImport.update({
   id: '/simulador',
   path: '/simulador',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSimplesDasRoute = AuthenticatedSimplesDasRouteImport.update({
+  id: '/simples-das',
+  path: '/simples-das',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedPrecificacaoRoute =
@@ -123,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/empresas': typeof AuthenticatedEmpresasRouteWithChildren
   '/minha-empresa': typeof AuthenticatedMinhaEmpresaRoute
   '/precificacao': typeof AuthenticatedPrecificacaoRoute
+  '/simples-das': typeof AuthenticatedSimplesDasRoute
   '/simulador': typeof AuthenticatedSimuladorRoute
   '/simulador-ncm': typeof AuthenticatedSimuladorNcmRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
@@ -139,6 +146,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/minha-empresa': typeof AuthenticatedMinhaEmpresaRoute
   '/precificacao': typeof AuthenticatedPrecificacaoRoute
+  '/simples-das': typeof AuthenticatedSimplesDasRoute
   '/simulador': typeof AuthenticatedSimuladorRoute
   '/simulador-ncm': typeof AuthenticatedSimuladorNcmRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
@@ -158,6 +166,7 @@ export interface FileRoutesById {
   '/_authenticated/empresas': typeof AuthenticatedEmpresasRouteWithChildren
   '/_authenticated/minha-empresa': typeof AuthenticatedMinhaEmpresaRoute
   '/_authenticated/precificacao': typeof AuthenticatedPrecificacaoRoute
+  '/_authenticated/simples-das': typeof AuthenticatedSimplesDasRoute
   '/_authenticated/simulador': typeof AuthenticatedSimuladorRoute
   '/_authenticated/simulador-ncm': typeof AuthenticatedSimuladorNcmRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
@@ -177,6 +186,7 @@ export interface FileRouteTypes {
     | '/empresas'
     | '/minha-empresa'
     | '/precificacao'
+    | '/simples-das'
     | '/simulador'
     | '/simulador-ncm'
     | '/usuarios'
@@ -193,6 +203,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/minha-empresa'
     | '/precificacao'
+    | '/simples-das'
     | '/simulador'
     | '/simulador-ncm'
     | '/usuarios'
@@ -211,6 +222,7 @@ export interface FileRouteTypes {
     | '/_authenticated/empresas'
     | '/_authenticated/minha-empresa'
     | '/_authenticated/precificacao'
+    | '/_authenticated/simples-das'
     | '/_authenticated/simulador'
     | '/_authenticated/simulador-ncm'
     | '/_authenticated/usuarios'
@@ -266,6 +278,13 @@ declare module '@tanstack/react-router' {
       path: '/simulador'
       fullPath: '/simulador'
       preLoaderRoute: typeof AuthenticatedSimuladorRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/simples-das': {
+      id: '/_authenticated/simples-das'
+      path: '/simples-das'
+      fullPath: '/simples-das'
+      preLoaderRoute: typeof AuthenticatedSimplesDasRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/precificacao': {
@@ -365,6 +384,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedEmpresasRoute: typeof AuthenticatedEmpresasRouteWithChildren
   AuthenticatedMinhaEmpresaRoute: typeof AuthenticatedMinhaEmpresaRoute
   AuthenticatedPrecificacaoRoute: typeof AuthenticatedPrecificacaoRoute
+  AuthenticatedSimplesDasRoute: typeof AuthenticatedSimplesDasRoute
   AuthenticatedSimuladorRoute: typeof AuthenticatedSimuladorRoute
   AuthenticatedSimuladorNcmRoute: typeof AuthenticatedSimuladorNcmRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
@@ -379,6 +399,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedEmpresasRoute: AuthenticatedEmpresasRouteWithChildren,
   AuthenticatedMinhaEmpresaRoute: AuthenticatedMinhaEmpresaRoute,
   AuthenticatedPrecificacaoRoute: AuthenticatedPrecificacaoRoute,
+  AuthenticatedSimplesDasRoute: AuthenticatedSimplesDasRoute,
   AuthenticatedSimuladorRoute: AuthenticatedSimuladorRoute,
   AuthenticatedSimuladorNcmRoute: AuthenticatedSimuladorNcmRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,

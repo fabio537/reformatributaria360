@@ -9,6 +9,7 @@ import {
   LogOut,
   PackageSearch,
   DollarSign,
+  Scale,
   Download,
 } from "lucide-react";
 import { Link, useLocation } from "@tanstack/react-router";
@@ -43,6 +44,7 @@ const clientItems = [
   { title: "Simulações", url: "/simulador", icon: Calculator },
   { title: "Simulador por NCM", url: "/simulador-ncm", icon: PackageSearch },
   { title: "Precificação", url: "/precificacao", icon: DollarSign },
+  { title: "Simples: Dentro × Fora DAS", url: "/simples-das", icon: Scale },
   { title: "Base Legal", url: "/base-legal", icon: BookOpen },
   { title: "Atualizações", url: "/atualizacoes", icon: Newspaper },
   { title: "Baixar App", url: "/baixar-app", icon: Download },
@@ -56,6 +58,7 @@ const staffItems = [
   { title: "Simulações", url: "/simulador", icon: Calculator },
   { title: "Simulador por NCM", url: "/simulador-ncm", icon: PackageSearch },
   { title: "Precificação", url: "/precificacao", icon: DollarSign },
+  { title: "Simples: Dentro × Fora DAS", url: "/simples-das", icon: Scale },
   { title: "Base Legal", url: "/base-legal", icon: BookOpen },
   { title: "Atualizações", url: "/atualizacoes", icon: Newspaper },
   { title: "Baixar App", url: "/baixar-app", icon: Download },
