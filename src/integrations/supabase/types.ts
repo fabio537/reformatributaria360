@@ -192,6 +192,8 @@ export type Database = {
           municipio: string | null
           nome_fantasia: string | null
           optante_simples_mei: boolean | null
+          perfil_b2b_pct: number | null
+          perfil_clientes: Database["public"]["Enums"]["perfil_clientes"] | null
           razao_social: string
           regime_tributario: Database["public"]["Enums"]["regime_tributario"]
           telefone: string | null
@@ -213,6 +215,10 @@ export type Database = {
           municipio?: string | null
           nome_fantasia?: string | null
           optante_simples_mei?: boolean | null
+          perfil_b2b_pct?: number | null
+          perfil_clientes?:
+            | Database["public"]["Enums"]["perfil_clientes"]
+            | null
           razao_social: string
           regime_tributario?: Database["public"]["Enums"]["regime_tributario"]
           telefone?: string | null
@@ -234,6 +240,10 @@ export type Database = {
           municipio?: string | null
           nome_fantasia?: string | null
           optante_simples_mei?: boolean | null
+          perfil_b2b_pct?: number | null
+          perfil_clientes?:
+            | Database["public"]["Enums"]["perfil_clientes"]
+            | null
           razao_social?: string
           regime_tributario?: Database["public"]["Enums"]["regime_tributario"]
           telefone?: string | null
@@ -604,6 +614,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "funcionario" | "cliente"
+      perfil_clientes: "B2B" | "B2C" | "MISTO"
       regime_tributario: "simples_nacional" | "lucro_presumido" | "lucro_real"
     }
     CompositeTypes: {
@@ -733,6 +744,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "funcionario", "cliente"],
+      perfil_clientes: ["B2B", "B2C", "MISTO"],
       regime_tributario: ["simples_nacional", "lucro_presumido", "lucro_real"],
     },
   },
