@@ -85,17 +85,46 @@ const DAS_ANEXO_III: FaixaDAS[] = [
 // Anexo I (Comércio): IRPJ 5,5% | CSLL 3,5% | COFINS 12,74% | PIS 2,76% | CPP 41,5% | ICMS 34,0%
 // Anexo III (Serviços): IRPJ 4,0% | CSLL 3,5% | COFINS 12,82% | PIS 2,78% | CPP 43,4% | ISS 33,5%
 // Esses percentuais são aplicados sobre a alíquota efetiva apurada por faixa.
+//
+// NOTA — Transição 2027:
+// Percentuais de PIS/COFINS/IPI mantidos como proxy da CBS embutida no DAS
+// enquanto o CGSN não publica a partilha definitiva de 2027. Revisar quando
+// a Resolução do CGSN definir os percentuais oficiais.
+// A fração derivada `cbs_fracao` (= pis + cofins + ipi quando aplicável)
+// representa, a partir de 2027, a parcela do DAS que corresponde à CBS e
+// é a base para o crédito que a empresa do Simples (cenário DENTRO do DAS)
+// transfere ao cliente, limitado a essa fração. Analogamente, `icms_iss`
+// passa a corresponder à fração de IBS embutida no DAS.
 
 interface ComposicaoDAS {
   pis: number;
   cofins: number;
-  icms_iss: number; // ICMS no Anexo I, ISS no Anexo III
+  ipi?: number;     // 0 nos Anexos I e III; reservado para anexos com IPI
+  icms_iss: number; // ICMS no Anexo I, ISS no Anexo III → fração equivalente ao IBS a partir de 2027
   outros: number;   // IRPJ + CSLL + CPP (mantidos integralmente após 2027)
+}
+
+/**
+ * Fração do DAS que, a partir de 2027, corresponde à CBS embutida.
+ * Soma PIS + COFINS (+ IPI quando o anexo contiver IPI).
+ * Base do crédito-teto transferível ao cliente no cenário DENTRO do DAS.
+ */
+export function cbsFracaoDAS(c: ComposicaoDAS): number {
+  return c.pis + c.cofins + (c.ipi ?? 0);
+}
+
+/**
+ * Fração do DAS que, a partir de 2027, corresponde ao IBS embutido
+ * (sucessor de ICMS/ISS dentro do regime unificado).
+ */
+export function ibsFracaoDAS(c: ComposicaoDAS): number {
+  return c.icms_iss;
 }
 
 const COMPOSICAO_DAS_ANEXO_I: ComposicaoDAS = {
   pis: 0.0276,
   cofins: 0.1274,
+  ipi: 0,
   icms_iss: 0.34,
   outros: 0.055 + 0.035 + 0.415, // 0,505
 };
@@ -103,9 +132,11 @@ const COMPOSICAO_DAS_ANEXO_I: ComposicaoDAS = {
 const COMPOSICAO_DAS_ANEXO_III: ComposicaoDAS = {
   pis: 0.0278,
   cofins: 0.1282,
+  ipi: 0,
   icms_iss: 0.335,
   outros: 0.04 + 0.035 + 0.434, // 0,509
 };
+
 
 /**
  * Calcula a alíquota efetiva do DAS com base no faturamento (RBT12)
