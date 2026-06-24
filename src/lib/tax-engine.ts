@@ -992,7 +992,14 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
   ibsCbsMensal.total = ibsCbsMensal.cbs + ibsCbsMensal.ibs + ibsCbsMensal.is;
 
   // 3. Calcular créditos (separados por tipo de tributo)
-  const cred = calcularCreditos(creditos, empresa.regime_tributario);
+  // Faturamento mensal somado de produtos + serviços é usado como base para
+  // estimativa quando não há histórico de aquisições importado.
+  const fatMensalItens = tribProd.faturamento + tribServ.faturamento;
+  const cred = calcularCreditos(creditos, empresa.regime_tributario, {
+    faturamento_mensal: fatMensalItens,
+    perc_insumos_creditaveis: empresa.perc_insumos_creditaveis,
+  });
+
 
   // 4. Valores anuais base (sistema atual em regime pleno)
   const cargaAtualAnual = tributosAtuaisMensal.total * 12;
