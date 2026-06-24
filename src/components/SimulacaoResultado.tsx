@@ -144,8 +144,19 @@ export function SimulacaoResultado({
             <p className="text-xs text-muted-foreground mt-1">
               Créditos: {formatBRL(resultado.creditos_novos_anual)}
             </p>
+            {resultado.origem_creditos_novos === "estimado" && (
+              <Badge variant="secondary" className="mt-2 text-[10px]">
+                crédito estimado (sem histórico)
+              </Badge>
+            )}
+            {resultado.origem_creditos_novos === "nenhum" && (
+              <Badge variant="destructive" className="mt-2 text-[10px]">
+                sem créditos — carga superestimada
+              </Badge>
+            )}
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>
