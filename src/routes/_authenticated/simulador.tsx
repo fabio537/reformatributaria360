@@ -195,7 +195,9 @@ function SimuladorPage() {
         faturamento_anual: Number(empresa.faturamento_anual) || 0,
         optante_simples_mei: empresa.optante_simples_mei || false,
         irpj_csll: irpjCsll,
+        perc_insumos_creditaveis: Number((empresa as any).perc_insumos_creditaveis) || 0,
       };
+
 
       const produtosInput: ProdutoInput[] = (produtos || []).map((p: any) => ({
         descricao: p.descricao,
