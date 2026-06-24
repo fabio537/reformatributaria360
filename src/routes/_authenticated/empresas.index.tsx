@@ -133,7 +133,10 @@ function EmpresasPage() {
       municipio: empresa.municipio || "",
       faturamento_anual: empresa.faturamento_anual ? String(empresa.faturamento_anual) : "",
       optante_simples_mei: empresa.optante_simples_mei || false,
+      perc_insumos_creditaveis:
+        empresa.perc_insumos_creditaveis != null ? String(empresa.perc_insumos_creditaveis) : "",
     });
+
     setEditDialogOpen(true);
   };
 
