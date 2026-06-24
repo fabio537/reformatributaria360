@@ -289,11 +289,34 @@ function SimplesDasPage() {
                 />
               </div>
             )}
+            <div className="space-y-2 md:col-span-3">
+              <Label htmlFor="perc-insumos-sd">
+                Percentual de insumos creditáveis sobre a receita bruta (%)
+              </Label>
+              <Input
+                id="perc-insumos-sd"
+                type="number"
+                min={0}
+                max={100}
+                step="0.01"
+                inputMode="decimal"
+                value={percInsumos}
+                onChange={(e) => setPercInsumos(e.target.value)}
+                placeholder="Ex.: 40"
+              />
+              <p className="text-xs text-muted-foreground">
+                Use quando não há histórico de compras importado. Ex.: se 40% da sua receita é
+                gasta em insumos e aquisições que geram crédito, informe <strong>40</strong>.
+                Aplica-se ao cenário <strong>POR FORA</strong> (regime regular). Quando houver
+                créditos cadastrados, eles têm prioridade sobre essa estimativa.
+              </p>
+            </div>
             <div>
               <Button onClick={salvarPerfil} disabled={savingPerfil || !perfilClientes}>
                 {savingPerfil ? "Salvando…" : "Salvar perfil"}
               </Button>
             </div>
+
           </div>
         </CardContent>
       </Card>
