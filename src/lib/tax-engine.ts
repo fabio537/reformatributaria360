@@ -1137,6 +1137,17 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
   if (empresa.irpj_csll?.incluir && empresa.regime_tributario !== "simples_nacional") {
     alertas.unshift("IRPJ/CSLL incluídos na carga atual para visualização da tributação federal total. Esses tributos não são afetados pela reforma do consumo (incidem sobre o lucro).");
   }
+  if (cred.origem_novo === "estimado") {
+    alertas.push(
+      `🧮 Créditos de IBS/CBS ESTIMADOS a partir de ${(empresa.perc_insumos_creditaveis ?? 0).toLocaleString("pt-BR")}% da receita bruta (sem histórico de aquisições importado). ` +
+      "Para maior precisão, importe os créditos reais na aba Créditos."
+    );
+  } else if (cred.origem_novo === "nenhum") {
+    alertas.push(
+      "⚠️ CBS/IBS calculados SEM créditos: nenhum crédito de aquisição importado e o percentual de insumos creditáveis está zerado. " +
+      "Isso superestima a carga no novo regime. Informe o % de insumos creditáveis no cadastro da empresa ou importe o histórico de compras."
+    );
+  }
 
   return {
     empresa: empresa.razao_social,
@@ -1147,7 +1158,9 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
     carga_nova_anual: cargaNovaAnual,
     creditos_atuais_anual: creditosAtuaisAnual,
     creditos_novos_anual: creditosNovosAnual,
+    origem_creditos_novos: cred.origem_novo,
     anos,
     alertas,
   };
+
 }
