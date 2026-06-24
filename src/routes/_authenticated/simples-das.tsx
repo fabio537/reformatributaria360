@@ -89,7 +89,9 @@ function SimplesDasPage() {
   // Edits locais (perfil) com salvamento no banco
   const [perfilClientes, setPerfilClientes] = useState<PerfilClientes | "">("");
   const [perfilB2bPct, setPerfilB2bPct] = useState<string>("");
+  const [percInsumos, setPercInsumos] = useState<string>("");
   const [savingPerfil, setSavingPerfil] = useState(false);
+
 
   useEffect(() => {
     const empresaId = linked.empresaId;
