@@ -5,6 +5,7 @@ import { Building2, Calculator, BookOpen, Newspaper } from "lucide-react";
 import { useAuth } from "@/hooks/AuthContext";
 import { useLinkedEmpresa } from "@/hooks/useLinkedEmpresa";
 import { supabase } from "@/integrations/supabase/client";
+import { AnaliseEmpresaImportada } from "@/components/AnaliseEmpresaImportada";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -86,6 +87,10 @@ function DashboardPage() {
           </Card>
         ))}
       </div>
+
+      {linkedEmpresa.empresaId && (
+        <AnaliseEmpresaImportada empresaId={linkedEmpresa.empresaId} />
+      )}
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>

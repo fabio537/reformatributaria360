@@ -22,6 +22,7 @@ import {
 import { formatCurrency } from "@/lib/format";
 import { SimulacaoResultado } from "@/components/SimulacaoResultado";
 import { SimulacaoProdutoResultado } from "@/components/SimulacaoProdutoResultado";
+import { AnaliseEmpresaImportada } from "@/components/AnaliseEmpresaImportada";
 import { CurrencyInput } from "@/components/CurrencyInput";
 import { useAuth } from "@/hooks/AuthContext";
 import { useLinkedEmpresa } from "@/hooks/useLinkedEmpresa";
@@ -88,6 +89,7 @@ function formatPct(value: number) {
 }
 
 function SimuladorNcmPage() {
+  const linkedEmpresa = useLinkedEmpresa();
   return (
     <div className="space-y-6">
       <div>
@@ -96,7 +98,8 @@ function SimuladorNcmPage() {
           Simulador por NCM
         </h1>
         <p className="mt-1 text-muted-foreground">
-          Consulte a alíquota estimada de CBS/IBS ou rode a simulação completa do impacto da reforma para um produto.
+          Consulte a alíquota estimada de CBS/IBS, rode a simulação completa de um produto
+          ou analise os itens importados da sua empresa.
         </p>
       </div>
 
@@ -104,12 +107,26 @@ function SimuladorNcmPage() {
         <TabsList>
           <TabsTrigger value="consulta">Consulta rápida</TabsTrigger>
           <TabsTrigger value="completa">Simulação completa do produto</TabsTrigger>
+          <TabsTrigger value="empresa" disabled={!linkedEmpresa.empresaId}>
+            Análise da empresa
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="consulta" className="mt-6">
           <ConsultaRapidaTab />
         </TabsContent>
         <TabsContent value="completa" className="mt-6">
           <SimulacaoCompletaProdutoTab />
+        </TabsContent>
+        <TabsContent value="empresa" className="mt-6">
+          {linkedEmpresa.empresaId ? (
+            <AnaliseEmpresaImportada empresaId={linkedEmpresa.empresaId} />
+          ) : (
+            <Card>
+              <CardContent className="py-10 text-center text-sm text-muted-foreground">
+                Vincule-se a uma empresa para visualizar a análise dos itens importados.
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>
