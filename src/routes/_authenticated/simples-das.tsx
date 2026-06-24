@@ -104,10 +104,11 @@ function SimplesDasPage() {
           supabase
             .from("empresas")
             .select(
-              "id, razao_social, regime_tributario, optante_simples_mei, faturamento_anual, perfil_clientes, perfil_b2b_pct",
+              "id, razao_social, regime_tributario, optante_simples_mei, faturamento_anual, perfil_clientes, perfil_b2b_pct, perc_insumos_creditaveis",
             )
             .eq("id", empresaId)
             .maybeSingle(),
+
           supabase
             .from("produtos")
             .select("valor_mensal, regime_diferenciado")
