@@ -63,7 +63,10 @@ function EmpresaDetalhePage() {
           municipio: data.municipio || "",
           faturamento_anual: String(data.faturamento_anual || ""),
           optante_simples_mei: data.optante_simples_mei || false,
+          perc_insumos_creditaveis:
+            data.perc_insumos_creditaveis != null ? String(data.perc_insumos_creditaveis) : "",
         });
+
       }
       setLoading(false);
     };
