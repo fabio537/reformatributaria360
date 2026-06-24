@@ -33,6 +33,7 @@ export type EmpresaFormValues = {
   municipio: string;
   faturamento_anual: string;
   optante_simples_mei: boolean;
+  perc_insumos_creditaveis: string;
 };
 
 type EmpresaFormFieldsProps = {
@@ -56,8 +57,10 @@ export function getEmptyEmpresaForm(): EmpresaFormValues {
     municipio: "",
     faturamento_anual: "",
     optante_simples_mei: false,
+    perc_insumos_creditaveis: "",
   };
 }
+
 
 function SectionTitle({ title, description }: { title: string; description: string }) {
   return (
