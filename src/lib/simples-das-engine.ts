@@ -151,8 +151,9 @@ function calcularDasIntegral(input: SimplesDasInput): {
   das_mensal: number;
   produtos_mensal: number;
   servicos_mensal: number;
-  composicao_pis_cofins_mensal: number; // parcela embutida no DAS
-  composicao_ibs_cbs_equivalente_mensal: number; // = pis+cofins (substituídos) — crédito-teto
+  composicao_pis_cofins_mensal: number; // fração CBS embutida (substituída no cenário B)
+  composicao_icms_iss_mensal: number;   // fração IBS embutida (continua no DAS em 2027)
+  composicao_ibs_cbs_equivalente_mensal: number; // crédito-teto ao cliente PJ no cenário A
 } {
   const produtos = input.itens.filter((i) => i.tipo === "produto");
   const servicos = input.itens.filter((i) => i.tipo === "servico");
@@ -166,26 +167,31 @@ function calcularDasIntegral(input: SimplesDasInput): {
   const dasServ = fatServ * aliqIII;
   const das = dasProd + dasServ;
 
-  // Parcela PIS+COFINS embutida (substituída pela CBS no novo regime).
-  // O IBS substitui a parcela de ICMS/ISS, mas em 2027 essa parcela
-  // permanece (transição) — só sai do DAS na opção pelo regime regular.
+  // Fração CBS embutida = PIS+COFINS (substituídos pela CBS no cenário B).
   const pisCofinsEmbutida =
     dasProd * (COMP_I.pis + COMP_I.cofins) +
     dasServ * (COMP_III.pis + COMP_III.cofins);
 
-  // Crédito-teto: dentro do DAS, o cliente PJ só pode aproveitar como crédito
-  // de CBS o que estiver embutido no DAS a título de CBS. Como a CBS substitui
-  // PIS+COFINS, usamos essa fração como aproximação razoável.
-  const creditoEquivalente = pisCofinsEmbutida;
+  // Fração IBS embutida = ICMS (produtos) / ISS (serviços). Em 2027 permanece
+  // dentro do DAS mesmo no cenário POR FORA, mas é parte do crédito-teto que
+  // o cliente PJ pode aproveitar quando a empresa está DENTRO do DAS.
+  const icmsIssEmbutida =
+    dasProd * COMP_I.icms +
+    dasServ * COMP_III.iss;
+
+  // Crédito-teto ao cliente PJ (cenário A) = fração CBS + fração IBS embutidas.
+  const creditoEquivalente = pisCofinsEmbutida + icmsIssEmbutida;
 
   return {
     das_mensal: das,
     produtos_mensal: fatProd,
     servicos_mensal: fatServ,
     composicao_pis_cofins_mensal: pisCofinsEmbutida,
+    composicao_icms_iss_mensal: icmsIssEmbutida,
     composicao_ibs_cbs_equivalente_mensal: creditoEquivalente,
   };
 }
+
 
 function calcularCenarioA(input: SimplesDasInput): CenarioResultado {
   const d = calcularDasIntegral(input);
