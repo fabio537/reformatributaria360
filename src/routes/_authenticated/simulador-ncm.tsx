@@ -22,6 +22,7 @@ import {
 import { formatCurrency } from "@/lib/format";
 import { SimulacaoResultado } from "@/components/SimulacaoResultado";
 import { SimulacaoProdutoResultado } from "@/components/SimulacaoProdutoResultado";
+import { AnaliseEmpresaImportada } from "@/components/AnaliseEmpresaImportada";
 import { CurrencyInput } from "@/components/CurrencyInput";
 import { useAuth } from "@/hooks/AuthContext";
 import { useLinkedEmpresa } from "@/hooks/useLinkedEmpresa";
