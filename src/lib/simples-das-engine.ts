@@ -117,7 +117,10 @@ export interface CenarioResultado {
   // Crédito transferido ao cliente PJ
   credito_cliente_mensal: number;
   credito_cliente_anual: number;
+  /** Origem do crédito de insumos usado no cenário (B). */
+  origem_credito_insumos?: "real" | "estimado" | "nenhum";
 }
+
 
 export interface SimplesDasResultado {
   ano: number;
