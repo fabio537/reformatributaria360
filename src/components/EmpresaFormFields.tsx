@@ -227,7 +227,32 @@ export function EmpresaFormFields({ form, setForm }: EmpresaFormFieldsProps) {
             <p className="text-sm text-muted-foreground">Usado como premissa complementar no simulador.</p>
           </div>
         </div>
+
+        <div className="space-y-2 rounded-lg border p-4">
+          <Label htmlFor="perc-insumos">
+            Percentual de insumos creditáveis sobre a receita bruta (%)
+          </Label>
+          <Input
+            id="perc-insumos"
+            type="number"
+            min={0}
+            max={100}
+            step="0.01"
+            inputMode="decimal"
+            value={form.perc_insumos_creditaveis}
+            onChange={(e) =>
+              setForm({ ...form, perc_insumos_creditaveis: e.target.value })
+            }
+            placeholder="Ex.: 40"
+          />
+          <p className="text-xs text-muted-foreground">
+            Use quando não há histórico de compras importado. Ex.: se 40% da sua receita é
+            gasta em insumos e aquisições que geram crédito de IBS/CBS, informe <strong>40</strong>.
+            Quando houver créditos cadastrados na aba Créditos, eles têm prioridade sobre essa estimativa.
+          </p>
+        </div>
       </section>
     </div>
   );
+
 }
