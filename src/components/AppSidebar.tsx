@@ -8,6 +8,7 @@ import {
   Users,
   LogOut,
   PackageSearch,
+  DollarSign,
   Download,
 } from "lucide-react";
 import { Link, useLocation } from "@tanstack/react-router";
