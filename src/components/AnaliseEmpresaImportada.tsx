@@ -223,7 +223,7 @@ export function AnaliseEmpresaImportada({ empresaId, hideFiltroAno }: Props) {
                   tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`}
                 />
                 <Tooltip
-                  formatter={(value: number) => formatCurrency(value)}
+                  formatter={(value) => formatCurrency(Number(value) || 0)}
                   labelFormatter={(label) => `Ano ${label}`}
                 />
                 <Legend />
