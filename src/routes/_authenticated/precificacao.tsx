@@ -49,7 +49,8 @@ function PrecificacaoPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!linked.empresaId) return;
+    const empresaId = linked.empresaId;
+    if (!empresaId) return;
     let active = true;
     setLoading(true);
     (async () => {
@@ -59,11 +60,11 @@ function PrecificacaoPage() {
           .select(
             "id, ncm, descricao, regime_diferenciado, aliquota_pis, aliquota_cofins, aliquota_ipi, aliquota_icms, aliquota_ibs, aliquota_cbs, reducao_aplicada",
           )
-          .eq("empresa_id", linked.empresaId),
+          .eq("empresa_id", empresaId),
         supabase
           .from("precificacao")
           .select("produto_id, preco_venda_atual, custo, credito_entrada_pct")
-          .eq("empresa_id", linked.empresaId),
+          .eq("empresa_id", empresaId),
       ]);
       if (!active) return;
       if (e1 || e2) {
