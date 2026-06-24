@@ -96,7 +96,13 @@ export interface SimplesDasInput {
   perfil_b2b_pct?: number;
   itens: ItemFaturamento[];
   creditos: ItemCredito[];
+  /**
+   * % da receita bruta gasto em insumos creditáveis (0–100). Usado para
+   * estimar a base de crédito no cenário POR FORA quando `creditos` está vazio.
+   */
+  perc_insumos_creditaveis?: number;
 }
+
 
 // ─── Saídas ────────────────────────────────────────────────────────────────
 
