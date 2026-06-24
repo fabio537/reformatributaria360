@@ -169,8 +169,10 @@ function SimplesDasPage() {
       perfil_b2b_pct: Number(perfilB2bPct) || 0,
       itens,
       creditos,
+      perc_insumos_creditaveis:
+        Number(percInsumos) || Number(empresa.perc_insumos_creditaveis) || 0,
     });
-  }, [empresa, itens, creditos, perfilClientes, perfilB2bPct]);
+  }, [empresa, itens, creditos, perfilClientes, perfilB2bPct, percInsumos]);
 
   async function salvarPerfil() {
     if (!empresa) return;
@@ -179,11 +181,13 @@ function SimplesDasPage() {
       return;
     }
     setSavingPerfil(true);
+    const percInsumosNum = Math.max(0, Math.min(100, Number(percInsumos) || 0));
     const { error } = await supabase
       .from("empresas")
       .update({
         perfil_clientes: perfilClientes,
         perfil_b2b_pct: perfilClientes === "MISTO" ? Number(perfilB2bPct) || 0 : 0,
+        perc_insumos_creditaveis: percInsumosNum,
       } as any)
       .eq("id", empresa.id);
     setSavingPerfil(false);
@@ -196,8 +200,10 @@ function SimplesDasPage() {
       ...empresa,
       perfil_clientes: perfilClientes,
       perfil_b2b_pct: perfilClientes === "MISTO" ? Number(perfilB2bPct) || 0 : 0,
+      perc_insumos_creditaveis: percInsumosNum,
     });
   }
+
 
   if (!linked.empresaId) {
     return (
