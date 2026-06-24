@@ -358,9 +358,16 @@ export function calcularSimplesDas(input: SimplesDasInput): SimplesDasResultado 
     "ℹ️ Em 2027 o ICMS/ISS continuam dentro do DAS mesmo no cenário POR FORA (transição). O DAS reduzido remove apenas PIS/COFINS, que são substituídos pela CBS recolhida por fora.",
   ];
 
-  if (input.creditos.length === 0) {
-    alertas.push("Nenhum crédito de aquisição cadastrado — o cenário POR FORA tende a ser subestimado em vantagem. Cadastre os insumos para uma análise mais precisa.");
+  if (b.origem_credito_insumos === "estimado") {
+    alertas.push(
+      `🧮 Crédito de insumos ESTIMADO a partir de ${(input.perc_insumos_creditaveis ?? 0).toLocaleString("pt-BR")}% da receita bruta (sem histórico importado). Para precisão, cadastre os créditos reais.`,
+    );
+  } else if (b.origem_credito_insumos === "nenhum") {
+    alertas.push(
+      "⚠️ CBS por fora calculada SEM créditos: sem histórico de aquisições e sem percentual de insumos creditáveis informado. Isso superestima o desembolso do cenário POR FORA. Informe o % de insumos creditáveis ou cadastre os créditos.",
+    );
   }
+
 
   return {
     ano: ANO_ANALISE,
