@@ -246,6 +246,7 @@ export function ServicosTab({ empresaId }: { empresaId: string }) {
         open={importOpen}
         onOpenChange={setImportOpen}
         tableName="servicos"
+        entity="servicos"
         fields={importFields}
         extraData={{ empresa_id: empresaId }}
         onSuccess={fetchData}

@@ -262,6 +262,7 @@ export function CreditosTab({ empresaId }: { empresaId: string }) {
         open={importOpen}
         onOpenChange={setImportOpen}
         tableName="creditos_aquisicao"
+        entity="creditos_aquisicao"
         fields={importFields}
         extraData={{ empresa_id: empresaId }}
         onSuccess={fetchData}
