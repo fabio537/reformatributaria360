@@ -221,10 +221,24 @@ function calcularCenarioB(input: SimplesDasInput): CenarioResultado {
 
   // Crédito sobre insumos: alíquota do FORNECEDOR (não-cumulatividade).
   let creditoInsumos = 0;
-  for (const c of input.creditos) {
-    const fator = FATOR_REGIME[c.regime_diferenciado_fornecedor] ?? 1.0;
-    const aliq = (CBS_2027 + IBS_2027 * ICMS_ISS_FATOR_2027) * fator;
-    creditoInsumos += c.valor_mensal * aliq;
+  let origemCredito: "real" | "estimado" | "nenhum" = "nenhum";
+  if (input.creditos.length > 0) {
+    for (const c of input.creditos) {
+      const fator = FATOR_REGIME[c.regime_diferenciado_fornecedor] ?? 1.0;
+      const aliq = (CBS_2027 + IBS_2027 * ICMS_ISS_FATOR_2027) * fator;
+      creditoInsumos += c.valor_mensal * aliq;
+    }
+    origemCredito = "real";
+  } else {
+    // Fallback sem histórico: estima base = faturamento_mensal * pct (regime padrão).
+    const pct = Math.max(0, Math.min(100, input.perc_insumos_creditaveis ?? 0)) / 100;
+    const fatMensalItens = input.itens.reduce((s, i) => s + i.valor_mensal, 0);
+    if (pct > 0 && fatMensalItens > 0) {
+      const baseCredito = fatMensalItens * pct;
+      const aliq = CBS_2027 + IBS_2027 * ICMS_ISS_FATOR_2027; // fator padrão = 1
+      creditoInsumos = baseCredito * aliq;
+      origemCredito = "estimado";
+    }
   }
 
   const ibsCbsLiquido = Math.max(0, debitoIbsCbs - creditoInsumos);
@@ -239,8 +253,10 @@ function calcularCenarioB(input: SimplesDasInput): CenarioResultado {
     desembolso_anual: desembolso * 12,
     credito_cliente_mensal: creditoClienteIntegral,
     credito_cliente_anual: creditoClienteIntegral * 12,
+    origem_credito_insumos: origemCredito,
   };
 }
+
 
 function gerarRecomendacao(
   input: SimplesDasInput,
