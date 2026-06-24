@@ -128,6 +128,10 @@ function SimplesDasPage() {
       setEmpresa(empData);
       setPerfilClientes((empData?.perfil_clientes as PerfilClientes | null) ?? "");
       setPerfilB2bPct(empData?.perfil_b2b_pct != null ? String(empData.perfil_b2b_pct) : "");
+      setPercInsumos(
+        empData?.perc_insumos_creditaveis != null ? String(empData.perc_insumos_creditaveis) : "",
+      );
+
       setItens([
         ...((prods ?? []) as any[]).map((p) => ({
           tipo: "produto" as const,
