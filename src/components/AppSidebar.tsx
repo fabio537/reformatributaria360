@@ -1,5 +1,4 @@
 import {
-  LayoutDashboard,
   Building2,
   Calculator,
   ClipboardList,
@@ -25,11 +24,18 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { InstallAppButton } from "@/components/InstallAppButton";
 import type { AuthState } from "@/hooks/useAuth";
+import { useLinkedEmpresa } from "@/hooks/useLinkedEmpresa";
 
 const mainItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Empresas", url: "/empresas", icon: Building2 },
   { title: "Simulador", url: "/simulador", icon: Calculator },
   { title: "Base Legal", url: "/base-legal", icon: BookOpen },
@@ -38,7 +44,6 @@ const mainItems = [
 ];
 
 const clientItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Minha Empresa", url: "/minha-empresa", icon: Building2 },
   { title: "Checklist", url: "/checklist", icon: ClipboardList },
   { title: "Simulações", url: "/simulador", icon: Calculator },
@@ -51,7 +56,6 @@ const clientItems = [
 ];
 
 const staffItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Empresas", url: "/empresas", icon: Building2 },
   { title: "Minha Empresa", url: "/minha-empresa", icon: Building2 },
   { title: "Checklist", url: "/checklist", icon: ClipboardList },
@@ -69,17 +73,70 @@ const adminItems = [
 ];
 
 export function AppSidebar({ auth }: { auth: AuthState }) {
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
   const currentPath = location.pathname;
   const items = auth.hasRole("cliente") ? clientItems : auth.isStaff() ? staffItems : mainItems;
+  const { empresas, empresaId, setEmpresaId, loading, razaoSocial } = useLinkedEmpresa();
 
   const isActive = (path: string) => currentPath.startsWith(path);
 
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>
+            {!collapsed && (
+              <span className="text-xs font-bold tracking-wider uppercase text-sidebar-primary">
+                Empresa
+              </span>
+            )}
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            {collapsed ? (
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={toggleSidebar}
+                    tooltip={razaoSocial ?? "Selecionar empresa"}
+                  >
+                    <Building2 className="h-4 w-4" />
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            ) : (
+              <div className="px-2 pb-2">
+                {loading ? (
+                  <div className="h-9 rounded-md bg-sidebar-accent/40 animate-pulse" />
+                ) : empresas.length === 0 ? (
+                  <p className="text-xs text-muted-foreground px-1">
+                    Nenhuma empresa vinculada
+                  </p>
+                ) : (
+                  <Select
+                    value={empresaId ?? undefined}
+                    onValueChange={setEmpresaId}
+                  >
+                    <SelectTrigger className="h-9 w-full text-sm">
+                      <SelectValue placeholder="Selecionar empresa" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {empresas.map((e) => (
+                        <SelectItem key={e.id} value={e.id}>
+                          <span className="truncate">
+                            {e.razao_social ?? e.cnpj ?? e.id}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            )}
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         <SidebarGroup>
           <SidebarGroupLabel>
             {!collapsed && (
