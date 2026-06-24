@@ -602,12 +602,17 @@ function calcularIbsCbsServicos(servicos: ServicoInput[]): { cbs: number; ibs: n
 function calcularCreditos(
   creditos: CreditoInput[],
   regime: string,
+  opts?: {
+    faturamento_mensal?: number;
+    perc_insumos_creditaveis?: number; // 0–100
+  },
 ): {
   atuais_mensal_pis_cofins: number;
   atuais_mensal_icms: number;
   atuais_mensal_ipi: number;
   novos_mensal_cbs: number;
   novos_mensal_ibs: number;
+  origem_novo: "real" | "estimado" | "nenhum";
 } {
   let atuais_pis_cofins = 0;
   let atuais_icms = 0;
@@ -637,14 +642,35 @@ function calcularCreditos(
     novos_ibs += v * aliqFornecedor.ibs;
   }
 
+  // Fallback: sem histórico importado → estimar pela % de insumos creditáveis
+  // sobre o faturamento mensal, assumindo fornecedor em regime padrão.
+  let origem_novo: "real" | "estimado" | "nenhum";
+  if (creditos.length > 0) {
+    origem_novo = "real";
+  } else {
+    const pct = Math.max(0, Math.min(100, opts?.perc_insumos_creditaveis ?? 0)) / 100;
+    const fatMensal = Math.max(0, opts?.faturamento_mensal ?? 0);
+    if (pct > 0 && fatMensal > 0) {
+      const baseCredito = fatMensal * pct;
+      const aliqPadrao = aliquotaEfetiva("padrao");
+      novos_cbs += baseCredito * aliqPadrao.cbs;
+      novos_ibs += baseCredito * aliqPadrao.ibs;
+      origem_novo = "estimado";
+    } else {
+      origem_novo = "nenhum";
+    }
+  }
+
   return {
     atuais_mensal_pis_cofins: atuais_pis_cofins,
     atuais_mensal_icms: atuais_icms,
     atuais_mensal_ipi: atuais_ipi,
     novos_mensal_cbs: novos_cbs,
     novos_mensal_ibs: novos_ibs,
+    origem_novo,
   };
 }
+
 
 /**
  * Gera alertas baseados na situação da empresa
