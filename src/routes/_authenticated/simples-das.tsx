@@ -514,8 +514,23 @@ function CenarioCard({
               valor={`− ${fmtBRL(cenario.credito_insumos_mensal)}`}
               muted
             />
+            {cenario.origem_credito_insumos === "estimado" && (
+              <div>
+                <Badge variant="secondary" className="text-[10px]">
+                  crédito estimado (sem histórico)
+                </Badge>
+              </div>
+            )}
+            {cenario.origem_credito_insumos === "nenhum" && (
+              <div>
+                <Badge variant="destructive" className="text-[10px]">
+                  sem créditos — carga superestimada
+                </Badge>
+              </div>
+            )}
           </>
         )}
+
         <div className="border-t pt-3 space-y-1">
           <div className="flex items-baseline justify-between">
             <span className="font-medium">Desembolso anual</span>
