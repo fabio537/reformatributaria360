@@ -620,6 +620,11 @@ function calcularCreditos(
   let novos_cbs = 0;
   let novos_ibs = 0;
 
+  // Simples Nacional (cenário padrão do simulador = DENTRO do DAS / unificado):
+  // não há apropriação de crédito de insumos pela empresa. A decisão "por fora"
+  // (regime regular híbrido) é tratada na Análise Simples-DAS.
+  const isSimples = regime === "simples_nacional";
+
   for (const c of creditos) {
     const v = c.valor_mensal;
 
@@ -634,18 +639,25 @@ function calcularCreditos(
     }
     // Simples Nacional: sem créditos no sistema atual
 
-    // No novo sistema: crédito com base no regime do FORNECEDOR
-    const aliqFornecedor = aliquotaEfetiva(
-      (c.regime_diferenciado_fornecedor || "padrao") as RegimeDiferenciado
-    );
-    novos_cbs += v * aliqFornecedor.cbs;
-    novos_ibs += v * aliqFornecedor.ibs;
+    // No novo sistema: crédito com base no regime do FORNECEDOR.
+    // Suprimido para Simples (dentro do DAS não há crédito de insumos).
+    if (!isSimples) {
+      const aliqFornecedor = aliquotaEfetiva(
+        (c.regime_diferenciado_fornecedor || "padrao") as RegimeDiferenciado
+      );
+      novos_cbs += v * aliqFornecedor.cbs;
+      novos_ibs += v * aliqFornecedor.ibs;
+    }
   }
 
   // Fallback: sem histórico importado → estimar pela % de insumos creditáveis
   // sobre o faturamento mensal, assumindo fornecedor em regime padrão.
+  // Aplicável APENAS a regimes regulares (lucro real / presumido). No Simples
+  // dentro do DAS não há crédito de insumos.
   let origem_novo: "real" | "estimado" | "nenhum";
-  if (creditos.length > 0) {
+  if (isSimples) {
+    origem_novo = "nenhum";
+  } else if (creditos.length > 0) {
     origem_novo = "real";
   } else {
     const pct = Math.max(0, Math.min(100, opts?.perc_insumos_creditaveis ?? 0)) / 100;
@@ -670,6 +682,7 @@ function calcularCreditos(
     origem_novo,
   };
 }
+
 
 
 /**
