@@ -192,6 +192,7 @@ export type Database = {
           municipio: string | null
           nome_fantasia: string | null
           optante_simples_mei: boolean | null
+          perc_insumos_creditaveis: number
           perfil_b2b_pct: number | null
           perfil_clientes: Database["public"]["Enums"]["perfil_clientes"] | null
           razao_social: string
@@ -215,6 +216,7 @@ export type Database = {
           municipio?: string | null
           nome_fantasia?: string | null
           optante_simples_mei?: boolean | null
+          perc_insumos_creditaveis?: number
           perfil_b2b_pct?: number | null
           perfil_clientes?:
             | Database["public"]["Enums"]["perfil_clientes"]
@@ -240,6 +242,7 @@ export type Database = {
           municipio?: string | null
           nome_fantasia?: string | null
           optante_simples_mei?: boolean | null
+          perc_insumos_creditaveis?: number
           perfil_b2b_pct?: number | null
           perfil_clientes?:
             | Database["public"]["Enums"]["perfil_clientes"]

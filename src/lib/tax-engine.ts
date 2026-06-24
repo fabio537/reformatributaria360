@@ -329,7 +329,14 @@ export interface EmpresaInput {
   faturamento_anual: number;
   optante_simples_mei: boolean;
   irpj_csll?: IrpjCsllConfig;
+  /**
+   * Percentual da receita bruta gasto em insumos/aquisições geradores
+   * de crédito de IBS/CBS (0–100). Usado como fallback quando não há
+   * registros em `creditos` (sem histórico importado).
+   */
+  perc_insumos_creditaveis?: number;
 }
+
 
 export type EscopoReforma = "cbs_ibs" | "somente_cbs";
 
@@ -366,7 +373,10 @@ export interface DetalheIbsCbs {
 export interface CreditosDetalhe {
   creditos_atuais: number;
   creditos_ibs_cbs: number;
+  /** Origem do crédito IBS/CBS no novo regime. */
+  origem_credito_novo?: "real" | "estimado" | "nenhum";
 }
+
 
 export interface ResultadoAno {
   ano: number;
@@ -390,6 +400,9 @@ export interface ResultadoSimulacao {
   carga_nova_anual: number;
   creditos_atuais_anual: number;
   creditos_novos_anual: number;
+  /** "real" = vindo de creditos_aquisicao; "estimado" = derivado de perc_insumos_creditaveis; "nenhum" = sem créditos. */
+  origem_creditos_novos?: "real" | "estimado" | "nenhum";
+
   anos: ResultadoAno[];
   alertas: string[];
 }
@@ -589,12 +602,17 @@ function calcularIbsCbsServicos(servicos: ServicoInput[]): { cbs: number; ibs: n
 function calcularCreditos(
   creditos: CreditoInput[],
   regime: string,
+  opts?: {
+    faturamento_mensal?: number;
+    perc_insumos_creditaveis?: number; // 0–100
+  },
 ): {
   atuais_mensal_pis_cofins: number;
   atuais_mensal_icms: number;
   atuais_mensal_ipi: number;
   novos_mensal_cbs: number;
   novos_mensal_ibs: number;
+  origem_novo: "real" | "estimado" | "nenhum";
 } {
   let atuais_pis_cofins = 0;
   let atuais_icms = 0;
@@ -624,14 +642,35 @@ function calcularCreditos(
     novos_ibs += v * aliqFornecedor.ibs;
   }
 
+  // Fallback: sem histórico importado → estimar pela % de insumos creditáveis
+  // sobre o faturamento mensal, assumindo fornecedor em regime padrão.
+  let origem_novo: "real" | "estimado" | "nenhum";
+  if (creditos.length > 0) {
+    origem_novo = "real";
+  } else {
+    const pct = Math.max(0, Math.min(100, opts?.perc_insumos_creditaveis ?? 0)) / 100;
+    const fatMensal = Math.max(0, opts?.faturamento_mensal ?? 0);
+    if (pct > 0 && fatMensal > 0) {
+      const baseCredito = fatMensal * pct;
+      const aliqPadrao = aliquotaEfetiva("padrao");
+      novos_cbs += baseCredito * aliqPadrao.cbs;
+      novos_ibs += baseCredito * aliqPadrao.ibs;
+      origem_novo = "estimado";
+    } else {
+      origem_novo = "nenhum";
+    }
+  }
+
   return {
     atuais_mensal_pis_cofins: atuais_pis_cofins,
     atuais_mensal_icms: atuais_icms,
     atuais_mensal_ipi: atuais_ipi,
     novos_mensal_cbs: novos_cbs,
     novos_mensal_ibs: novos_ibs,
+    origem_novo,
   };
 }
+
 
 /**
  * Gera alertas baseados na situação da empresa
@@ -953,7 +992,14 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
   ibsCbsMensal.total = ibsCbsMensal.cbs + ibsCbsMensal.ibs + ibsCbsMensal.is;
 
   // 3. Calcular créditos (separados por tipo de tributo)
-  const cred = calcularCreditos(creditos, empresa.regime_tributario);
+  // Faturamento mensal somado de produtos + serviços é usado como base para
+  // estimativa quando não há histórico de aquisições importado.
+  const fatMensalItens = tribProd.faturamento + tribServ.faturamento;
+  const cred = calcularCreditos(creditos, empresa.regime_tributario, {
+    faturamento_mensal: fatMensalItens,
+    perc_insumos_creditaveis: empresa.perc_insumos_creditaveis,
+  });
+
 
   // 4. Valores anuais base (sistema atual em regime pleno)
   const cargaAtualAnual = tributosAtuaisMensal.total * 12;
@@ -1059,7 +1105,9 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
     const creditosAno: CreditosDetalhe = {
       creditos_atuais: creditosAtuaisAno,
       creditos_ibs_cbs: creditosNovosAno,
+      origem_credito_novo: cred.origem_novo,
     };
+
 
     const cargaAtualLiq = Math.max(0, tribAtualAno.total - creditosAtuaisAno);
     const cargaNovaLiq = Math.max(0, ibsCbsAno.total - creditosNovosAno);
@@ -1089,6 +1137,17 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
   if (empresa.irpj_csll?.incluir && empresa.regime_tributario !== "simples_nacional") {
     alertas.unshift("IRPJ/CSLL incluídos na carga atual para visualização da tributação federal total. Esses tributos não são afetados pela reforma do consumo (incidem sobre o lucro).");
   }
+  if (cred.origem_novo === "estimado") {
+    alertas.push(
+      `🧮 Créditos de IBS/CBS ESTIMADOS a partir de ${(empresa.perc_insumos_creditaveis ?? 0).toLocaleString("pt-BR")}% da receita bruta (sem histórico de aquisições importado). ` +
+      "Para maior precisão, importe os créditos reais na aba Créditos."
+    );
+  } else if (cred.origem_novo === "nenhum") {
+    alertas.push(
+      "⚠️ CBS/IBS calculados SEM créditos: nenhum crédito de aquisição importado e o percentual de insumos creditáveis está zerado. " +
+      "Isso superestima a carga no novo regime. Informe o % de insumos creditáveis no cadastro da empresa ou importe o histórico de compras."
+    );
+  }
 
   return {
     empresa: empresa.razao_social,
@@ -1099,7 +1158,9 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
     carga_nova_anual: cargaNovaAnual,
     creditos_atuais_anual: creditosAtuaisAnual,
     creditos_novos_anual: creditosNovosAnual,
+    origem_creditos_novos: cred.origem_novo,
     anos,
     alertas,
   };
+
 }

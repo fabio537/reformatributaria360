@@ -75,7 +75,9 @@ interface EmpresaData {
   faturamento_anual: number | null;
   perfil_clientes: PerfilClientes | null;
   perfil_b2b_pct: number | null;
+  perc_insumos_creditaveis: number | null;
 }
+
 
 function SimplesDasPage() {
   const linked = useLinkedEmpresa();
@@ -87,7 +89,9 @@ function SimplesDasPage() {
   // Edits locais (perfil) com salvamento no banco
   const [perfilClientes, setPerfilClientes] = useState<PerfilClientes | "">("");
   const [perfilB2bPct, setPerfilB2bPct] = useState<string>("");
+  const [percInsumos, setPercInsumos] = useState<string>("");
   const [savingPerfil, setSavingPerfil] = useState(false);
+
 
   useEffect(() => {
     const empresaId = linked.empresaId;
@@ -100,10 +104,11 @@ function SimplesDasPage() {
           supabase
             .from("empresas")
             .select(
-              "id, razao_social, regime_tributario, optante_simples_mei, faturamento_anual, perfil_clientes, perfil_b2b_pct",
+              "id, razao_social, regime_tributario, optante_simples_mei, faturamento_anual, perfil_clientes, perfil_b2b_pct, perc_insumos_creditaveis",
             )
             .eq("id", empresaId)
             .maybeSingle(),
+
           supabase
             .from("produtos")
             .select("valor_mensal, regime_diferenciado")
@@ -123,6 +128,10 @@ function SimplesDasPage() {
       setEmpresa(empData);
       setPerfilClientes((empData?.perfil_clientes as PerfilClientes | null) ?? "");
       setPerfilB2bPct(empData?.perfil_b2b_pct != null ? String(empData.perfil_b2b_pct) : "");
+      setPercInsumos(
+        empData?.perc_insumos_creditaveis != null ? String(empData.perc_insumos_creditaveis) : "",
+      );
+
       setItens([
         ...((prods ?? []) as any[]).map((p) => ({
           tipo: "produto" as const,
@@ -160,8 +169,10 @@ function SimplesDasPage() {
       perfil_b2b_pct: Number(perfilB2bPct) || 0,
       itens,
       creditos,
+      perc_insumos_creditaveis:
+        Number(percInsumos) || Number(empresa.perc_insumos_creditaveis) || 0,
     });
-  }, [empresa, itens, creditos, perfilClientes, perfilB2bPct]);
+  }, [empresa, itens, creditos, perfilClientes, perfilB2bPct, percInsumos]);
 
   async function salvarPerfil() {
     if (!empresa) return;
@@ -170,11 +181,13 @@ function SimplesDasPage() {
       return;
     }
     setSavingPerfil(true);
+    const percInsumosNum = Math.max(0, Math.min(100, Number(percInsumos) || 0));
     const { error } = await supabase
       .from("empresas")
       .update({
         perfil_clientes: perfilClientes,
         perfil_b2b_pct: perfilClientes === "MISTO" ? Number(perfilB2bPct) || 0 : 0,
+        perc_insumos_creditaveis: percInsumosNum,
       } as any)
       .eq("id", empresa.id);
     setSavingPerfil(false);
@@ -187,8 +200,10 @@ function SimplesDasPage() {
       ...empresa,
       perfil_clientes: perfilClientes,
       perfil_b2b_pct: perfilClientes === "MISTO" ? Number(perfilB2bPct) || 0 : 0,
+      perc_insumos_creditaveis: percInsumosNum,
     });
   }
+
 
   if (!linked.empresaId) {
     return (
@@ -274,11 +289,34 @@ function SimplesDasPage() {
                 />
               </div>
             )}
+            <div className="space-y-2 md:col-span-3">
+              <Label htmlFor="perc-insumos-sd">
+                Percentual de insumos creditáveis sobre a receita bruta (%)
+              </Label>
+              <Input
+                id="perc-insumos-sd"
+                type="number"
+                min={0}
+                max={100}
+                step="0.01"
+                inputMode="decimal"
+                value={percInsumos}
+                onChange={(e) => setPercInsumos(e.target.value)}
+                placeholder="Ex.: 40"
+              />
+              <p className="text-xs text-muted-foreground">
+                Use quando não há histórico de compras importado. Ex.: se 40% da sua receita é
+                gasta em insumos e aquisições que geram crédito, informe <strong>40</strong>.
+                Aplica-se ao cenário <strong>POR FORA</strong> (regime regular). Quando houver
+                créditos cadastrados, eles têm prioridade sobre essa estimativa.
+              </p>
+            </div>
             <div>
               <Button onClick={salvarPerfil} disabled={savingPerfil || !perfilClientes}>
                 {savingPerfil ? "Salvando…" : "Salvar perfil"}
               </Button>
             </div>
+
           </div>
         </CardContent>
       </Card>
@@ -476,8 +514,23 @@ function CenarioCard({
               valor={`− ${fmtBRL(cenario.credito_insumos_mensal)}`}
               muted
             />
+            {cenario.origem_credito_insumos === "estimado" && (
+              <div>
+                <Badge variant="secondary" className="text-[10px]">
+                  crédito estimado (sem histórico)
+                </Badge>
+              </div>
+            )}
+            {cenario.origem_credito_insumos === "nenhum" && (
+              <div>
+                <Badge variant="destructive" className="text-[10px]">
+                  sem créditos — carga superestimada
+                </Badge>
+              </div>
+            )}
           </>
         )}
+
         <div className="border-t pt-3 space-y-1">
           <div className="flex items-baseline justify-between">
             <span className="font-medium">Desembolso anual</span>
