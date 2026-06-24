@@ -329,7 +329,14 @@ export interface EmpresaInput {
   faturamento_anual: number;
   optante_simples_mei: boolean;
   irpj_csll?: IrpjCsllConfig;
+  /**
+   * Percentual da receita bruta gasto em insumos/aquisições geradores
+   * de crédito de IBS/CBS (0–100). Usado como fallback quando não há
+   * registros em `creditos` (sem histórico importado).
+   */
+  perc_insumos_creditaveis?: number;
 }
+
 
 export type EscopoReforma = "cbs_ibs" | "somente_cbs";
 
