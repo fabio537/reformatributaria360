@@ -29,7 +29,7 @@ function LoginPage() {
 
   useEffect(() => {
     if (auth.isAuthenticated && !linkedEmpresa.loading) {
-      navigate({ to: auth.hasRole("cliente") ? "/minha-empresa" : "/dashboard" });
+      navigate({ to: auth.hasRole("cliente") ? "/minha-empresa" : "/empresas" });
     }
   }, [auth, linkedEmpresa.loading, navigate]);
 
