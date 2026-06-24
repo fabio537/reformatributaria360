@@ -1105,7 +1105,9 @@ export function executarSimulacao(input: SimulacaoInput): ResultadoSimulacao {
     const creditosAno: CreditosDetalhe = {
       creditos_atuais: creditosAtuaisAno,
       creditos_ibs_cbs: creditosNovosAno,
+      origem_credito_novo: cred.origem_novo,
     };
+
 
     const cargaAtualLiq = Math.max(0, tribAtualAno.total - creditosAtuaisAno);
     const cargaNovaLiq = Math.max(0, ibsCbsAno.total - creditosNovosAno);
