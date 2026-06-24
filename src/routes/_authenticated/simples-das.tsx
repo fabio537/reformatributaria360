@@ -404,7 +404,7 @@ function ResultadoAnalise({ resultado }: { resultado: SimplesDasResultado }) {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="grupo" tick={{ fontSize: 12 }} />
               <YAxis tickFormatter={(v) => fmtBRL(v as number)} tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(v: number) => fmtBRL(v)} />
+              <Tooltip formatter={(v) => fmtBRL(Number(v) || 0)} />
               <Legend />
               <Bar dataKey="desembolso" name="Desembolso anual" fill="hsl(var(--primary))">
                 {chartData.map((_, i) => (
