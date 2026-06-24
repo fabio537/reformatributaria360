@@ -94,6 +94,7 @@ export type Database = {
           aliquota_icms: number | null
           aliquota_ipi: number | null
           aliquota_pis: number | null
+          competencia: string | null
           created_at: string
           descricao: string | null
           empresa_id: string
@@ -109,6 +110,7 @@ export type Database = {
           aliquota_icms?: number | null
           aliquota_ipi?: number | null
           aliquota_pis?: number | null
+          competencia?: string | null
           created_at?: string
           descricao?: string | null
           empresa_id: string
@@ -124,6 +126,7 @@ export type Database = {
           aliquota_icms?: number | null
           aliquota_ipi?: number | null
           aliquota_pis?: number | null
+          competencia?: string | null
           created_at?: string
           descricao?: string | null
           empresa_id?: string
@@ -277,19 +280,26 @@ export type Database = {
       }
       produtos: {
         Row: {
+          aliquota_cbs: number | null
           aliquota_cofins: number | null
+          aliquota_ibs: number | null
           aliquota_icms: number | null
           aliquota_ipi: number | null
           aliquota_is: number | null
           aliquota_pis: number | null
+          cclasstrib: string | null
+          competencia: string | null
           created_at: string
+          cst: string | null
           descricao: string
           destino_operacao: string
           empresa_id: string
           id: string
           ncm: string
           quantidade_mensal: number | null
+          reducao_aplicada: number | null
           regime_diferenciado: string | null
+          regime_especial: string | null
           sujeito_imposto_seletivo: boolean
           tipo_operacao: string | null
           unidade: string | null
@@ -297,19 +307,26 @@ export type Database = {
           valor_mensal: number | null
         }
         Insert: {
+          aliquota_cbs?: number | null
           aliquota_cofins?: number | null
+          aliquota_ibs?: number | null
           aliquota_icms?: number | null
           aliquota_ipi?: number | null
           aliquota_is?: number | null
           aliquota_pis?: number | null
+          cclasstrib?: string | null
+          competencia?: string | null
           created_at?: string
+          cst?: string | null
           descricao: string
           destino_operacao?: string
           empresa_id: string
           id?: string
           ncm: string
           quantidade_mensal?: number | null
+          reducao_aplicada?: number | null
           regime_diferenciado?: string | null
+          regime_especial?: string | null
           sujeito_imposto_seletivo?: boolean
           tipo_operacao?: string | null
           unidade?: string | null
@@ -317,19 +334,26 @@ export type Database = {
           valor_mensal?: number | null
         }
         Update: {
+          aliquota_cbs?: number | null
           aliquota_cofins?: number | null
+          aliquota_ibs?: number | null
           aliquota_icms?: number | null
           aliquota_ipi?: number | null
           aliquota_is?: number | null
           aliquota_pis?: number | null
+          cclasstrib?: string | null
+          competencia?: string | null
           created_at?: string
+          cst?: string | null
           descricao?: string
           destino_operacao?: string
           empresa_id?: string
           id?: string
           ncm?: string
           quantidade_mensal?: number | null
+          reducao_aplicada?: number | null
           regime_diferenciado?: string | null
+          regime_especial?: string | null
           sujeito_imposto_seletivo?: boolean
           tipo_operacao?: string | null
           unidade?: string | null
@@ -375,10 +399,14 @@ export type Database = {
       }
       servicos: {
         Row: {
+          aliquota_cbs: number | null
           aliquota_cofins: number | null
+          aliquota_ibs: number | null
           aliquota_iss: number | null
           aliquota_pis: number | null
+          cclasstrib: string | null
           codigo_servico: string
+          competencia: string | null
           created_at: string
           descricao: string
           empresa_id: string
@@ -389,10 +417,14 @@ export type Database = {
           valor_mensal: number | null
         }
         Insert: {
+          aliquota_cbs?: number | null
           aliquota_cofins?: number | null
+          aliquota_ibs?: number | null
           aliquota_iss?: number | null
           aliquota_pis?: number | null
+          cclasstrib?: string | null
           codigo_servico: string
+          competencia?: string | null
           created_at?: string
           descricao: string
           empresa_id: string
@@ -403,10 +435,14 @@ export type Database = {
           valor_mensal?: number | null
         }
         Update: {
+          aliquota_cbs?: number | null
           aliquota_cofins?: number | null
+          aliquota_ibs?: number | null
           aliquota_iss?: number | null
           aliquota_pis?: number | null
+          cclasstrib?: string | null
           codigo_servico?: string
+          competencia?: string | null
           created_at?: string
           descricao?: string
           empresa_id?: string
