@@ -278,6 +278,60 @@ export type Database = {
         }
         Relationships: []
       }
+      precificacao: {
+        Row: {
+          created_at: string
+          credito_entrada_pct: number
+          custo: number
+          empresa_id: string
+          id: string
+          margem_atual_pct: number | null
+          observacoes: string | null
+          preco_venda_atual: number
+          produto_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          credito_entrada_pct?: number
+          custo?: number
+          empresa_id: string
+          id?: string
+          margem_atual_pct?: number | null
+          observacoes?: string | null
+          preco_venda_atual?: number
+          produto_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          credito_entrada_pct?: number
+          custo?: number
+          empresa_id?: string
+          id?: string
+          margem_atual_pct?: number | null
+          observacoes?: string | null
+          preco_venda_atual?: number
+          produto_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "precificacao_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "precificacao_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: true
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       produtos: {
         Row: {
           aliquota_cbs: number | null
