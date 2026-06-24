@@ -400,6 +400,9 @@ export interface ResultadoSimulacao {
   carga_nova_anual: number;
   creditos_atuais_anual: number;
   creditos_novos_anual: number;
+  /** "real" = vindo de creditos_aquisicao; "estimado" = derivado de perc_insumos_creditaveis; "nenhum" = sem créditos. */
+  origem_creditos_novos?: "real" | "estimado" | "nenhum";
+
   anos: ResultadoAno[];
   alertas: string[];
 }
