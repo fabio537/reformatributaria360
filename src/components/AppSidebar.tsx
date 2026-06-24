@@ -9,6 +9,7 @@ import {
   LogOut,
   PackageSearch,
   DollarSign,
+  Scale,
   Download,
 } from "lucide-react";
 import { Link, useLocation } from "@tanstack/react-router";
