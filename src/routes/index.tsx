@@ -24,7 +24,7 @@ function IndexRedirect() {
         return;
       }
 
-      navigate({ to: "/dashboard" });
+      navigate({ to: "/empresas" });
     }
   }, [auth, linkedEmpresa.empresaId, linkedEmpresa.loading, navigate]);
 

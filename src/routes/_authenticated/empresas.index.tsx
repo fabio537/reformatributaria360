@@ -197,7 +197,7 @@ function EmpresasPage() {
       e.cnpj?.includes(search)
   );
 
-  const visibleEmpresas = auth.hasRole("cliente") && linkedEmpresa.empresaId
+  const visibleEmpresas = linkedEmpresa.empresaId
     ? filtered.filter((empresa) => empresa.id === linkedEmpresa.empresaId)
     : filtered;
 
