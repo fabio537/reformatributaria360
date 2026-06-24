@@ -75,7 +75,9 @@ interface EmpresaData {
   faturamento_anual: number | null;
   perfil_clientes: PerfilClientes | null;
   perfil_b2b_pct: number | null;
+  perc_insumos_creditaveis: number | null;
 }
+
 
 function SimplesDasPage() {
   const linked = useLinkedEmpresa();
