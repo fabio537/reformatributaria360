@@ -103,7 +103,9 @@ function EmpresaDetalhePage() {
       municipio: form.municipio || null,
       faturamento_anual: Number(form.faturamento_anual) || 0,
       optante_simples_mei: form.optante_simples_mei,
+      perc_insumos_creditaveis: Number(form.perc_insumos_creditaveis) || 0,
     };
+
 
     const { error } = await supabase
       .from("empresas")
