@@ -143,10 +143,57 @@ function aliquotaEfetivaDASMensal(rbt12: number): number {
   return (rbt12 * f.aliq - f.ded) / rbt12;
 }
 
+function mediaProjetada(rows: CompetenciaFiscalRow[]): CompetenciaFiscalRow[] {
+  if (rows.length === 0 || rows.length >= 12) return rows;
+  const n = rows.length;
+  const num = (k: keyof CompetenciaFiscalRow) =>
+    rows.reduce((s, r) => s + (Number(r[k] ?? 0) || 0), 0) / n;
+
+  const media: Omit<CompetenciaFiscalRow, "competencia"> = {
+    receita_bruta: num("receita_bruta"),
+    receita_clientes_regime_normal: num("receita_clientes_regime_normal"),
+    receita_clientes_outros: num("receita_clientes_outros"),
+    aquisicoes_totais: num("aquisicoes_totais"),
+    aquisicoes_fornecedores_regime_normal: num("aquisicoes_fornecedores_regime_normal"),
+    aquisicoes_fornecedores_simples: num("aquisicoes_fornecedores_simples"),
+    folha_empregados: num("folha_empregados"),
+    inss_empregados: num("inss_empregados"),
+    inss_contribuinte_individual: num("inss_contribuinte_individual"),
+    irpj_apurado: num("irpj_apurado"),
+    csll_apurado: num("csll_apurado"),
+    pis_apurado: num("pis_apurado"),
+    cofins_apurado: num("cofins_apurado"),
+    icms_apurado: num("icms_apurado"),
+    iss_apurado: num("iss_apurado"),
+    ipi_apurado: num("ipi_apurado"),
+    das_total: num("das_total"),
+  };
+
+  // Encontra próxima competência após a última informada
+  const ultima = [...rows].sort((a, b) => a.competencia.localeCompare(b.competencia)).at(-1)!;
+  const [yStr, mStr] = ultima.competencia.split("-");
+  let y = Number(yStr);
+  let m = Number(mStr);
+  const out = [...rows];
+  while (out.length < 12) {
+    m += 1;
+    if (m > 12) { m = 1; y += 1; }
+    const comp = `${y}-${String(m).padStart(2, "0")}-01`;
+    out.push({ ...media, competencia: comp });
+  }
+  return out;
+}
+
 export function calcularAnaliseComparativa(
   rows: CompetenciaFiscalRow[],
+  opts: AnaliseComparativaOpts = {},
 ): AnaliseComparativaResultado {
-  const ordenadas = [...rows].sort((a, b) => a.competencia.localeCompare(b.competencia));
+  const cbsRate = opts.cbsRate ?? CBS_2027_DEFAULT;
+  const ibsRate = opts.ibsRate ?? IBS_2027_DEFAULT;
+  const totalReforma = cbsRate + ibsRate;
+  const reais = [...rows].sort((a, b) => a.competencia.localeCompare(b.competencia));
+  const ordenadas = opts.projetar12Meses ? mediaProjetada(reais) : reais;
+
   const receitaAnualizada =
     ordenadas.reduce((s, r) => s + (r.receita_bruta || 0), 0) * (12 / Math.max(1, ordenadas.length));
 
@@ -169,12 +216,9 @@ export function calcularAnaliseComparativa(
     const sn_atual_total = das + inss;
 
     // B) SN Híbrido 2027
-    // DAS reduzido: tira PIS+COFINS (≈ cbsFracao da fração do DAS).
     const das_reduzido = das * (1 - cbsFracao);
-    // CBS débito apenas sobre receita de clientes Regime Normal (B2B precisa de crédito).
-    const cbs_debito = receita * mixB2B * CBS_2027;
-    // Crédito recebido na entrada: aquisições de fornecedores Regime Normal × CBS_2027
-    const credito_recebido = aquisicoesRN * CBS_2027;
+    const cbs_debito = receita * mixB2B * totalReforma;
+    const credito_recebido = aquisicoesRN * totalReforma;
     const cbs_liquido_pagar = Math.max(0, cbs_debito - credito_recebido);
     const sn_hibrido_total = das_reduzido + cbs_liquido_pagar + inss;
 
@@ -186,9 +230,9 @@ export function calcularAnaliseComparativa(
     const lp_inss = folha * INSS_PATRONAL;
     const lp_2026_total = lp_pis_cofins + icms_pago + lp_irpj_csll + lp_inss;
 
-    // D) Lucro Presumido 2027 — PIS/COFINS extintos; CBS 8,7% líquida; ICMS mantido.
-    const cbs_2027_debito = receita * CBS_2027;
-    const cbs_2027_credito = aquisicoesRN * CBS_2027;
+    // D) Lucro Presumido 2027
+    const cbs_2027_debito = receita * totalReforma;
+    const cbs_2027_credito = aquisicoesRN * totalReforma;
     const cbs_2027_liquida = Math.max(0, cbs_2027_debito - cbs_2027_credito);
     const lp_2027_total = cbs_2027_liquida + icms_pago + lp_irpj_csll + lp_inss;
 
@@ -234,7 +278,6 @@ export function calcularAnaliseComparativa(
     lp_2027: totais.receita_bruta > 0 ? totais.lp_2027 / totais.receita_bruta : 0,
   };
 
-  // Decisão: melhor cenário em 2027 entre SN Atual, SN Híbrido e LP 2027
   const opcoes2027 = [
     { k: "sn_atual" as const, v: totais.sn_atual },
     { k: "sn_hibrido" as const, v: totais.sn_hibrido },
@@ -244,11 +287,6 @@ export function calcularAnaliseComparativa(
   const melhor = opcoes2027[0].k;
 
   const alertas: string[] = [];
-  if (ordenadas.length < 6) {
-    alertas.push(
-      `Amostra de ${ordenadas.length} mês(es). Recomenda-se 6+ competências para projeção anual confiável.`,
-    );
-  }
   if (ordenadas.some((r) => r.receita_clientes_regime_normal == null)) {
     alertas.push(
       "Mix B2B/B2C não informado em algumas competências — assumido 50% como padrão.",
@@ -279,3 +317,4 @@ export function calcularAnaliseComparativa(
     alertas,
   };
 }
+
