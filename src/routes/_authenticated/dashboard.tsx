@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/AuthContext";
 import { useLinkedEmpresa } from "@/hooks/useLinkedEmpresa";
 import { supabase } from "@/integrations/supabase/client";
 import { AnaliseEmpresaImportada } from "@/components/AnaliseEmpresaImportada";
+import { DecisoesCriticasCard } from "@/components/DecisoesCriticasCard";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
