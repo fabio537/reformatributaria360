@@ -88,6 +88,92 @@ export type Database = {
           },
         ]
       }
+      competencias_fiscais: {
+        Row: {
+          aquisicoes_fornecedores_regime_normal: number
+          aquisicoes_fornecedores_simples: number
+          aquisicoes_totais: number
+          cofins_apurado: number
+          competencia: string
+          created_at: string
+          csll_apurado: number
+          das_total: number
+          empresa_id: string
+          folha_empregados: number
+          icms_apurado: number
+          id: string
+          inss_contribuinte_individual: number
+          inss_empregados: number
+          ipi_apurado: number
+          irpj_apurado: number
+          iss_apurado: number
+          observacao: string | null
+          pis_apurado: number
+          receita_bruta: number
+          receita_clientes_outros: number
+          receita_clientes_regime_normal: number
+          updated_at: string
+        }
+        Insert: {
+          aquisicoes_fornecedores_regime_normal?: number
+          aquisicoes_fornecedores_simples?: number
+          aquisicoes_totais?: number
+          cofins_apurado?: number
+          competencia: string
+          created_at?: string
+          csll_apurado?: number
+          das_total?: number
+          empresa_id: string
+          folha_empregados?: number
+          icms_apurado?: number
+          id?: string
+          inss_contribuinte_individual?: number
+          inss_empregados?: number
+          ipi_apurado?: number
+          irpj_apurado?: number
+          iss_apurado?: number
+          observacao?: string | null
+          pis_apurado?: number
+          receita_bruta?: number
+          receita_clientes_outros?: number
+          receita_clientes_regime_normal?: number
+          updated_at?: string
+        }
+        Update: {
+          aquisicoes_fornecedores_regime_normal?: number
+          aquisicoes_fornecedores_simples?: number
+          aquisicoes_totais?: number
+          cofins_apurado?: number
+          competencia?: string
+          created_at?: string
+          csll_apurado?: number
+          das_total?: number
+          empresa_id?: string
+          folha_empregados?: number
+          icms_apurado?: number
+          id?: string
+          inss_contribuinte_individual?: number
+          inss_empregados?: number
+          ipi_apurado?: number
+          irpj_apurado?: number
+          iss_apurado?: number
+          observacao?: string | null
+          pis_apurado?: number
+          receita_bruta?: number
+          receita_clientes_outros?: number
+          receita_clientes_regime_normal?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competencias_fiscais_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creditos_aquisicao: {
         Row: {
           aliquota_cofins: number | null
