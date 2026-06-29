@@ -55,6 +55,11 @@ import {
   type AnaliseComparativaResultado,
   type CompetenciaFiscalRow,
 } from "@/lib/analise-comparativa-engine";
+import {
+  BadgeRow,
+  CenarioBreakdownCard,
+  ComparativoFooter,
+} from "@/components/CenarioBreakdownCard";
 
 export const Route = createFileRoute("/_authenticated/analise-comparativa")({
   head: () => ({
@@ -352,37 +357,211 @@ function AnaliseComparativaPage() {
 
       {resultado && (
         <>
-          <div className="grid gap-4 md:grid-cols-3">
-            {CENARIOS_2027.map((k) => {
-              const best = resultado.melhor_cenario_2027 === k;
-              return (
-                <Card key={k} className={best ? "border-emerald-500 border-2" : ""}>
-                  <CardHeader className="pb-2">
-                    <CardDescription>{CENARIO_LABEL[k]}</CardDescription>
-                    <CardTitle className="text-xl">{fmtBRL(resultado.totais[k])}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">
-                        Carga efetiva: {fmtPct(resultado.carga_efetiva[k])}
-                      </span>
-                      {best && (
-                        <Badge className="bg-emerald-600">
-                          <CheckCircle2 className="h-3 w-3 mr-1" /> Melhor 2027
-                        </Badge>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+          {(() => {
+            // Mês representativo = média dos meses analisados
+            const n = Math.max(1, resultado.meses.length);
+            const avg = resultado.meses.reduce(
+              (a, m) => ({
+                receita: a.receita + m.receita_bruta / n,
+                sn_atual_total: a.sn_atual_total + m.sn_atual_total / n,
+                sn_atual_das: a.sn_atual_das + m.sn_atual_das / n,
+                sn_atual_inss: a.sn_atual_inss + m.sn_atual_inss / n,
+                sn_hibrido_total: a.sn_hibrido_total + m.sn_hibrido_total / n,
+                sn_hibrido_das_reduzido: a.sn_hibrido_das_reduzido + m.sn_hibrido_das_reduzido / n,
+                sn_hibrido_cbs_debito: a.sn_hibrido_cbs_debito + m.sn_hibrido_cbs_debito / n,
+                sn_hibrido_credito_recebido: a.sn_hibrido_credito_recebido + m.sn_hibrido_credito_recebido / n,
+                sn_hibrido_inss: a.sn_hibrido_inss + m.sn_hibrido_inss / n,
+                lp_2027_total: a.lp_2027_total + m.lp_2027_total / n,
+                lp_2027_cbs: a.lp_2027_cbs + m.lp_2027_cbs / n,
+                lp_2027_icms: a.lp_2027_icms + m.lp_2027_icms / n,
+                lp_2027_irpj_csll: a.lp_2027_irpj_csll + m.lp_2027_irpj_csll / n,
+                lp_2027_inss: a.lp_2027_inss + m.lp_2027_inss / n,
+              }),
+              {
+                receita: 0, sn_atual_total: 0, sn_atual_das: 0, sn_atual_inss: 0,
+                sn_hibrido_total: 0, sn_hibrido_das_reduzido: 0, sn_hibrido_cbs_debito: 0,
+                sn_hibrido_credito_recebido: 0, sn_hibrido_inss: 0,
+                lp_2027_total: 0, lp_2027_cbs: 0, lp_2027_icms: 0,
+                lp_2027_irpj_csll: 0, lp_2027_inss: 0,
+              },
+            );
+            const aliqDAS = avg.receita > 0 ? avg.sn_atual_das / avg.receita : 0;
+            const cbsHibridoLiquido = Math.max(
+              0,
+              avg.sn_hibrido_cbs_debito - avg.sn_hibrido_credito_recebido,
+            );
+            return (
+              <>
+                <BadgeRow
+                  badges={[
+                    { label: "Mês representativo", value: `média de ${resultado.meses.length}` },
+                    { label: "Faturamento", value: fmtBRL(avg.receita) },
+                    { label: "CBS", value: `${cbsPct.toFixed(2)}%` },
+                    { label: "IBS líq.", value: `${ibsPct.toFixed(2)}%` },
+                    { label: "Melhor cenário", value: CENARIO_LABEL[resultado.melhor_cenario_2027] },
+                  ]}
+                />
 
-          <Alert>
-            <CheckCircle2 className="h-4 w-4" />
-            <AlertTitle>Recomendação</AlertTitle>
-            <AlertDescription>{resultado.recomendacao}</AlertDescription>
-          </Alert>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <CenarioBreakdownCard
+                    variant="blue"
+                    label="Cenário A"
+                    title="SN Atual 2027"
+                    icon="🔵"
+                    steps={[
+                      {
+                        title: "DAS unificado",
+                        rows: [
+                          { label: "Faturamento do mês", value: avg.receita },
+                          { label: "Alíquota efetiva DAS", value: fmtPct(aliqDAS) },
+                          { label: "DAS total", value: avg.sn_atual_das, tone: "highlight" },
+                        ],
+                      },
+                      {
+                        title: "INSS patronal",
+                        rows: [{ label: "Sobre folha", value: avg.sn_atual_inss }],
+                      },
+                      {
+                        title: "Créditos aproveitados",
+                        rows: [{ label: "Regime unificado — sem crédito de entradas", value: "—", tone: "muted" }],
+                      },
+                    ]}
+                    totalLabel="Total de tributos no mês"
+                    totalValue={avg.sn_atual_total}
+                    credit={{
+                      label: "Crédito CBS ao comprador B2B",
+                      value: 0,
+                      sub: "DAS unificado não destaca CBS/IBS para o adquirente",
+                    }}
+                  />
+
+                  <CenarioBreakdownCard
+                    variant="green"
+                    label="Cenário B"
+                    title="SN Híbrido 2027"
+                    icon="🟢"
+                    steps={[
+                      {
+                        title: "DAS reduzido (sem CBS/IBS)",
+                        rows: [
+                          { label: "Faturamento do mês", value: avg.receita },
+                          { label: "DAS sem parcela CBS/IBS", value: avg.sn_hibrido_das_reduzido, tone: "highlight" },
+                        ],
+                        note: "IRPJ, CSLL, CPP e ICMS permanecem no DAS",
+                      },
+                      {
+                        title: "CBS/IBS apurados separadamente",
+                        rows: [
+                          { label: "Débito CBS+IBS sobre receita B2B", value: avg.sn_hibrido_cbs_debito },
+                          { label: "( – ) Crédito sobre insumos regime regular", value: -avg.sn_hibrido_credito_recebido },
+                          { label: "CBS/IBS líquido a recolher", value: cbsHibridoLiquido, tone: "highlight" },
+                        ],
+                      },
+                      {
+                        title: "INSS patronal",
+                        rows: [{ label: "Sobre folha", value: avg.sn_hibrido_inss }],
+                      },
+                    ]}
+                    totalLabel="Total de tributos no mês"
+                    totalValue={avg.sn_hibrido_total}
+                    credit={{
+                      label: "Crédito CBS/IBS transferido ao comprador B2B",
+                      value: avg.sn_hibrido_cbs_debito,
+                      sub: "Alíquota plena destacada na NF — vantagem competitiva B2B",
+                    }}
+                  />
+
+                  <CenarioBreakdownCard
+                    variant="amber"
+                    label="Cenário C"
+                    title="LP 2027"
+                    icon="🟡"
+                    steps={[
+                      {
+                        title: "CBS/IBS (regime regular)",
+                        rows: [
+                          { label: "Débito CBS+IBS sobre receita", value: avg.lp_2027_cbs + (avg.lp_2027_cbs > 0 ? 0 : 0) },
+                          { label: "CBS/IBS líquido (após créditos)", value: avg.lp_2027_cbs, tone: "highlight" },
+                        ],
+                        note: "PIS/Cofins extintos em 2027",
+                      },
+                      {
+                        title: "ICMS apurado",
+                        rows: [{ label: "ICMS no mês", value: avg.lp_2027_icms }],
+                      },
+                      {
+                        title: "IRPJ + CSLL + INSS",
+                        rows: [
+                          { label: "IRPJ + CSLL (presunção)", value: avg.lp_2027_irpj_csll },
+                          { label: "INSS patronal", value: avg.lp_2027_inss },
+                        ],
+                      },
+                    ]}
+                    totalLabel="Total de tributos no mês"
+                    totalValue={avg.lp_2027_total}
+                    credit={{
+                      label: "Crédito CBS/IBS ao comprador B2B",
+                      value: avg.lp_2027_cbs > 0 ? avg.lp_2027_cbs : 0,
+                      sub: "Destaque pleno na NF; comprador Lucro Real aproveita integralmente",
+                    }}
+                  />
+                </div>
+
+                <ComparativoFooter
+                  header="Comparativo — impacto por cenário (média mensal)"
+                  colunas={[
+                    {
+                      title: "Carga tributária mensal",
+                      rows: [
+                        { label: "SN Atual", value: avg.sn_atual_total, tone: "blue" },
+                        { label: "SN Híbrido", value: avg.sn_hibrido_total, tone: "green" },
+                        { label: "LP 2027", value: avg.lp_2027_total, tone: "amber" },
+                      ],
+                      footer: {
+                        label: "Diferença vs. melhor",
+                        value:
+                          Math.max(avg.sn_atual_total, avg.sn_hibrido_total, avg.lp_2027_total) -
+                          Math.min(avg.sn_atual_total, avg.sn_hibrido_total, avg.lp_2027_total),
+                        tone: "red",
+                      },
+                    },
+                    {
+                      title: "Crédito gerado ao comprador B2B",
+                      rows: [
+                        { label: "SN Atual", value: 0, tone: "blue" },
+                        { label: "SN Híbrido", value: avg.sn_hibrido_cbs_debito, tone: "green" },
+                        { label: "LP 2027", value: avg.lp_2027_cbs > 0 ? avg.lp_2027_cbs : 0, tone: "amber" },
+                      ],
+                      footer: {
+                        label: "Melhor crédito B2B",
+                        value: Math.max(avg.sn_hibrido_cbs_debito, avg.lp_2027_cbs, 0),
+                        tone: "green",
+                      },
+                    },
+                    {
+                      title: "Carga efetiva (% receita)",
+                      rows: [
+                        { label: "SN Atual", value: fmtPct(resultado.carga_efetiva.sn_atual), tone: "blue" },
+                        { label: "SN Híbrido", value: fmtPct(resultado.carga_efetiva.sn_hibrido), tone: "green" },
+                        { label: "LP 2027", value: fmtPct(resultado.carga_efetiva.lp_2027), tone: "amber" },
+                      ],
+                      footer: {
+                        label: "Recomendação",
+                        value: CENARIO_LABEL[resultado.melhor_cenario_2027],
+                        tone: "green",
+                      },
+                    },
+                  ]}
+                  alert={
+                    <>
+                      <b className="text-[#4eca8b]">O que isso significa: </b>
+                      {resultado.recomendacao}
+                    </>
+                  }
+                />
+              </>
+            );
+          })()}
 
           <div className="grid gap-4 lg:grid-cols-2">
             <Card>
