@@ -96,7 +96,7 @@ function AnaliseComparativaPage() {
   const { empresaId, razaoSocial } = useLinkedEmpresa();
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<CompetenciaFiscalRow[]>([]);
-  const [importOpen, setImportOpen] = useState(false);
+  
   const [cbsPct, setCbsPct] = useState<number>(CBS_2027_DEFAULT * 100);
   const [ibsPct, setIbsPct] = useState<number>(IBS_2027_DEFAULT * 100);
   const [projetar, setProjetar] = useState<boolean>(true);
