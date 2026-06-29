@@ -9,6 +9,8 @@ import {
   PackageSearch,
   Scale,
   Download,
+  LineChart,
+
 } from "lucide-react";
 
 import { Link, useLocation } from "@tanstack/react-router";
