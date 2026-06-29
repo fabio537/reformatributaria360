@@ -250,7 +250,7 @@ function AnaliseComparativaPage() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="mes" />
                   <YAxis tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`} />
-                  <Tooltip formatter={(v: number) => fmtBRL(v)} />
+                  <Tooltip formatter={(v) => fmtBRL(Number(v))} />
                   <Legend />
                   <Bar dataKey="SN Atual" fill="#94a3b8" />
                   <Bar dataKey="SN Híbrido 2027" fill="#10b981" />
