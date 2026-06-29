@@ -39,6 +39,31 @@ const CHECKLIST_ITEMS = [
       { key: "recuperacao_pis_cofins", label: "Recuperação Tributária Acelerada (PIS/COFINS extintos em 2027)" },
     ],
   },
+  {
+    categoria: "Live P&N Valorem — Ações até 31/12/2026 (URGENTE)",
+    itens: [
+      { key: "live_efd_pis_cofins", label: "🔴 Regularizar EFD-Contribuições e levantar saldo de PIS/Cofins acumulado (prazo 31/12/2026)" },
+      { key: "live_ressarcir_ipi", label: "🔴 Monetizar créditos de IPI via ressarcimento administrativo no e-CAC (não migram para CBS)" },
+      { key: "live_opcao_hibrido_set", label: "🔴 Avaliar opção pelo Simples Híbrido — janela 1º a 30/set/2026 (clientes B2B)" },
+    ],
+  },
+  {
+    categoria: "Live P&N Valorem — Prioridade Alta",
+    itens: [
+      { key: "live_inventario_estoque_381", label: "🟠 Inventário de estoques em 01/01/2027 para crédito presumido CBS (Art. 381 LC 214)" },
+      { key: "live_erp_cclasstrib", label: "🟠 Atualizar ERP: CBS/IBS por fora, cClassTrib, layouts NF-e, nova base de cálculo" },
+      { key: "live_simulacao_preco_rs", label: "🟠 Simular impacto na precificação com novo ICMS RS interno (17%) e CBS por fora" },
+    ],
+  },
+  {
+    categoria: "Live P&N Valorem — Prioridade Média",
+    itens: [
+      { key: "live_renegociacao_contratos", label: "🟡 Renegociar contratos com fornecedores e clientes considerando nova cadeia de créditos" },
+      { key: "live_fornecedores_sn", label: "🟡 Avaliar se fornecedores do Simples precisam migrar para híbrido (impacto nos créditos de entrada)" },
+      { key: "live_sefaz_rs_plp16", label: "🟡 Monitorar posição da SEFAZ/RS e PLP 16/2025 sobre CBS/IBS na base do ICMS para 2027" },
+      { key: "live_split_art36", label: "🟡 Definir política de uso do Art. 36 (Split via comprador) em jan/2027 — risco de crédito podre" },
+    ],
+  },
 ];
 
 const ALL_KEYS = CHECKLIST_ITEMS.flatMap((c) => c.itens.map((i) => i.key));

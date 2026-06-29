@@ -21,9 +21,17 @@ import { verificarNcmZfm } from "./ncm-zfm";
 
 // ─── Alíquotas de Referência (LC 214/2025, Art. 9º) ───────────────────────
 
-export const ALIQUOTA_CBS_REF = 0.088; // 8,8%
+export const ALIQUOTA_CBS_REF = 0.088; // 8,8% — estimativa Fazenda (2024)
 export const ALIQUOTA_IBS_REF = 0.177; // 17,7%
 export const ALIQUOTA_TOTAL_REF = ALIQUOTA_CBS_REF + ALIQUOTA_IBS_REF; // 26,5%
+
+/**
+ * Estimativa alternativa ROIT (mai/2026), considerando as desonerações de
+ * carnes e medicamentos previstas na LC 227/2026. Usada como cenário de
+ * comparação até o Senado fixar a alíquota definitiva (prazo 15/dez/2026).
+ * Fonte: Live P&N Valorem — Reforma Tributária 2026 (jun/2026).
+ */
+export const ALIQUOTA_CBS_REF_ROIT = 0.0943; // 9,43%
 
 /**
  * Redução de transição da CBS em 2027 e 2028 (LC 214/2025, art. 344).

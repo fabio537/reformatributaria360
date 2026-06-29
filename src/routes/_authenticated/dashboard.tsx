@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/AuthContext";
 import { useLinkedEmpresa } from "@/hooks/useLinkedEmpresa";
 import { supabase } from "@/integrations/supabase/client";
 import { AnaliseEmpresaImportada } from "@/components/AnaliseEmpresaImportada";
+import { DecisoesCriticasCard } from "@/components/DecisoesCriticasCard";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -91,6 +92,9 @@ function DashboardPage() {
       {linkedEmpresa.empresaId && (
         <AnaliseEmpresaImportada empresaId={linkedEmpresa.empresaId} />
       )}
+
+      <DecisoesCriticasCard />
+
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
