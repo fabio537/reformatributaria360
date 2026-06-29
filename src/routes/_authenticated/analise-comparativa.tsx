@@ -284,9 +284,6 @@ function AnaliseComparativaPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setImportOpen(true)} variant="outline">
-            <Upload className="h-4 w-4 mr-2" /> Importar Competências
-          </Button>
           <Button onClick={handleExportXLSX} disabled={!resultado} variant="outline">
             <FileSpreadsheet className="h-4 w-4 mr-2" /> XLSX
           </Button>
