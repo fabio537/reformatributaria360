@@ -43,12 +43,11 @@ import {
   Download,
   FileSpreadsheet,
   FileText,
-  Upload,
 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useLinkedEmpresa } from "@/hooks/useLinkedEmpresa";
-import { ImportDialog } from "@/components/ImportDialog";
 import {
   calcularAnaliseComparativa,
   CBS_2027_DEFAULT,

@@ -18,6 +18,7 @@ import { Route as AuthenticatedSimuladorRouteImport } from './routes/_authentica
 import { Route as AuthenticatedSimplesDasRouteImport } from './routes/_authenticated/simples-das'
 import { Route as AuthenticatedPrecificacaoRouteImport } from './routes/_authenticated/precificacao'
 import { Route as AuthenticatedMinhaEmpresaRouteImport } from './routes/_authenticated/minha-empresa'
+import { Route as AuthenticatedImportacaoRouteImport } from './routes/_authenticated/importacao'
 import { Route as AuthenticatedEmpresasRouteImport } from './routes/_authenticated/empresas'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedChecklistRouteImport } from './routes/_authenticated/checklist'
@@ -75,6 +76,11 @@ const AuthenticatedMinhaEmpresaRoute =
     path: '/minha-empresa',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedImportacaoRoute = AuthenticatedImportacaoRouteImport.update({
+  id: '/importacao',
+  path: '/importacao',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedEmpresasRoute = AuthenticatedEmpresasRouteImport.update({
   id: '/empresas',
   path: '/empresas',
@@ -135,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/checklist': typeof AuthenticatedChecklistRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresas': typeof AuthenticatedEmpresasRouteWithChildren
+  '/importacao': typeof AuthenticatedImportacaoRoute
   '/minha-empresa': typeof AuthenticatedMinhaEmpresaRoute
   '/precificacao': typeof AuthenticatedPrecificacaoRoute
   '/simples-das': typeof AuthenticatedSimplesDasRoute
@@ -153,6 +160,7 @@ export interface FileRoutesByTo {
   '/base-legal': typeof AuthenticatedBaseLegalRoute
   '/checklist': typeof AuthenticatedChecklistRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/importacao': typeof AuthenticatedImportacaoRoute
   '/minha-empresa': typeof AuthenticatedMinhaEmpresaRoute
   '/precificacao': typeof AuthenticatedPrecificacaoRoute
   '/simples-das': typeof AuthenticatedSimplesDasRoute
@@ -174,6 +182,7 @@ export interface FileRoutesById {
   '/_authenticated/checklist': typeof AuthenticatedChecklistRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/empresas': typeof AuthenticatedEmpresasRouteWithChildren
+  '/_authenticated/importacao': typeof AuthenticatedImportacaoRoute
   '/_authenticated/minha-empresa': typeof AuthenticatedMinhaEmpresaRoute
   '/_authenticated/precificacao': typeof AuthenticatedPrecificacaoRoute
   '/_authenticated/simples-das': typeof AuthenticatedSimplesDasRoute
@@ -195,6 +204,7 @@ export interface FileRouteTypes {
     | '/checklist'
     | '/dashboard'
     | '/empresas'
+    | '/importacao'
     | '/minha-empresa'
     | '/precificacao'
     | '/simples-das'
@@ -213,6 +223,7 @@ export interface FileRouteTypes {
     | '/base-legal'
     | '/checklist'
     | '/dashboard'
+    | '/importacao'
     | '/minha-empresa'
     | '/precificacao'
     | '/simples-das'
@@ -233,6 +244,7 @@ export interface FileRouteTypes {
     | '/_authenticated/checklist'
     | '/_authenticated/dashboard'
     | '/_authenticated/empresas'
+    | '/_authenticated/importacao'
     | '/_authenticated/minha-empresa'
     | '/_authenticated/precificacao'
     | '/_authenticated/simples-das'
@@ -312,6 +324,13 @@ declare module '@tanstack/react-router' {
       path: '/minha-empresa'
       fullPath: '/minha-empresa'
       preLoaderRoute: typeof AuthenticatedMinhaEmpresaRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/importacao': {
+      id: '/_authenticated/importacao'
+      path: '/importacao'
+      fullPath: '/importacao'
+      preLoaderRoute: typeof AuthenticatedImportacaoRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/empresas': {
@@ -403,6 +422,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedChecklistRoute: typeof AuthenticatedChecklistRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEmpresasRoute: typeof AuthenticatedEmpresasRouteWithChildren
+  AuthenticatedImportacaoRoute: typeof AuthenticatedImportacaoRoute
   AuthenticatedMinhaEmpresaRoute: typeof AuthenticatedMinhaEmpresaRoute
   AuthenticatedPrecificacaoRoute: typeof AuthenticatedPrecificacaoRoute
   AuthenticatedSimplesDasRoute: typeof AuthenticatedSimplesDasRoute
@@ -419,6 +439,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedChecklistRoute: AuthenticatedChecklistRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEmpresasRoute: AuthenticatedEmpresasRouteWithChildren,
+  AuthenticatedImportacaoRoute: AuthenticatedImportacaoRoute,
   AuthenticatedMinhaEmpresaRoute: AuthenticatedMinhaEmpresaRoute,
   AuthenticatedPrecificacaoRoute: AuthenticatedPrecificacaoRoute,
   AuthenticatedSimplesDasRoute: AuthenticatedSimplesDasRoute,
