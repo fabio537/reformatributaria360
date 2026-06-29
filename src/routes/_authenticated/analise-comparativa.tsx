@@ -308,7 +308,9 @@ function AnaliseComparativaPage() {
               value={cbsPct}
               onChange={(e) => setCbsPct(Number(e.target.value) || 0)}
             />
-            <p className="text-xs text-muted-foreground mt-1">Referência LC 214/2025: 8,70%</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Referência LC 214/2025: 8,70% — projeção ROIT: 9,30% (ajuste conforme cenário).
+            </p>
           </div>
           <div>
             <Label htmlFor="ibs">Alíquota IBS líquida (%)</Label>
@@ -318,7 +320,8 @@ function AnaliseComparativaPage() {
               onChange={(e) => setIbsPct(Number(e.target.value) || 0)}
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Transição 2027-2028: 0,1% débito = 0,1% crédito ⇒ líquido 0%.
+              Transição 2027-2028: alíquota teste de 0,1%. Mesmo com crédito de 0,1%,
+              havendo saldo devedor (débito &gt; crédito) o recolhimento é devido.
             </p>
           </div>
           <div className="flex items-center justify-between rounded-md border p-3">
