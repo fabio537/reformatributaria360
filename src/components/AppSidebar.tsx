@@ -10,6 +10,7 @@ import {
   Scale,
   Download,
   LineChart,
+  Upload,
 
 } from "lucide-react";
 
