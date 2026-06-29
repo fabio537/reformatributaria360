@@ -377,6 +377,8 @@ export function buildDedupKey(row: Record<string, unknown>): string | null {
   const empresa = row.empresa_id;
   const comp = row.competencia;
   const ncm = row.ncm;
-  if (!empresa || !comp || !ncm) return null;
-  return `${empresa}|${comp}|${ncm}`;
+  if (!empresa || !comp) return null;
+  if (ncm) return `${empresa}|${comp}|${ncm}`;
+  // Para competências fiscais (agregado mensal), chave é empresa+competência
+  return `${empresa}|${comp}`;
 }
