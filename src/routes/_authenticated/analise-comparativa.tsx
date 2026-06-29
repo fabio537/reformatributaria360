@@ -529,15 +529,6 @@ function AnaliseComparativaPage() {
         </>
       )}
 
-      <ImportDialog
-        open={importOpen}
-        onOpenChange={setImportOpen}
-        tableName="competencias_fiscais"
-        entity="competencias_fiscais"
-        extraData={{ empresa_id: empresaId }}
-        onSuccess={() => void carregar()}
-        templateFileName="competencias-fiscais"
-      />
     </div>
   );
 }
