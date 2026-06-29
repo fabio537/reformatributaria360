@@ -112,8 +112,22 @@ const LP_CSLL = 0.09;
 const LP_PIS = 0.0065;
 const LP_COFINS = 0.03;
 const LP_ICMS_EFETIVO = 0.18; // padrão; aproximação — ajuste futuro por UF
-const CBS_2027 = ALIQUOTA_CBS_REF - CBS_REDUCAO_TRANSICAO_PP; // 8,7%
+export const CBS_2027_DEFAULT = ALIQUOTA_CBS_REF - CBS_REDUCAO_TRANSICAO_PP; // 8,7%
+export const IBS_2027_DEFAULT = 0; // 0,1% débito = 0,1% crédito ⇒ líquido 0
 const INSS_PATRONAL = 0.20; // patronal sobre folha (aproximação simplificada)
+
+export interface AnaliseComparativaOpts {
+  /** Alíquota CBS líquida usada em 2027 (default 8,7%). */
+  cbsRate?: number;
+  /** Alíquota IBS líquida em 2027 (default 0%, pois débito = crédito). */
+  ibsRate?: number;
+  /**
+   * Quando true, projeta 12 meses a partir da média dos meses informados
+   * (mantendo as competências reais e completando o restante até 12).
+   */
+  projetar12Meses?: boolean;
+}
+
 
 function aliquotaEfetivaDASMensal(rbt12: number): number {
   if (rbt12 <= 0) return 0;
