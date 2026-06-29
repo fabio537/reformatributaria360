@@ -339,9 +339,14 @@ function AnaliseComparativaPage() {
         <Alert>
           <Download className="h-4 w-4" />
           <AlertTitle>Sem competências importadas</AlertTitle>
-          <AlertDescription>
-            Importe a planilha mensal (Saídas, Entradas, Folha, Impostos apurados) para gerar
-            a análise comparativa. O modelo pode ser baixado dentro do importador.
+          <AlertDescription className="space-y-2">
+            <p>
+              Para gerar a análise comparativa é necessário importar a planilha mensal
+              (Saídas, Entradas, Folha, Impostos apurados).
+            </p>
+            <Button asChild size="sm" variant="outline">
+              <Link to="/importacao">Ir para Importação</Link>
+            </Button>
           </AlertDescription>
         </Alert>
       )}
