@@ -24,6 +24,7 @@ import { Route as AuthenticatedChecklistRouteImport } from './routes/_authentica
 import { Route as AuthenticatedBaseLegalRouteImport } from './routes/_authenticated/base-legal'
 import { Route as AuthenticatedBaixarAppRouteImport } from './routes/_authenticated/baixar-app'
 import { Route as AuthenticatedAtualizacoesRouteImport } from './routes/_authenticated/atualizacoes'
+import { Route as AuthenticatedAnaliseComparativaRouteImport } from './routes/_authenticated/analise-comparativa'
 import { Route as AuthenticatedEmpresasIndexRouteImport } from './routes/_authenticated/empresas.index'
 import { Route as AuthenticatedEmpresasEmpresaIdRouteImport } from './routes/_authenticated/empresas.$empresaId'
 
@@ -105,6 +106,12 @@ const AuthenticatedAtualizacoesRoute =
     path: '/atualizacoes',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedAnaliseComparativaRoute =
+  AuthenticatedAnaliseComparativaRouteImport.update({
+    id: '/analise-comparativa',
+    path: '/analise-comparativa',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedEmpresasIndexRoute =
   AuthenticatedEmpresasIndexRouteImport.update({
     id: '/',
@@ -121,6 +128,7 @@ const AuthenticatedEmpresasEmpresaIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/analise-comparativa': typeof AuthenticatedAnaliseComparativaRoute
   '/atualizacoes': typeof AuthenticatedAtualizacoesRoute
   '/baixar-app': typeof AuthenticatedBaixarAppRoute
   '/base-legal': typeof AuthenticatedBaseLegalRoute
@@ -139,6 +147,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/analise-comparativa': typeof AuthenticatedAnaliseComparativaRoute
   '/atualizacoes': typeof AuthenticatedAtualizacoesRoute
   '/baixar-app': typeof AuthenticatedBaixarAppRoute
   '/base-legal': typeof AuthenticatedBaseLegalRoute
@@ -158,6 +167,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+  '/_authenticated/analise-comparativa': typeof AuthenticatedAnaliseComparativaRoute
   '/_authenticated/atualizacoes': typeof AuthenticatedAtualizacoesRoute
   '/_authenticated/baixar-app': typeof AuthenticatedBaixarAppRoute
   '/_authenticated/base-legal': typeof AuthenticatedBaseLegalRoute
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/analise-comparativa'
     | '/atualizacoes'
     | '/baixar-app'
     | '/base-legal'
@@ -196,6 +207,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/analise-comparativa'
     | '/atualizacoes'
     | '/baixar-app'
     | '/base-legal'
@@ -214,6 +226,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/login'
+    | '/_authenticated/analise-comparativa'
     | '/_authenticated/atualizacoes'
     | '/_authenticated/baixar-app'
     | '/_authenticated/base-legal'
@@ -343,6 +356,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAtualizacoesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/analise-comparativa': {
+      id: '/_authenticated/analise-comparativa'
+      path: '/analise-comparativa'
+      fullPath: '/analise-comparativa'
+      preLoaderRoute: typeof AuthenticatedAnaliseComparativaRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/empresas/': {
       id: '/_authenticated/empresas/'
       path: '/'
@@ -376,6 +396,7 @@ const AuthenticatedEmpresasRouteWithChildren =
   )
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedAnaliseComparativaRoute: typeof AuthenticatedAnaliseComparativaRoute
   AuthenticatedAtualizacoesRoute: typeof AuthenticatedAtualizacoesRoute
   AuthenticatedBaixarAppRoute: typeof AuthenticatedBaixarAppRoute
   AuthenticatedBaseLegalRoute: typeof AuthenticatedBaseLegalRoute
@@ -391,6 +412,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAnaliseComparativaRoute: AuthenticatedAnaliseComparativaRoute,
   AuthenticatedAtualizacoesRoute: AuthenticatedAtualizacoesRoute,
   AuthenticatedBaixarAppRoute: AuthenticatedBaixarAppRoute,
   AuthenticatedBaseLegalRoute: AuthenticatedBaseLegalRoute,
@@ -417,3 +439,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

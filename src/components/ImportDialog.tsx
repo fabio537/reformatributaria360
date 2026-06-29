@@ -220,6 +220,22 @@ export function ImportDialog({
           }
         });
       }
+    } else if (empresaId && tableName === "competencias_fiscais") {
+      const competencias = Array.from(
+        new Set(
+          proc.map((p) => p.data.competencia).filter((c): c is string => typeof c === "string")
+        )
+      );
+      if (competencias.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: existentes } = await (supabase.from("competencias_fiscais" as any) as any)
+          .select("competencia")
+          .eq("empresa_id", empresaId)
+          .in("competencia", competencias);
+        (existentes ?? []).forEach((e: { competencia: string | null }) => {
+          if (e.competencia) dup.add(`${empresaId}|${e.competencia}`);
+        });
+      }
     }
 
     setProcessed(proc);
@@ -267,6 +283,15 @@ export function ImportDialog({
             .eq("empresa_id", empresaId)
             .eq("competencia", r.data.competencia as string)
             .eq("ncm", r.data.ncm as string);
+        }
+      } else if (rowsToReplace.length > 0 && tableName === "competencias_fiscais") {
+        const empresaId = (extraData as Record<string, unknown>).empresa_id as string;
+        for (const r of rowsToReplace) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase.from("competencias_fiscais" as any) as any)
+            .delete()
+            .eq("empresa_id", empresaId)
+            .eq("competencia", r.data.competencia as string);
         }
       }
 
