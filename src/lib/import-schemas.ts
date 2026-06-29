@@ -89,7 +89,11 @@ export interface ImportField {
   enumValues?: string[];
 }
 
-export type Entity = "produtos" | "servicos" | "creditos_aquisicao";
+export type Entity =
+  | "produtos"
+  | "servicos"
+  | "creditos_aquisicao"
+  | "competencias_fiscais";
 
 export const ENTITY_FIELDS: Record<Entity, ImportField[]> = {
   produtos: [
