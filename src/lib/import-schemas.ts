@@ -254,6 +254,29 @@ export const ENTITY_ZOD: Record<Entity, z.ZodTypeAny> = {
     aliquota_ibs: baseNumeric,
     aliquota_cbs: baseNumeric,
   }).passthrough(),
+  competencias_fiscais: z.object({
+    competencia: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Competência (MM/AAAA) obrigatória"),
+    receita_bruta: z.number({ invalid_type_error: "Receita bruta obrigatória" }),
+    receita_clientes_regime_normal: baseNumeric,
+    receita_clientes_outros: baseNumeric,
+    aquisicoes_totais: baseNumeric,
+    aquisicoes_fornecedores_regime_normal: baseNumeric,
+    aquisicoes_fornecedores_simples: baseNumeric,
+    folha_empregados: baseNumeric,
+    inss_empregados: baseNumeric,
+    inss_contribuinte_individual: baseNumeric,
+    irpj_apurado: baseNumeric,
+    csll_apurado: baseNumeric,
+    pis_apurado: baseNumeric,
+    cofins_apurado: baseNumeric,
+    icms_apurado: baseNumeric,
+    iss_apurado: baseNumeric,
+    ipi_apurado: baseNumeric,
+    das_total: baseNumeric,
+    observacao: baseText,
+  }).passthrough(),
 };
 
 // ---------- Row processing ----------
