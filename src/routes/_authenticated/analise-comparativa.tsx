@@ -59,11 +59,11 @@ import {
 export const Route = createFileRoute("/_authenticated/analise-comparativa")({
   head: () => ({
     meta: [
-      { title: "Análise Comparativa de Cenários | Reforma Tributária" },
+      { title: "Análise Comparativa de Cenários 2027 | Reforma Tributária" },
       {
         name: "description",
         content:
-          "Compare cenários Simples Nacional Atual, Simples Híbrido 2027, Lucro Presumido 2026 e Lucro Presumido 2027 a partir de dados mensais agregados.",
+          "Compare os cenários de 2027 — SN Atual (dentro do DAS), SN Híbrido (DAS + CBS/IBS) e Lucro Presumido 2027 — a partir de dados mensais agregados.",
       },
     ],
   }),
@@ -80,17 +80,17 @@ const fmtMes = (iso: string) => {
 };
 
 const CENARIO_LABEL = {
-  sn_atual: "SN Atual",
+  sn_atual: "SN Atual 2027 (dentro do DAS)",
   sn_hibrido: "SN Híbrido 2027",
-  lp_2026: "LP 2026",
   lp_2027: "LP 2027",
 } as const;
 const COR = {
   sn_atual: "#94a3b8",
   sn_hibrido: "#10b981",
-  lp_2026: "#f59e0b",
   lp_2027: "#3b82f6",
 } as const;
+type Cenario2027 = keyof typeof CENARIO_LABEL;
+const CENARIOS_2027: readonly Cenario2027[] = ["sn_atual", "sn_hibrido", "lp_2027"] as const;
 
 function AnaliseComparativaPage() {
   const { empresaId, razaoSocial } = useLinkedEmpresa();
@@ -138,13 +138,12 @@ function AnaliseComparativaPage() {
     const meses = resultado.meses.map((m) => ({
       "Competência": fmtMes(m.competencia),
       "Receita Bruta": m.receita_bruta,
-      "SN Atual (Total)": m.sn_atual_total,
+      "SN Atual 2027 (Total)": m.sn_atual_total,
       "SN Híbrido 2027 (Total)": m.sn_hibrido_total,
-      "LP 2026 (Total)": m.lp_2026_total,
       "LP 2027 (Total)": m.lp_2027_total,
     }));
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(meses), "Comparativo Mensal");
-    XLSX.writeFile(wb, `analise-comparativa-${razaoSocial ?? "empresa"}.xlsx`);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(meses), "Cenários 2027");
+    XLSX.writeFile(wb, `cenarios-2027-${razaoSocial ?? "empresa"}.xlsx`);
   };
 
   const handleExportPDF = async () => {
@@ -156,7 +155,7 @@ function AnaliseComparativaPage() {
     let y = 18;
 
     doc.setFontSize(16); doc.setFont("helvetica", "bold");
-    doc.text("Análise Comparativa de Cenários — Reforma Tributária", pageW / 2, y, { align: "center" });
+    doc.text("Comparativo de Cenários 2027 — Reforma Tributária", pageW / 2, y, { align: "center" });
     y += 7;
     doc.setFontSize(10); doc.setFont("helvetica", "normal");
     doc.text(razaoSocial ?? "Empresa", pageW / 2, y, { align: "center" });
@@ -169,15 +168,14 @@ function AnaliseComparativaPage() {
     doc.setDrawColor(180); doc.line(14, y, pageW - 14, y); y += 6;
 
     doc.setFontSize(12); doc.setFont("helvetica", "bold");
-    doc.text("Resumo (período analisado)", 14, y); y += 5;
+    doc.text("Resumo dos cenários 2027 (período analisado)", 14, y); y += 5;
     autoTable(doc, {
       startY: y,
-      head: [["Cenário", "Carga Total", "Carga Efetiva"]],
+      head: [["Cenário 2027", "Carga Total", "Carga Efetiva"]],
       body: [
-        ["SN Atual", fmtBRL(resultado.totais.sn_atual), fmtPct(resultado.carga_efetiva.sn_atual)],
-        ["SN Híbrido 2027", fmtBRL(resultado.totais.sn_hibrido), fmtPct(resultado.carga_efetiva.sn_hibrido)],
-        ["LP 2026", fmtBRL(resultado.totais.lp_2026), fmtPct(resultado.carga_efetiva.lp_2026)],
-        ["LP 2027", fmtBRL(resultado.totais.lp_2027), fmtPct(resultado.carga_efetiva.lp_2027)],
+        [CENARIO_LABEL.sn_atual, fmtBRL(resultado.totais.sn_atual), fmtPct(resultado.carga_efetiva.sn_atual)],
+        [CENARIO_LABEL.sn_hibrido, fmtBRL(resultado.totais.sn_hibrido), fmtPct(resultado.carga_efetiva.sn_hibrido)],
+        [CENARIO_LABEL.lp_2027, fmtBRL(resultado.totais.lp_2027), fmtPct(resultado.carga_efetiva.lp_2027)],
         ["Receita Bruta", fmtBRL(resultado.totais.receita_bruta), "—"],
       ],
       theme: "grid",
@@ -195,16 +193,15 @@ function AnaliseComparativaPage() {
     doc.text(recoLines, 14, y); y += recoLines.length * 4 + 4;
 
     doc.setFontSize(12); doc.setFont("helvetica", "bold");
-    doc.text("Detalhamento Mês a Mês", 14, y); y += 5;
+    doc.text("Detalhamento Mês a Mês — Cenários 2027", 14, y); y += 5;
     autoTable(doc, {
       startY: y,
-      head: [["Mês", "Receita", "SN Atual", "SN Híbrido", "LP 2026", "LP 2027"]],
+      head: [["Mês", "Receita", "SN Atual 2027", "SN Híbrido 2027", "LP 2027"]],
       body: resultado.meses.map((m) => [
         fmtMes(m.competencia),
         fmtBRL(m.receita_bruta),
         fmtBRL(m.sn_atual_total),
         fmtBRL(m.sn_hibrido_total),
-        fmtBRL(m.lp_2026_total),
         fmtBRL(m.lp_2027_total),
       ]),
       theme: "grid",
@@ -250,14 +247,13 @@ function AnaliseComparativaPage() {
 
   const chartData = resultado?.meses.map((m) => ({
     mes: fmtMes(m.competencia),
-    "SN Atual": m.sn_atual_total,
+    "SN Atual 2027": m.sn_atual_total,
     "SN Híbrido 2027": m.sn_hibrido_total,
-    "LP 2026": m.lp_2026_total,
     "LP 2027": m.lp_2027_total,
   }));
 
   const cargaData = resultado
-    ? (["sn_atual", "sn_hibrido", "lp_2026", "lp_2027"] as const).map((k) => ({
+    ? CENARIOS_2027.map((k) => ({
         cenario: CENARIO_LABEL[k],
         carga: resultado.carga_efetiva[k] * 100,
         fill: COR[k],
@@ -265,7 +261,7 @@ function AnaliseComparativaPage() {
     : [];
 
   const pizzaData = resultado
-    ? (["sn_atual", "sn_hibrido", "lp_2026", "lp_2027"] as const).map((k) => ({
+    ? CENARIOS_2027.map((k) => ({
         name: CENARIO_LABEL[k],
         value: resultado.totais[k],
         fill: COR[k],
@@ -277,10 +273,10 @@ function AnaliseComparativaPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
-            Simulação da Reforma Tributária — Dashboard
+            Simulação da Reforma Tributária — Cenários 2027
           </h1>
           <p className="text-sm text-muted-foreground">
-            {razaoSocial ?? "Empresa"} — comparativo entre SN Atual, SN Híbrido 2027, LP 2026 e LP 2027.
+            {razaoSocial ?? "Empresa"} — comparativo entre os modelos que passam a valer em 2027: SN Atual (dentro do DAS), SN Híbrido (DAS + CBS/IBS) e Lucro Presumido 2027. Os dados históricos (incl. 2026) são usados apenas como base de cálculo.
           </p>
         </div>
         <div className="flex gap-2">
@@ -356,8 +352,8 @@ function AnaliseComparativaPage() {
 
       {resultado && (
         <>
-          <div className="grid gap-4 md:grid-cols-4">
-            {(["sn_atual", "sn_hibrido", "lp_2026", "lp_2027"] as const).map((k) => {
+          <div className="grid gap-4 md:grid-cols-3">
+            {CENARIOS_2027.map((k) => {
               const best = resultado.melhor_cenario_2027 === k;
               return (
                 <Card key={k} className={best ? "border-emerald-500 border-2" : ""}>
@@ -402,9 +398,8 @@ function AnaliseComparativaPage() {
                     <YAxis tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`} />
                     <Tooltip formatter={(v) => fmtBRL(Number(v))} />
                     <Legend />
-                    <Bar dataKey="SN Atual" fill={COR.sn_atual} />
+                    <Bar dataKey="SN Atual 2027" fill={COR.sn_atual} />
                     <Bar dataKey="SN Híbrido 2027" fill={COR.sn_hibrido} />
-                    <Bar dataKey="LP 2026" fill={COR.lp_2026} />
                     <Bar dataKey="LP 2027" fill={COR.lp_2027} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -424,9 +419,8 @@ function AnaliseComparativaPage() {
                     <YAxis tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`} />
                     <Tooltip formatter={(v) => fmtBRL(Number(v))} />
                     <Legend />
-                    <Line type="monotone" dataKey="SN Atual" stroke={COR.sn_atual} strokeWidth={2} />
+                    <Line type="monotone" dataKey="SN Atual 2027" stroke={COR.sn_atual} strokeWidth={2} />
                     <Line type="monotone" dataKey="SN Híbrido 2027" stroke={COR.sn_hibrido} strokeWidth={2} />
-                    <Line type="monotone" dataKey="LP 2026" stroke={COR.lp_2026} strokeWidth={2} />
                     <Line type="monotone" dataKey="LP 2027" stroke={COR.lp_2027} strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -491,9 +485,8 @@ function AnaliseComparativaPage() {
                   <TableRow>
                     <TableHead>Mês</TableHead>
                     <TableHead className="text-right">Receita</TableHead>
-                    <TableHead className="text-right">SN Atual</TableHead>
-                    <TableHead className="text-right">SN Híbrido</TableHead>
-                    <TableHead className="text-right">LP 2026</TableHead>
+                    <TableHead className="text-right">SN Atual 2027</TableHead>
+                    <TableHead className="text-right">SN Híbrido 2027</TableHead>
                     <TableHead className="text-right">LP 2027</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -504,7 +497,6 @@ function AnaliseComparativaPage() {
                       <TableCell className="text-right">{fmtBRL(m.receita_bruta)}</TableCell>
                       <TableCell className="text-right">{fmtBRL(m.sn_atual_total)}</TableCell>
                       <TableCell className="text-right">{fmtBRL(m.sn_hibrido_total)}</TableCell>
-                      <TableCell className="text-right">{fmtBRL(m.lp_2026_total)}</TableCell>
                       <TableCell className="text-right">{fmtBRL(m.lp_2027_total)}</TableCell>
                     </TableRow>
                   ))}
@@ -513,7 +505,6 @@ function AnaliseComparativaPage() {
                     <TableCell className="text-right">{fmtBRL(resultado.totais.receita_bruta)}</TableCell>
                     <TableCell className="text-right">{fmtBRL(resultado.totais.sn_atual)}</TableCell>
                     <TableCell className="text-right">{fmtBRL(resultado.totais.sn_hibrido)}</TableCell>
-                    <TableCell className="text-right">{fmtBRL(resultado.totais.lp_2026)}</TableCell>
                     <TableCell className="text-right">{fmtBRL(resultado.totais.lp_2027)}</TableCell>
                   </TableRow>
                 </TableBody>
