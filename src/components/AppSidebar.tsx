@@ -51,6 +51,7 @@ const clientItems = [
   { title: "Simulações", url: "/simulador", icon: Calculator },
   { title: "Simulador NCM & Precificação", url: "/simulador-ncm", icon: PackageSearch },
   { title: "Simples: Dentro × Fora DAS", url: "/simples-das", icon: Scale },
+  { title: "Importação", url: "/importacao", icon: Upload },
   { title: "Análise Comparativa", url: "/analise-comparativa", icon: LineChart },
 
   { title: "Base Legal", url: "/base-legal", icon: BookOpen },
