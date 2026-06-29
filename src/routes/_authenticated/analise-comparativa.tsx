@@ -43,12 +43,11 @@ import {
   Download,
   FileSpreadsheet,
   FileText,
-  Upload,
 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useLinkedEmpresa } from "@/hooks/useLinkedEmpresa";
-import { ImportDialog } from "@/components/ImportDialog";
 import {
   calcularAnaliseComparativa,
   CBS_2027_DEFAULT,
@@ -97,7 +96,7 @@ function AnaliseComparativaPage() {
   const { empresaId, razaoSocial } = useLinkedEmpresa();
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<CompetenciaFiscalRow[]>([]);
-  const [importOpen, setImportOpen] = useState(false);
+  
   const [cbsPct, setCbsPct] = useState<number>(CBS_2027_DEFAULT * 100);
   const [ibsPct, setIbsPct] = useState<number>(IBS_2027_DEFAULT * 100);
   const [projetar, setProjetar] = useState<boolean>(true);
@@ -285,9 +284,6 @@ function AnaliseComparativaPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setImportOpen(true)} variant="outline">
-            <Upload className="h-4 w-4 mr-2" /> Importar Competências
-          </Button>
           <Button onClick={handleExportXLSX} disabled={!resultado} variant="outline">
             <FileSpreadsheet className="h-4 w-4 mr-2" /> XLSX
           </Button>
@@ -343,9 +339,14 @@ function AnaliseComparativaPage() {
         <Alert>
           <Download className="h-4 w-4" />
           <AlertTitle>Sem competências importadas</AlertTitle>
-          <AlertDescription>
-            Importe a planilha mensal (Saídas, Entradas, Folha, Impostos apurados) para gerar
-            a análise comparativa. O modelo pode ser baixado dentro do importador.
+          <AlertDescription className="space-y-2">
+            <p>
+              Para gerar a análise comparativa é necessário importar a planilha mensal
+              (Saídas, Entradas, Folha, Impostos apurados).
+            </p>
+            <Button asChild size="sm" variant="outline">
+              <Link to="/importacao">Ir para Importação</Link>
+            </Button>
           </AlertDescription>
         </Alert>
       )}
@@ -533,15 +534,6 @@ function AnaliseComparativaPage() {
         </>
       )}
 
-      <ImportDialog
-        open={importOpen}
-        onOpenChange={setImportOpen}
-        tableName="competencias_fiscais"
-        entity="competencias_fiscais"
-        extraData={{ empresa_id: empresaId }}
-        onSuccess={() => void carregar()}
-        templateFileName="competencias-fiscais"
-      />
     </div>
   );
 }
