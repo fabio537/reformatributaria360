@@ -23,7 +23,9 @@ import { formatCurrency } from "@/lib/format";
 import { SimulacaoResultado } from "@/components/SimulacaoResultado";
 import { SimulacaoProdutoResultado } from "@/components/SimulacaoProdutoResultado";
 import { AnaliseEmpresaImportada } from "@/components/AnaliseEmpresaImportada";
+import { PrecificacaoView } from "@/components/PrecificacaoView";
 import { CurrencyInput } from "@/components/CurrencyInput";
+
 import { useAuth } from "@/hooks/AuthContext";
 import { useLinkedEmpresa } from "@/hooks/useLinkedEmpresa";
 import { supabase } from "@/integrations/supabase/client";
@@ -95,11 +97,11 @@ function SimuladorNcmPage() {
       <div>
         <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
           <PackageSearch className="h-7 w-7" />
-          Simulador por NCM
+          Simulador NCM & Precificação
         </h1>
         <p className="mt-1 text-muted-foreground">
-          Consulte a alíquota estimada de CBS/IBS, rode a simulação completa de um produto
-          ou analise os itens importados da sua empresa.
+          Consulte alíquotas por NCM, simule um produto, analise os itens importados e
+          precifique. Foco em 2027/2028, anos com regras consolidadas pela LC 214/2025.
         </p>
       </div>
 
@@ -109,6 +111,9 @@ function SimuladorNcmPage() {
           <TabsTrigger value="completa">Simulação completa do produto</TabsTrigger>
           <TabsTrigger value="empresa" disabled={!linkedEmpresa.empresaId}>
             Análise da empresa
+          </TabsTrigger>
+          <TabsTrigger value="precificacao" disabled={!linkedEmpresa.empresaId}>
+            Precificação
           </TabsTrigger>
         </TabsList>
         <TabsContent value="consulta" className="mt-6">
@@ -128,10 +133,14 @@ function SimuladorNcmPage() {
             </Card>
           )}
         </TabsContent>
+        <TabsContent value="precificacao" className="mt-6">
+          <PrecificacaoView />
+        </TabsContent>
       </Tabs>
     </div>
   );
 }
+
 
 // ─── Aba 1: Consulta rápida (conteúdo original) ────────────────────────────
 function ConsultaRapidaTab() {
@@ -338,7 +347,7 @@ function SimulacaoCompletaProdutoTab() {
 
   // Cenário da reforma
   const [escopoReforma, setEscopoReforma] = useState<EscopoReforma>("cbs_ibs");
-  const [anosSelecionados, setAnosSelecionados] = useState<number[]>(ANOS_CRONOGRAMA);
+  const [anosSelecionados, setAnosSelecionados] = useState<number[]>([2027, 2028]);
 
   // Créditos de aquisição (insumos / mercadorias compradas)
   const [creditos, setCreditos] = useState<CreditoLinha[]>([]);
@@ -699,11 +708,12 @@ function SimulacaoCompletaProdutoTab() {
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="text-sm font-semibold">Anos a simular</h3>
               <div className="flex gap-1 flex-wrap">
+                <Button type="button" variant="default" size="sm" onClick={() => setAnosSelecionados([2027, 2028])}>Foco 2027–2028</Button>
                 <Button type="button" variant="outline" size="sm" onClick={() => setAnosSelecionados(ANOS_CRONOGRAMA)}>Todos</Button>
-                <Button type="button" variant="outline" size="sm" onClick={() => setAnosSelecionados([2026, 2027, 2028])}>Transição (2026–2028)</Button>
                 <Button type="button" variant="outline" size="sm" onClick={() => setAnosSelecionados([2033])}>Pleno (2033)</Button>
                 <Button type="button" variant="outline" size="sm" onClick={() => setAnosSelecionados([])}>Limpar</Button>
               </div>
+
             </div>
             <div className="flex flex-wrap gap-3">
               {ANOS_CRONOGRAMA.map((ano) => {

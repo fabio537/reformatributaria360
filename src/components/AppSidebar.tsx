@@ -7,10 +7,10 @@ import {
   Users,
   LogOut,
   PackageSearch,
-  DollarSign,
   Scale,
   Download,
 } from "lucide-react";
+
 import { Link, useLocation } from "@tanstack/react-router";
 import {
   Sidebar,
@@ -47,8 +47,7 @@ const clientItems = [
   { title: "Minha Empresa", url: "/minha-empresa", icon: Building2 },
   { title: "Checklist", url: "/checklist", icon: ClipboardList },
   { title: "Simulações", url: "/simulador", icon: Calculator },
-  { title: "Simulador por NCM", url: "/simulador-ncm", icon: PackageSearch },
-  { title: "Precificação", url: "/precificacao", icon: DollarSign },
+  { title: "Simulador NCM & Precificação", url: "/simulador-ncm", icon: PackageSearch },
   { title: "Simples: Dentro × Fora DAS", url: "/simples-das", icon: Scale },
   { title: "Base Legal", url: "/base-legal", icon: BookOpen },
   { title: "Atualizações", url: "/atualizacoes", icon: Newspaper },
@@ -60,13 +59,13 @@ const staffItems = [
   { title: "Minha Empresa", url: "/minha-empresa", icon: Building2 },
   { title: "Checklist", url: "/checklist", icon: ClipboardList },
   { title: "Simulações", url: "/simulador", icon: Calculator },
-  { title: "Simulador por NCM", url: "/simulador-ncm", icon: PackageSearch },
-  { title: "Precificação", url: "/precificacao", icon: DollarSign },
+  { title: "Simulador NCM & Precificação", url: "/simulador-ncm", icon: PackageSearch },
   { title: "Simples: Dentro × Fora DAS", url: "/simples-das", icon: Scale },
   { title: "Base Legal", url: "/base-legal", icon: BookOpen },
   { title: "Atualizações", url: "/atualizacoes", icon: Newspaper },
   { title: "Baixar App", url: "/baixar-app", icon: Download },
 ];
+
 
 const adminItems = [
   { title: "Usuários", url: "/usuarios", icon: Users },
