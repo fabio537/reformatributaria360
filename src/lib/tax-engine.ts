@@ -194,8 +194,12 @@ export interface TransicaoAno {
   sem_incidencia_real: boolean;
 }
 
-// IBS 0,1% em 2027/2028 expresso como % da alíquota de referência
-const IBS_PCT_TRANSICAO = IBS_TRANSICAO_2027_2028 / ALIQUOTA_IBS_REF; // ≈ 0,00565
+// IBS 0,1% em 2027/2028 — débito de 0,1% compensado integralmente por crédito
+// de 0,1% (não-cumulatividade plena, LC 214/2025 art. 347). Efeito líquido = 0.
+// No motor, tratamos o IBS desses dois anos como zero (já que débito = crédito)
+// e mantemos apenas a CBS reduzida em 0,1 p.p. (art. 344), que representa de
+// fato a carga adicional do novo regime na transição.
+const IBS_PCT_TRANSICAO = 0;
 
 export const CRONOGRAMA_TRANSICAO: TransicaoAno[] = [
   // 2026: Teste — CBS 0,9%, IBS 0,1%. Sem incidência real (compensáveis).
@@ -208,7 +212,7 @@ export const CRONOGRAMA_TRANSICAO: TransicaoAno[] = [
     ipi_fator: 1.0,
     sem_incidencia_real: true,
   },
-  // 2027: CBS = ref - 0,1 p.p. (~8,7%). IBS 0,1% efetivo com crédito pleno.
+  // 2027: CBS = ref - 0,1 p.p. (~8,7%). IBS débito 0,1% = crédito 0,1% → líquido 0.
   {
     ano: 2027,
     cbs_pct: 1.0, cbs_teste: false, cbs_reducao_pp: CBS_REDUCAO_TRANSICAO_PP,
@@ -228,6 +232,7 @@ export const CRONOGRAMA_TRANSICAO: TransicaoAno[] = [
     ipi_fator: 0.0,
     sem_incidencia_real: false,
   },
+
   // 2029: CBS 100%. IBS 10%. ICMS/ISS reduzidos 10%. IPI zerado.
   {
     ano: 2029,
