@@ -171,6 +171,27 @@ export const ENTITY_FIELDS: Record<Entity, ImportField[]> = {
       enumValues: ["padrao", "reducao_30", "reducao_60", "aliquota_zero"],
     },
   ],
+  competencias_fiscais: [
+    { key: "competencia", label: "Competência (MM/AAAA)", type: "competencia", required: true },
+    { key: "receita_bruta", label: "Receita Bruta (Saídas)", type: "number_br", required: true },
+    { key: "receita_clientes_regime_normal", label: "Receita Clientes Regime Normal", type: "number_br" },
+    { key: "receita_clientes_outros", label: "Receita Clientes Outros (SN/PF)", type: "number_br" },
+    { key: "aquisicoes_totais", label: "Aquisições Totais (Entradas)", type: "number_br" },
+    { key: "aquisicoes_fornecedores_regime_normal", label: "Aquisições Fornec. Regime Normal", type: "number_br" },
+    { key: "aquisicoes_fornecedores_simples", label: "Aquisições Fornec. Simples", type: "number_br" },
+    { key: "folha_empregados", label: "Folha Empregados", type: "number_br" },
+    { key: "inss_empregados", label: "INSS Empregados", type: "number_br" },
+    { key: "inss_contribuinte_individual", label: "INSS Contribuinte Individual", type: "number_br" },
+    { key: "irpj_apurado", label: "IRPJ Apurado", type: "number_br" },
+    { key: "csll_apurado", label: "CSLL Apurada", type: "number_br" },
+    { key: "pis_apurado", label: "PIS Apurado", type: "number_br" },
+    { key: "cofins_apurado", label: "COFINS Apurada", type: "number_br" },
+    { key: "icms_apurado", label: "ICMS Apurado", type: "number_br" },
+    { key: "iss_apurado", label: "ISS Apurado", type: "number_br" },
+    { key: "ipi_apurado", label: "IPI Apurado", type: "number_br" },
+    { key: "das_total", label: "DAS Total (Simples)", type: "number_br" },
+    { key: "observacao", label: "Observação", type: "text" },
+  ],
 };
 
 // ---------- Zod schemas ----------
