@@ -55,6 +55,14 @@ import {
   type AnaliseComparativaResultado,
   type CompetenciaFiscalRow,
 } from "@/lib/analise-comparativa-engine";
+import type { AnexoSN } from "@/lib/reforma";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   BadgeRow,
   CenarioBreakdownCard,
