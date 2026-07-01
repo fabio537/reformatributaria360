@@ -311,7 +311,7 @@ function AnaliseComparativaPage() {
             Ajuste as alíquotas e a base de projeção para refletir cenários alternativos.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-3">
+        <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div>
             <Label htmlFor="cbs">Alíquota CBS (%)</Label>
             <Input
