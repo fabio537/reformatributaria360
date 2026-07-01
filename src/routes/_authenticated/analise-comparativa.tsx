@@ -143,8 +143,9 @@ function AnaliseComparativaPage() {
       cbsRate: cbsPct / 100,
       ibsRate: ibsPct / 100,
       projetar12Meses: projetar,
+      anexo,
     });
-  }, [rows, cbsPct, ibsPct, projetar]);
+  }, [rows, cbsPct, ibsPct, projetar, anexo]);
 
   const handleExportXLSX = () => {
     if (!resultado) return;
