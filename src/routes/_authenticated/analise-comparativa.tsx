@@ -631,19 +631,27 @@ function AnaliseComparativaPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Carga Tributária Mensal</CardTitle>
-                <CardDescription>Total por cenário, mês a mês.</CardDescription>
+                <CardDescription>Total por cenário projetado — meses de 2027.</CardDescription>
               </CardHeader>
-              <CardContent style={{ height: 320 }}>
+              <CardContent style={{ height: 340 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="mes" />
-                    <YAxis tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`} />
-                    <Tooltip formatter={(v) => fmtBRL(Number(v))} />
-                    <Legend />
-                    <Bar dataKey="SN Atual 2027" fill={COR.sn_atual} />
-                    <Bar dataKey="SN Híbrido 2027" fill={COR.sn_hibrido} />
-                    <Bar dataKey="LP 2027" fill={COR.lp_2027} />
+                  <BarChart data={chartData} margin={{ top: 10, right: 16, left: 8, bottom: 8 }} barCategoryGap="20%">
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                    <XAxis dataKey="mes" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickMargin={8} />
+                    <YAxis
+                      tickFormatter={fmtBRLcompact}
+                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                      width={68}
+                    />
+                    <Tooltip
+                      formatter={(v: number) => fmtBRL(Number(v))}
+                      contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))", fontSize: 12 }}
+                      cursor={{ fill: "hsl(var(--muted) / 0.4)" }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} iconType="circle" />
+                    <Bar dataKey="SN Atual 2027" fill={COR.sn_atual} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="SN Híbrido 2027" fill={COR.sn_hibrido} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="LP 2027" fill={COR.lp_2027} radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -654,17 +662,24 @@ function AnaliseComparativaPage() {
                 <CardTitle>Evolução por Cenário</CardTitle>
                 <CardDescription>Tendência mensal — útil para projeção anual.</CardDescription>
               </CardHeader>
-              <CardContent style={{ height: 320 }}>
+              <CardContent style={{ height: 340 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="mes" />
-                    <YAxis tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`} />
-                    <Tooltip formatter={(v) => fmtBRL(Number(v))} />
-                    <Legend />
-                    <Line type="monotone" dataKey="SN Atual 2027" stroke={COR.sn_atual} strokeWidth={2} />
-                    <Line type="monotone" dataKey="SN Híbrido 2027" stroke={COR.sn_hibrido} strokeWidth={2} />
-                    <Line type="monotone" dataKey="LP 2027" stroke={COR.lp_2027} strokeWidth={2} />
+                  <LineChart data={chartData} margin={{ top: 10, right: 16, left: 8, bottom: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                    <XAxis dataKey="mes" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickMargin={8} />
+                    <YAxis
+                      tickFormatter={fmtBRLcompact}
+                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                      width={68}
+                    />
+                    <Tooltip
+                      formatter={(v: number) => fmtBRL(Number(v))}
+                      contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))", fontSize: 12 }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} iconType="circle" />
+                    <Line type="monotone" dataKey="SN Atual 2027" stroke={COR.sn_atual} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                    <Line type="monotone" dataKey="SN Híbrido 2027" stroke={COR.sn_hibrido} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                    <Line type="monotone" dataKey="LP 2027" stroke={COR.lp_2027} strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -673,16 +688,24 @@ function AnaliseComparativaPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Carga Efetiva (%)</CardTitle>
-                <CardDescription>% sobre a receita bruta acumulada.</CardDescription>
+                <CardDescription>% sobre a receita bruta acumulada em 2027.</CardDescription>
               </CardHeader>
-              <CardContent style={{ height: 280 }}>
+              <CardContent style={{ height: 300 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={cargaData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="cenario" />
-                    <YAxis tickFormatter={(v) => `${v.toFixed(1)}%`} />
-                    <Tooltip formatter={(v) => `${Number(v).toFixed(2)}%`} />
-                    <Bar dataKey="carga">
+                  <BarChart data={cargaData} margin={{ top: 16, right: 24, left: 8, bottom: 8 }} barCategoryGap="30%">
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                    <XAxis dataKey="cenario" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickMargin={8} />
+                    <YAxis
+                      tickFormatter={(v) => `${v.toFixed(1)}%`}
+                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                      width={56}
+                    />
+                    <Tooltip
+                      formatter={(v: number) => `${Number(v).toFixed(2)}%`}
+                      contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))", fontSize: 12 }}
+                      cursor={{ fill: "hsl(var(--muted) / 0.4)" }}
+                    />
+                    <Bar dataKey="carga" radius={[6, 6, 0, 0]} label={{ position: "top", formatter: (v: number) => `${v.toFixed(1)}%`, fontSize: 11, fill: "hsl(var(--foreground))" }}>
                       {cargaData.map((d, i) => (
                         <Cell key={i} fill={d.fill} />
                       ))}
@@ -697,21 +720,36 @@ function AnaliseComparativaPage() {
                 <CardTitle>Participação no Total</CardTitle>
                 <CardDescription>Comparativo proporcional da carga acumulada.</CardDescription>
               </CardHeader>
-              <CardContent style={{ height: 280 }}>
+              <CardContent style={{ height: 300 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={pizzaData} dataKey="value" nameKey="name" outerRadius={100} label>
+                    <Pie
+                      data={pizzaData}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={55}
+                      outerRadius={95}
+                      paddingAngle={2}
+                      stroke="hsl(var(--background))"
+                      strokeWidth={2}
+                      label={({ percent }) => `${((percent ?? 0) * 100).toFixed(1)}%`}
+                      labelLine={false}
+                    >
                       {pizzaData.map((d, i) => (
                         <Cell key={i} fill={d.fill} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(v) => fmtBRL(Number(v))} />
-                    <Legend />
+                    <Tooltip
+                      formatter={(v: number) => fmtBRL(Number(v))}
+                      contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))", fontSize: 12 }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} iconType="circle" />
                   </PieChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
           </div>
+
 
           <Card>
             <CardHeader>
