@@ -644,7 +644,7 @@ function AnaliseComparativaPage() {
                       width={68}
                     />
                     <Tooltip
-                      formatter={(v: number) => fmtBRL(Number(v))}
+                      formatter={(v) => fmtBRL(Number(v))}
                       contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))", fontSize: 12 }}
                       cursor={{ fill: "hsl(var(--muted) / 0.4)" }}
                     />
@@ -673,7 +673,7 @@ function AnaliseComparativaPage() {
                       width={68}
                     />
                     <Tooltip
-                      formatter={(v: number) => fmtBRL(Number(v))}
+                      formatter={(v) => fmtBRL(Number(v))}
                       contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))", fontSize: 12 }}
                     />
                     <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} iconType="circle" />
@@ -701,11 +701,11 @@ function AnaliseComparativaPage() {
                       width={56}
                     />
                     <Tooltip
-                      formatter={(v: number) => `${Number(v).toFixed(2)}%`}
+                      formatter={(v) => `${Number(v).toFixed(2)}%`}
                       contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))", fontSize: 12 }}
                       cursor={{ fill: "hsl(var(--muted) / 0.4)" }}
                     />
-                    <Bar dataKey="carga" radius={[6, 6, 0, 0]} label={{ position: "top", formatter: (v: number) => `${v.toFixed(1)}%`, fontSize: 11, fill: "hsl(var(--foreground))" }}>
+                    <Bar dataKey="carga" radius={[6, 6, 0, 0]} label={{ position: "top", formatter: (v: number | string) => `${Number(v).toFixed(1)}%`, fontSize: 11, fill: "hsl(var(--foreground))" }}>
                       {cargaData.map((d, i) => (
                         <Cell key={i} fill={d.fill} />
                       ))}
@@ -740,7 +740,7 @@ function AnaliseComparativaPage() {
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(v: number) => fmtBRL(Number(v))}
+                      formatter={(v) => fmtBRL(Number(v))}
                       contentStyle={{ borderRadius: 8, border: "1px solid hsl(var(--border))", fontSize: 12 }}
                     />
                     <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} iconType="circle" />
