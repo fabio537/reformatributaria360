@@ -165,7 +165,7 @@ export function AppSidebar({ auth }: { auth: AuthState }) {
         <SidebarGroup>
           <SidebarGroupLabel>
             {!collapsed && (
-              <span className="text-xs font-bold tracking-wider uppercase text-sidebar-primary">
+              <span className="eyebrow text-sidebar-foreground/60">
                 Reforma Tributária
               </span>
             )}
