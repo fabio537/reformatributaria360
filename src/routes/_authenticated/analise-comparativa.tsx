@@ -447,22 +447,39 @@ function AnaliseComparativaPage() {
                           { label: "Alíquota efetiva DAS", value: fmtPct(aliqDAS) },
                           { label: "DAS total", value: avg.sn_atual_das, tone: "highlight" },
                         ],
+                        note:
+                          anexo === "IV"
+                            ? "Anexo IV: INSS patronal recolhido em separado."
+                            : "CPP (INSS patronal) já incluída no DAS.",
                       },
+                      ...(anexo === "IV"
+                        ? [{
+                            title: "INSS patronal (Anexo IV)",
+                            rows: [{ label: "Sobre folha", value: avg.sn_atual_inss }],
+                          }]
+                        : []),
                       {
-                        title: "INSS patronal",
-                        rows: [{ label: "Sobre folha", value: avg.sn_atual_inss }],
-                      },
-                      {
-                        title: "Créditos aproveitados",
-                        rows: [{ label: "Regime unificado — sem crédito de entradas", value: "—", tone: "muted" }],
+                        title: "Crédito reduzido de CBS ao comprador",
+                        rows: [
+                          {
+                            label: "Fração PIS+COFINS embutida no DAS",
+                            value: fmtPct(avg.sn_atual_das > 0 ? avg.sn_atual_credito_cbs / avg.sn_atual_das : 0),
+                          },
+                          {
+                            label: "Crédito estimado gerado ao B2B",
+                            value: avg.sn_atual_credito_cbs,
+                            tone: "highlight",
+                          },
+                        ],
+                        note: "Proxy pelas alíquotas atuais de PIS/COFINS embutidas no SN — não há publicação formal da CBS reduzida do SN.",
                       },
                     ]}
                     totalLabel="Total de tributos no mês"
                     totalValue={avg.sn_atual_total}
                     credit={{
-                      label: "Crédito CBS ao comprador B2B",
-                      value: 0,
-                      sub: "DAS unificado não destaca CBS/IBS para o adquirente",
+                      label: "Crédito de CBS ao comprador B2B (reduzido)",
+                      value: avg.sn_atual_credito_cbs,
+                      sub: "Calculado pela fração PIS/COFINS do DAS (proxy oficial).",
                     }}
                   />
 
@@ -478,7 +495,7 @@ function AnaliseComparativaPage() {
                           { label: "Faturamento do mês", value: avg.receita },
                           { label: "DAS sem parcela CBS/IBS", value: avg.sn_hibrido_das_reduzido, tone: "highlight" },
                         ],
-                        note: "IRPJ, CSLL, CPP e ICMS permanecem no DAS",
+                        note: "IRPJ, CSLL, CPP e ICMS permanecem no DAS.",
                       },
                       {
                         title: "CBS/IBS apurados separadamente",
@@ -488,19 +505,22 @@ function AnaliseComparativaPage() {
                           { label: "CBS/IBS líquido a recolher", value: cbsHibridoLiquido, tone: "highlight" },
                         ],
                       },
-                      {
-                        title: "INSS patronal",
-                        rows: [{ label: "Sobre folha", value: avg.sn_hibrido_inss }],
-                      },
+                      ...(anexo === "IV"
+                        ? [{
+                            title: "INSS patronal (Anexo IV)",
+                            rows: [{ label: "Sobre folha", value: avg.sn_hibrido_inss }],
+                          }]
+                        : []),
                     ]}
                     totalLabel="Total de tributos no mês"
                     totalValue={avg.sn_hibrido_total}
                     credit={{
                       label: "Crédito CBS/IBS transferido ao comprador B2B",
                       value: avg.sn_hibrido_cbs_debito,
-                      sub: "Alíquota plena destacada na NF — vantagem competitiva B2B",
+                      sub: "Alíquota plena destacada na NF — vantagem competitiva B2B.",
                     }}
                   />
+
 
                   <CenarioBreakdownCard
                     variant="amber"
