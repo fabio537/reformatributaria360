@@ -394,6 +394,7 @@ function AnaliseComparativaPage() {
                 sn_atual_total: a.sn_atual_total + m.sn_atual_total / n,
                 sn_atual_das: a.sn_atual_das + m.sn_atual_das / n,
                 sn_atual_inss: a.sn_atual_inss + m.sn_atual_inss / n,
+                sn_atual_credito_cbs: a.sn_atual_credito_cbs + m.sn_atual_credito_cbs / n,
                 sn_hibrido_total: a.sn_hibrido_total + m.sn_hibrido_total / n,
                 sn_hibrido_das_reduzido: a.sn_hibrido_das_reduzido + m.sn_hibrido_das_reduzido / n,
                 sn_hibrido_cbs_debito: a.sn_hibrido_cbs_debito + m.sn_hibrido_cbs_debito / n,
@@ -407,11 +408,13 @@ function AnaliseComparativaPage() {
               }),
               {
                 receita: 0, sn_atual_total: 0, sn_atual_das: 0, sn_atual_inss: 0,
+                sn_atual_credito_cbs: 0,
                 sn_hibrido_total: 0, sn_hibrido_das_reduzido: 0, sn_hibrido_cbs_debito: 0,
                 sn_hibrido_credito_recebido: 0, sn_hibrido_inss: 0,
                 lp_2027_total: 0, lp_2027_cbs: 0, lp_2027_icms: 0,
                 lp_2027_irpj_csll: 0, lp_2027_inss: 0,
               },
+
             );
             const aliqDAS = avg.receita > 0 ? avg.sn_atual_das / avg.receita : 0;
             const cbsHibridoLiquido = Math.max(
