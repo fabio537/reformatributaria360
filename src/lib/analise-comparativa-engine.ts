@@ -1,37 +1,30 @@
 /**
- * Engine de Análise Comparativa de Cenários Tributários
+ * Engine de Análise Comparativa de Cenários Tributários (2027)
  *
- * A partir de agregados mensais (tabela `competencias_fiscais`) projeta os 4
- * cenários típicos discutidos na transição 2026/2027:
- *  - A) Simples Nacional Atual (regime vigente, sem reforma)
- *  - B) Simples Nacional Híbrido 2027 (dentro do DAS + débito de CBS/IBS para
- *       clientes Regime Normal, com crédito recebido na entrada)
- *  - C) Lucro Presumido 2026 (sai do Simples, atual)
- *  - D) Lucro Presumido 2027 (PIS/COFINS extintos; CBS 8,7% + IBS líquido 0;
- *       ICMS mantido; com créditos de aquisições)
+ * Adaptador que expõe a API histórica (`CompetenciaFiscalRow` / `CenarioMes` /
+ * `AnaliseComparativaResultado`) mas usa por baixo o motor de alta fidelidade
+ * de `@/lib/reforma`:
+ *   - Alíquota efetiva do DAS via faixas reais dos Anexos I–V (`getFaixa`,
+ *     `calcularAliquotaEfetiva`).
+ *   - Fração PIS/COFINS embutida no DAS extraída da partilha CGSN 140/2018
+ *     (`decomporDAS`) — não mais uma proxy estática.
+ *   - Parâmetros de reforma (CBS/IBS) alinhados a `PARAMETROS_PADRAO`.
  *
- * Premissas de transição alinhadas ao `tax-engine.ts`:
- *  - 2027: CBS 8,7% líquido; IBS 0,1% débito = 0,1% crédito ⇒ líquido 0.
- *  - PIS/COFINS extintos em 2027; ICMS mantido integralmente.
- *  - Empresa do Simples NÃO se credita de insumos no cenário "dentro do DAS"
- *    mas, no híbrido, gera crédito para o cliente limitado à fração PIS+COFINS
- *    embutida no DAS (proxy da CBS — ver `cbsFracaoDAS`).
+ * Cenários projetados por competência:
+ *  A) Simples Nacional Atual (dentro do DAS)
+ *  B) Simples Nacional Híbrido 2027 (DAS reduzido + CBS/IBS por fora sobre
+ *     receita B2B, com crédito recebido nas aquisições Regime Normal)
+ *  C) Lucro Presumido 2026 (atual)
+ *  D) Lucro Presumido 2027 (PIS/COFINS extintos; CBS/IBS com créditos)
  */
 
 import {
-  ALIQUOTA_CBS_REF,
-  CBS_REDUCAO_TRANSICAO_PP,
-  cbsFracaoDAS,
-} from "./tax-engine";
-
-// Composição média do DAS Anexo I (Comércio) — mesma do tax-engine
-const DAS_ANEXO_I_COMPOSICAO = {
-  pis: 0.0276,
-  cofins: 0.1274,
-  ipi: 0,
-  icms_iss: 0.34,
-  outros: 0.505,
-};
+  getFaixa,
+  calcularAliquotaEfetiva,
+  decomporDAS,
+  PARAMETROS_PADRAO,
+  type AnexoSN,
+} from "./reforma";
 
 export interface CompetenciaFiscalRow {
   competencia: string; // YYYY-MM-DD
@@ -105,42 +98,32 @@ export interface AnaliseComparativaResultado {
   alertas: string[];
 }
 
-// ─── Parâmetros (Lucro Presumido — Comércio) ───────────────────────────────
-const LP_PRESUNCAO_COMERCIO = 0.08; // 8%
+// ─── Parâmetros LP (Comércio) — mantidos para preservar semântica da UI ────
+const LP_PRESUNCAO_COMERCIO = 0.08;
 const LP_IRPJ = 0.15;
+const LP_IRPJ_ADICIONAL = 0.10; // sobre parcela da base > 20k/mês (240k/ano)
+const LP_IRPJ_LIMITE_MENSAL = 20_000;
 const LP_CSLL = 0.09;
 const LP_PIS = 0.0065;
 const LP_COFINS = 0.03;
-const LP_ICMS_EFETIVO = 0.18; // padrão; aproximação — ajuste futuro por UF
-export const CBS_2027_DEFAULT = ALIQUOTA_CBS_REF - CBS_REDUCAO_TRANSICAO_PP; // 8,7%
-export const IBS_2027_DEFAULT = 0; // 0,1% débito = 0,1% crédito ⇒ líquido 0
-const INSS_PATRONAL = 0.20; // patronal sobre folha (aproximação simplificada)
+const LP_ICMS_EFETIVO = 0.18;
+export const CBS_2027_DEFAULT = PARAMETROS_PADRAO.aliquota_cbs_referencia; // 8,8%
+export const IBS_2027_DEFAULT = PARAMETROS_PADRAO.aliquota_ibs_2027_2028; // 0,1%
+const INSS_PATRONAL =
+  0.20 + PARAMETROS_PADRAO.percentual_rat + PARAMETROS_PADRAO.percentual_terceiros;
 
 export interface AnaliseComparativaOpts {
-  /** Alíquota CBS líquida usada em 2027 (default 8,7%). */
+  /** Alíquota CBS de referência para 2027 (default 8,8%). */
   cbsRate?: number;
-  /** Alíquota IBS líquida em 2027 (default 0%, pois débito = crédito). */
+  /** Alíquota IBS de referência para 2027 (default 0,1%). */
   ibsRate?: number;
+  /** Anexo do Simples Nacional (default "I" — Comércio). */
+  anexo?: AnexoSN;
   /**
    * Quando true, projeta 12 meses a partir da média dos meses informados
    * (mantendo as competências reais e completando o restante até 12).
    */
   projetar12Meses?: boolean;
-}
-
-
-function aliquotaEfetivaDASMensal(rbt12: number): number {
-  if (rbt12 <= 0) return 0;
-  const tabela = [
-    { limite: 180000, aliq: 0.04, ded: 0 },
-    { limite: 360000, aliq: 0.073, ded: 5940 },
-    { limite: 720000, aliq: 0.095, ded: 13860 },
-    { limite: 1800000, aliq: 0.107, ded: 22500 },
-    { limite: 3600000, aliq: 0.143, ded: 87300 },
-    { limite: 4800000, aliq: 0.19, ded: 378000 },
-  ];
-  const f = tabela.find((x) => rbt12 <= x.limite) ?? tabela[tabela.length - 1];
-  return (rbt12 * f.aliq - f.ded) / rbt12;
 }
 
 function mediaProjetada(rows: CompetenciaFiscalRow[]): CompetenciaFiscalRow[] {
@@ -169,15 +152,19 @@ function mediaProjetada(rows: CompetenciaFiscalRow[]): CompetenciaFiscalRow[] {
     das_total: num("das_total"),
   };
 
-  // Encontra próxima competência após a última informada
-  const ultima = [...rows].sort((a, b) => a.competencia.localeCompare(b.competencia)).at(-1)!;
+  const ultima = [...rows]
+    .sort((a, b) => a.competencia.localeCompare(b.competencia))
+    .at(-1)!;
   const [yStr, mStr] = ultima.competencia.split("-");
   let y = Number(yStr);
   let m = Number(mStr);
   const out = [...rows];
   while (out.length < 12) {
     m += 1;
-    if (m > 12) { m = 1; y += 1; }
+    if (m > 12) {
+      m = 1;
+      y += 1;
+    }
     const comp = `${y}-${String(m).padStart(2, "0")}-01`;
     out.push({ ...media, competencia: comp });
   }
@@ -190,15 +177,30 @@ export function calcularAnaliseComparativa(
 ): AnaliseComparativaResultado {
   const cbsRate = opts.cbsRate ?? CBS_2027_DEFAULT;
   const ibsRate = opts.ibsRate ?? IBS_2027_DEFAULT;
+  const anexo: AnexoSN = opts.anexo ?? "I";
   const totalReforma = cbsRate + ibsRate;
+
   const reais = [...rows].sort((a, b) => a.competencia.localeCompare(b.competencia));
   const ordenadas = opts.projetar12Meses ? mediaProjetada(reais) : reais;
 
+  // RBT12 real (soma dos meses informados normalizada para 12) — dita a faixa do DAS.
   const receitaAnualizada =
-    ordenadas.reduce((s, r) => s + (r.receita_bruta || 0), 0) * (12 / Math.max(1, ordenadas.length));
+    ordenadas.reduce((s, r) => s + (r.receita_bruta || 0), 0) *
+    (12 / Math.max(1, ordenadas.length));
 
-  const aliqDAS = aliquotaEfetivaDASMensal(receitaAnualizada);
-  const cbsFracao = cbsFracaoDAS(DAS_ANEXO_I_COMPOSICAO);
+  // Faixa + alíquota efetiva do DAS (Anexos I–V reais).
+  const faixa = getFaixa(anexo, receitaAnualizada);
+  const aliqEfetivaDAS = calcularAliquotaEfetiva(
+    receitaAnualizada,
+    faixa.aliquota,
+    faixa.deducao,
+  );
+
+  // Decompõe o DAS anualizado para extrair a fração PIS+COFINS (proxy da CBS por dentro).
+  const compAnual = decomporDAS(anexo, faixa, aliqEfetivaDAS, receitaAnualizada);
+  const dasAnual = compAnual.das ?? 0;
+  const cbsFracaoDentroDAS =
+    dasAnual > 0 ? ((compAnual.pis ?? 0) + (compAnual.cofins ?? 0)) / dasAnual : 0;
 
   const meses: CenarioMes[] = ordenadas.map((r) => {
     const receita = r.receita_bruta || 0;
@@ -211,26 +213,34 @@ export function calcularAnaliseComparativa(
     const inssBase = (r.inss_empregados || 0) + (r.inss_contribuinte_individual || 0);
     const inss = inssBase > 0 ? inssBase : folha * INSS_PATRONAL;
 
-    // A) SN Atual
-    const das = r.das_total ?? receita * aliqDAS;
+    // A) SN Atual — DAS = receita_mes × alíquota efetiva (RBT12).
+    const das = r.das_total ?? receita * aliqEfetivaDAS;
     const sn_atual_total = das + inss;
 
-    // B) SN Híbrido 2027
-    const das_reduzido = das * (1 - cbsFracao);
+    // B) SN Híbrido 2027 — retira PIS/COFINS do DAS e recolhe CBS/IBS por fora
+    //    apenas sobre a parcela B2B (clientes Regime Normal), com crédito de
+    //    aquisições Regime Normal.
+    const das_reduzido = das * (1 - cbsFracaoDentroDAS);
     const cbs_debito = receita * mixB2B * totalReforma;
     const credito_recebido = aquisicoesRN * totalReforma;
     const cbs_liquido_pagar = Math.max(0, cbs_debito - credito_recebido);
     const sn_hibrido_total = das_reduzido + cbs_liquido_pagar + inss;
 
-    // C) Lucro Presumido 2026 (atual)
+    // C) Lucro Presumido 2026
     const lp_pis_cofins = receita * (LP_PIS + LP_COFINS);
-    const icms_pago = r.icms_apurado ?? Math.max(0, receita * LP_ICMS_EFETIVO - aquisicoesRN * LP_ICMS_EFETIVO);
+    const icms_pago =
+      r.icms_apurado ??
+      Math.max(0, receita * LP_ICMS_EFETIVO - aquisicoesRN * LP_ICMS_EFETIVO);
     const base_presumida = receita * LP_PRESUNCAO_COMERCIO;
-    const lp_irpj_csll = base_presumida * (LP_IRPJ + LP_CSLL);
+    const irpj_base = base_presumida * LP_IRPJ;
+    const irpj_adicional =
+      Math.max(0, base_presumida - LP_IRPJ_LIMITE_MENSAL) * LP_IRPJ_ADICIONAL;
+    const csll_devida = base_presumida * LP_CSLL;
+    const lp_irpj_csll = irpj_base + irpj_adicional + csll_devida;
     const lp_inss = folha * INSS_PATRONAL;
     const lp_2026_total = lp_pis_cofins + icms_pago + lp_irpj_csll + lp_inss;
 
-    // D) Lucro Presumido 2027
+    // D) Lucro Presumido 2027 — PIS/COFINS extintos; CBS/IBS com crédito.
     const cbs_2027_debito = receita * totalReforma;
     const cbs_2027_credito = aquisicoesRN * totalReforma;
     const cbs_2027_liquida = Math.max(0, cbs_2027_debito - cbs_2027_credito);
@@ -292,6 +302,15 @@ export function calcularAnaliseComparativa(
       "Mix B2B/B2C não informado em algumas competências — assumido 50% como padrão.",
     );
   }
+  if (receitaAnualizada > 4_800_000) {
+    alertas.push(
+      "RBT12 projetado acima de R$ 4.800.000 — cliente desenquadrado do Simples Nacional.",
+    );
+  } else if (receitaAnualizada > 3_600_000) {
+    alertas.push(
+      "RBT12 projetado acima do sublimite de R$ 3.600.000 — ICMS/ISS devem ser recolhidos fora do DAS.",
+    );
+  }
 
   const fmt = (n: number) => (n * 100).toFixed(2) + "%";
   const ganhoSNHib = totais.sn_atual - totais.sn_hibrido;
@@ -317,4 +336,3 @@ export function calcularAnaliseComparativa(
     alertas,
   };
 }
-
