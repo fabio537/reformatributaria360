@@ -113,6 +113,7 @@ function AnaliseComparativaPage() {
   const [cbsPct, setCbsPct] = useState<number>(CBS_2027_DEFAULT * 100);
   const [ibsPct, setIbsPct] = useState<number>(IBS_2027_DEFAULT * 100);
   const [projetar, setProjetar] = useState<boolean>(true);
+  const [anexo, setAnexo] = useState<AnexoSN>("I");
   const dashRef = useRef<HTMLDivElement>(null);
 
   const carregar = async () => {
