@@ -91,12 +91,29 @@ export function AppSidebar({ auth }: { auth: AuthState }) {
   const isActive = (path: string) => currentPath.startsWith(path);
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarContent>
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
+      <SidebarContent className="gap-1">
+        {/* Brand block */}
+        <div className={collapsed ? "px-2 pt-4 pb-2 flex justify-center" : "px-5 pt-6 pb-4"}>
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-accent flex items-center justify-center text-primary font-bold shadow-lg shadow-black/20">
+              R
+            </div>
+            {!collapsed && (
+              <div className="leading-tight">
+                <p className="font-serif text-[15px] text-sidebar-accent-foreground">Reforma</p>
+                <p className="text-[9px] tracking-[0.22em] uppercase font-semibold text-sidebar-foreground/60">
+                  Tributária 360
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
         <SidebarGroup>
           <SidebarGroupLabel>
             {!collapsed && (
-              <span className="text-xs font-bold tracking-wider uppercase text-sidebar-primary">
+              <span className="eyebrow text-sidebar-foreground/60">
                 Empresa
               </span>
             )}
@@ -148,7 +165,7 @@ export function AppSidebar({ auth }: { auth: AuthState }) {
         <SidebarGroup>
           <SidebarGroupLabel>
             {!collapsed && (
-              <span className="text-xs font-bold tracking-wider uppercase text-sidebar-primary">
+              <span className="eyebrow text-sidebar-foreground/60">
                 Reforma Tributária
               </span>
             )}

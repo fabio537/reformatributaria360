@@ -1,3 +1,5 @@
+@import "@fontsource-variable/inter";
+@import "@fontsource/playfair-display/700.css";
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -50,55 +52,72 @@
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
   --font-display: var(--font-display);
+  --font-serif: var(--font-serif);
 }
 
 :root {
-  --radius: 0.625rem;
-  --font-display: 'Inter', system-ui, sans-serif;
+  --radius: 0.875rem;
+  --font-display: 'Inter Variable', 'Inter', system-ui, sans-serif;
+  --font-serif: '"Playfair Display"', 'Playfair Display', Georgia, serif;
 
-  /* Tema escuro padrão — alinhado aos mockups de apresentação */
-  --background: oklch(0.165 0.012 265);              /* #0f1117 */
-  --foreground: oklch(0.93 0.01 265);                /* #e8eaf0 */
-  --card: oklch(0.215 0.022 265);                    /* #13192a */
-  --card-foreground: oklch(0.93 0.01 265);
-  --popover: oklch(0.215 0.022 265);
-  --popover-foreground: oklch(0.93 0.01 265);
-  --primary: oklch(0.74 0.10 245);                   /* #7ab0f0 */
-  --primary-foreground: oklch(0.18 0.03 260);
-  --secondary: oklch(0.245 0.025 265);               /* #1c2030 */
-  --secondary-foreground: oklch(0.88 0.012 265);
-  --muted: oklch(0.235 0.025 265);                   /* #1a1d30 */
-  --muted-foreground: oklch(0.68 0.025 265);         /* #8892aa */
-  --accent: oklch(0.30 0.045 260);                   /* #1a3060 */
-  --accent-foreground: oklch(0.88 0.05 245);
-  --destructive: oklch(0.64 0.20 25);                /* #e04c4c */
-  --destructive-foreground: oklch(0.98 0.005 25);
-  --success: oklch(0.72 0.14 148);                   /* #5db86e */
-  --success-foreground: oklch(0.12 0.02 148);
-  --warning: oklch(0.80 0.13 80);                    /* #f0b840 */
-  --warning-foreground: oklch(0.20 0.05 80);
-  --border: oklch(0.30 0.035 260);                   /* #1e2d4a */
-  --input: oklch(0.27 0.03 260);                     /* #222840 */
-  --ring: oklch(0.58 0.13 250);                      /* #4d7bc4 */
+  /* Editorial Premium — claro, sidebar navy, acento dourado */
+  --background: oklch(0.985 0.003 250);              /* #f8fafc */
+  --foreground: oklch(0.22 0.03 260);                /* #1e293b */
 
-  /* Charts — alinhados às cores dos modelos comparativos */
-  --chart-1: oklch(0.74 0.10 245);   /* azul — Modelo A */
-  --chart-2: oklch(0.72 0.14 148);   /* verde — Modelo B / SN Híbrido */
-  --chart-3: oklch(0.80 0.13 80);    /* âmbar — destaques fiscais */
-  --chart-4: oklch(0.58 0.13 250);   /* azul médio — LP 2027 */
-  --chart-5: oklch(0.64 0.20 25);    /* vermelho — alertas */
-  --chart-6: oklch(0.62 0.10 260);   /* lavanda — neutro */
-  --chart-7: oklch(0.70 0.16 200);   /* ciano — auxiliar */
+  --card: oklch(1 0 0);                              /* #ffffff */
+  --card-foreground: oklch(0.22 0.03 260);
 
-  --sidebar: oklch(0.135 0.013 265);                 /* #0a0d18 */
-  --sidebar-foreground: oklch(0.88 0.012 265);
-  --sidebar-primary: oklch(0.74 0.10 245);
-  --sidebar-primary-foreground: oklch(0.15 0.025 260);
-  --sidebar-accent: oklch(0.22 0.03 265);
-  --sidebar-accent-foreground: oklch(0.92 0.01 265);
-  --sidebar-border: oklch(0.24 0.03 265);
-  --sidebar-ring: oklch(0.58 0.13 250);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.03 260);
+
+  --primary: oklch(0.20 0.035 260);                  /* #0f172a slate-900 */
+  --primary-foreground: oklch(0.98 0.003 250);
+
+  --secondary: oklch(0.965 0.005 250);               /* slate-100 */
+  --secondary-foreground: oklch(0.30 0.03 260);
+
+  --muted: oklch(0.965 0.005 250);
+  --muted-foreground: oklch(0.55 0.02 260);          /* slate-500 */
+
+  --accent: oklch(0.79 0.13 84);                     /* dourado #d4af37 */
+  --accent-foreground: oklch(0.20 0.035 260);
+
+  --gold: oklch(0.79 0.13 84);
+  --gold-foreground: oklch(0.20 0.035 260);
+
+  --destructive: oklch(0.62 0.22 25);                /* rose-600 */
+  --destructive-foreground: oklch(0.99 0.005 0);
+
+  --success: oklch(0.63 0.15 155);                   /* emerald-600 */
+  --success-foreground: oklch(0.99 0.005 155);
+
+  --warning: oklch(0.79 0.13 84);
+  --warning-foreground: oklch(0.20 0.035 260);
+
+  --border: oklch(0.92 0.005 250);                   /* slate-200 */
+  --input: oklch(0.94 0.005 250);
+  --ring: oklch(0.79 0.13 84);
+
+  --chart-1: oklch(0.20 0.035 260);   /* navy */
+  --chart-2: oklch(0.63 0.15 155);    /* emerald */
+  --chart-3: oklch(0.79 0.13 84);     /* gold */
+  --chart-4: oklch(0.55 0.14 250);    /* blue */
+  --chart-5: oklch(0.62 0.22 25);     /* rose */
+  --chart-6: oklch(0.65 0.10 300);    /* mauve */
+  --chart-7: oklch(0.70 0.16 200);    /* cyan */
+
+  /* Sidebar: navy quase preto com acento dourado */
+  --sidebar: oklch(0.20 0.035 260);                  /* #0f172a */
+  --sidebar-foreground: oklch(0.85 0.015 250);       /* slate-300 */
+  --sidebar-primary: oklch(0.79 0.13 84);            /* gold */
+  --sidebar-primary-foreground: oklch(0.20 0.035 260);
+  --sidebar-accent: oklch(0.27 0.035 260);           /* slate-800 */
+  --sidebar-accent-foreground: oklch(0.98 0.003 250);
+  --sidebar-border: oklch(0.30 0.03 260 / 0.4);
+  --sidebar-ring: oklch(0.79 0.13 84);
 }
 
 @layer base {
@@ -108,8 +127,17 @@
   html, body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-family: 'Inter', system-ui, sans-serif;
-    font-feature-settings: "cv11", "ss01";
+    font-family: var(--font-display);
+    font-feature-settings: "cv11", "ss01", "ss03";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  h1, h2, h3, h4 {
+    letter-spacing: -0.02em;
+  }
+  .font-serif {
+    font-family: var(--font-serif);
+    letter-spacing: -0.01em;
   }
 }
 
@@ -127,11 +155,24 @@
     width: auto;
     letter-spacing: 0.02em;
   }
-  
+
   td .input-numeric,
   .table-numeric {
     font-variant-numeric: tabular-nums;
     text-align: right;
     white-space: nowrap;
   }
+
+  .eyebrow {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+}
+
+@utility bg-gold-soft {
+  background-color: color-mix(in oklab, var(--gold) 12%, transparent);
+  color: var(--gold);
 }

@@ -30,24 +30,33 @@ function AuthenticatedLayout() {
   return (
     <EmpresaProvider>
       <SidebarProvider>
-        <div className="min-h-screen flex w-full">
+        <div className="min-h-screen flex w-full bg-background">
           <AppSidebar auth={auth} />
-          <div className="flex-1 flex flex-col">
-            <header className="h-14 flex items-center border-b bg-card px-4 gap-3">
-              <SidebarTrigger />
+          <div className="flex-1 flex flex-col min-w-0">
+            <header className="h-16 flex items-center border-b border-border bg-card px-6 gap-4 sticky top-0 z-30 backdrop-blur supports-[backdrop-filter]:bg-card/85">
+              <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
+              <div className="hidden md:flex flex-col leading-tight">
+                <span className="eyebrow">Consultoria Tributária</span>
+                <span className="font-serif text-base text-foreground">Reforma Tributária 360</span>
+              </div>
               <div className="flex-1" />
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
+              <div className="flex items-center gap-3">
+                <div className="hidden sm:flex flex-col text-right leading-tight">
+                  <span className="text-sm font-medium text-foreground">
+                    {auth.user?.email?.split("@")[0]}
+                  </span>
+                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Sessão ativa
+                  </span>
+                </div>
+                <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center ring-2 ring-accent/40">
                   <span className="text-xs font-semibold text-primary-foreground">
                     {auth.user?.email?.charAt(0).toUpperCase() || "U"}
                   </span>
                 </div>
-                <span className="text-sm text-muted-foreground hidden md:block">
-                  {auth.user?.email}
-                </span>
               </div>
             </header>
-            <main className="flex-1 p-6">
+            <main className="flex-1 p-8 max-w-[1600px] w-full mx-auto">
               <Outlet />
             </main>
           </div>
