@@ -55,6 +55,14 @@ import {
   type AnaliseComparativaResultado,
   type CompetenciaFiscalRow,
 } from "@/lib/analise-comparativa-engine";
+import type { AnexoSN } from "@/lib/reforma";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   BadgeRow,
   CenarioBreakdownCard,
@@ -105,6 +113,7 @@ function AnaliseComparativaPage() {
   const [cbsPct, setCbsPct] = useState<number>(CBS_2027_DEFAULT * 100);
   const [ibsPct, setIbsPct] = useState<number>(IBS_2027_DEFAULT * 100);
   const [projetar, setProjetar] = useState<boolean>(true);
+  const [anexo, setAnexo] = useState<AnexoSN>("I");
   const dashRef = useRef<HTMLDivElement>(null);
 
   const carregar = async () => {
@@ -134,8 +143,9 @@ function AnaliseComparativaPage() {
       cbsRate: cbsPct / 100,
       ibsRate: ibsPct / 100,
       projetar12Meses: projetar,
+      anexo,
     });
-  }, [rows, cbsPct, ibsPct, projetar]);
+  }, [rows, cbsPct, ibsPct, projetar, anexo]);
 
   const handleExportXLSX = () => {
     if (!resultado) return;
@@ -301,7 +311,7 @@ function AnaliseComparativaPage() {
             Ajuste as alíquotas e a base de projeção para refletir cenários alternativos.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-3">
+        <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div>
             <Label htmlFor="cbs">Alíquota CBS (%)</Label>
             <Input
@@ -310,7 +320,25 @@ function AnaliseComparativaPage() {
               onChange={(e) => setCbsPct(Number(e.target.value) || 0)}
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Referência LC 214/2025: 8,70% — projeção ROIT: 9,30% (ajuste conforme cenário).
+              Referência LC 214/2025: 8,80% — projeção ROIT: 9,30% (ajuste conforme cenário).
+            </p>
+          </div>
+          <div>
+            <Label htmlFor="anexo">Anexo do Simples Nacional</Label>
+            <Select value={anexo} onValueChange={(v) => setAnexo(v as AnexoSN)}>
+              <SelectTrigger id="anexo">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="I">Anexo I — Comércio</SelectItem>
+                <SelectItem value="II">Anexo II — Indústria</SelectItem>
+                <SelectItem value="III">Anexo III — Serviços</SelectItem>
+                <SelectItem value="IV">Anexo IV — Serviços (Construção)</SelectItem>
+                <SelectItem value="V">Anexo V — Serviços intelectuais</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground mt-1">
+              Faixas e partilha CGSN 140/2018 aplicadas ao DAS.
             </p>
           </div>
           <div>
