@@ -531,10 +531,12 @@ function AnaliseComparativaPage() {
                       {
                         title: "CBS/IBS (regime regular)",
                         rows: [
-                          { label: "Débito CBS+IBS sobre receita", value: avg.lp_2027_cbs + (avg.lp_2027_cbs > 0 ? 0 : 0) },
+                          { label: "Faturamento do mês", value: avg.receita },
+                          { label: "Débito CBS+IBS sobre receita", value: avg.receita * ((cbsPct + ibsPct) / 100) },
+                          { label: "( – ) Crédito sobre insumos regime regular", value: -(avg.receita * ((cbsPct + ibsPct) / 100) - avg.lp_2027_cbs) },
                           { label: "CBS/IBS líquido (após créditos)", value: avg.lp_2027_cbs, tone: "highlight" },
                         ],
-                        note: "PIS/Cofins extintos em 2027",
+                        note: "PIS/Cofins extintos em 2027.",
                       },
                       {
                         title: "ICMS apurado",
@@ -552,8 +554,8 @@ function AnaliseComparativaPage() {
                     totalValue={avg.lp_2027_total}
                     credit={{
                       label: "Crédito CBS/IBS ao comprador B2B",
-                      value: avg.lp_2027_cbs > 0 ? avg.lp_2027_cbs : 0,
-                      sub: "Destaque pleno na NF; comprador Lucro Real aproveita integralmente",
+                      value: avg.sn_hibrido_cbs_debito,
+                      sub: "Débito destacado na NF sobre receita B2B (mesma base do SN Híbrido); comprador Lucro Real aproveita integralmente.",
                     }}
                   />
                 </div>
@@ -581,11 +583,11 @@ function AnaliseComparativaPage() {
                       rows: [
                         { label: "SN Atual", value: avg.sn_atual_credito_cbs, tone: "blue" },
                         { label: "SN Híbrido", value: avg.sn_hibrido_cbs_debito, tone: "green" },
-                        { label: "LP 2027", value: avg.lp_2027_cbs > 0 ? avg.lp_2027_cbs : 0, tone: "amber" },
+                        { label: "LP 2027", value: avg.sn_hibrido_cbs_debito, tone: "amber" },
                       ],
                       footer: {
                         label: "Melhor crédito B2B",
-                        value: Math.max(avg.sn_atual_credito_cbs, avg.sn_hibrido_cbs_debito, avg.lp_2027_cbs, 0),
+                        value: Math.max(avg.sn_atual_credito_cbs, avg.sn_hibrido_cbs_debito, 0),
                         tone: "green",
                       },
 
