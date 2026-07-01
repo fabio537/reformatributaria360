@@ -583,11 +583,11 @@ function AnaliseComparativaPage() {
                       rows: [
                         { label: "SN Atual", value: avg.sn_atual_credito_cbs, tone: "blue" },
                         { label: "SN Híbrido", value: avg.sn_hibrido_cbs_debito, tone: "green" },
-                        { label: "LP 2027", value: avg.lp_2027_cbs > 0 ? avg.lp_2027_cbs : 0, tone: "amber" },
+                        { label: "LP 2027", value: avg.sn_hibrido_cbs_debito, tone: "amber" },
                       ],
                       footer: {
                         label: "Melhor crédito B2B",
-                        value: Math.max(avg.sn_atual_credito_cbs, avg.sn_hibrido_cbs_debito, avg.lp_2027_cbs, 0),
+                        value: Math.max(avg.sn_atual_credito_cbs, avg.sn_hibrido_cbs_debito, 0),
                         tone: "green",
                       },
 
