@@ -87,9 +87,19 @@ const fmtBRL = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const fmtPct = (n: number) =>
   (n * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + "%";
+/**
+ * Como toda a análise projeta o ano-calendário de 2027 (primeira aplicação
+ * dos novos tributos), qualquer competência histórica é reindexada para o
+ * mês equivalente de 2027 no eixo de apresentação.
+ */
 const fmtMes = (iso: string) => {
-  const [y, m] = iso.split("-");
-  return `${m}/${y}`;
+  const [, m] = iso.split("-");
+  return `${m}/2027`;
+};
+const fmtBRLcompact = (n: number) => {
+  if (Math.abs(n) >= 1_000_000) return `R$ ${(n / 1_000_000).toFixed(1)}M`;
+  if (Math.abs(n) >= 1_000) return `R$ ${(n / 1_000).toFixed(0)}k`;
+  return `R$ ${n.toFixed(0)}`;
 };
 
 const CENARIO_LABEL = {
