@@ -55,6 +55,9 @@ export interface CenarioMes {
   sn_atual_total: number;
   sn_atual_das: number;
   sn_atual_inss: number;
+  /** Crédito reduzido de CBS ao comprador B2B — proxy pela fração PIS+COFINS
+   *  embutida no DAS (não há publicação formal da CBS embutida em 2027). */
+  sn_atual_credito_cbs: number;
 
   // Cenário B — Simples Híbrido 2027
   sn_hibrido_total: number;
@@ -62,13 +65,6 @@ export interface CenarioMes {
   sn_hibrido_cbs_debito: number;
   sn_hibrido_credito_recebido: number;
   sn_hibrido_inss: number;
-
-  // Cenário C — Lucro Presumido 2026 (atual)
-  lp_2026_total: number;
-  lp_2026_pis_cofins: number;
-  lp_2026_icms: number;
-  lp_2026_irpj_csll: number;
-  lp_2026_inss: number;
 
   // Cenário D — Lucro Presumido 2027
   lp_2027_total: number;
@@ -84,19 +80,18 @@ export interface AnaliseComparativaResultado {
     receita_bruta: number;
     sn_atual: number;
     sn_hibrido: number;
-    lp_2026: number;
     lp_2027: number;
   };
   carga_efetiva: {
     sn_atual: number;
     sn_hibrido: number;
-    lp_2026: number;
     lp_2027: number;
   };
   melhor_cenario_2027: "sn_atual" | "sn_hibrido" | "lp_2027";
   recomendacao: string;
   alertas: string[];
 }
+
 
 // ─── Parâmetros LP (Comércio) — mantidos para preservar semântica da UI ────
 const LP_PRESUNCAO_COMERCIO = 0.08;
@@ -202,6 +197,10 @@ export function calcularAnaliseComparativa(
   const cbsFracaoDentroDAS =
     dasAnual > 0 ? ((compAnual.pis ?? 0) + (compAnual.cofins ?? 0)) / dasAnual : 0;
 
+  // Para Anexos I, II, III e V a CPP (INSS patronal) está inclusa no DAS.
+  // Somente Anexo IV recolhe o INSS patronal em separado.
+  const inssPatronalForaDoDAS = anexo === "IV";
+
   const meses: CenarioMes[] = ordenadas.map((r) => {
     const receita = r.receita_bruta || 0;
     const mixB2B =
@@ -211,23 +210,26 @@ export function calcularAnaliseComparativa(
     const aquisicoesRN = r.aquisicoes_fornecedores_regime_normal || 0;
     const folha = r.folha_empregados || 0;
     const inssBase = (r.inss_empregados || 0) + (r.inss_contribuinte_individual || 0);
-    const inss = inssBase > 0 ? inssBase : folha * INSS_PATRONAL;
+    const inssPatronalCalc = inssBase > 0 ? inssBase : folha * INSS_PATRONAL;
+    const inssSN = inssPatronalForaDoDAS ? inssPatronalCalc : 0;
 
     // A) SN Atual — DAS = receita_mes × alíquota efetiva (RBT12).
+    //    CPP já incluída no DAS (exceto Anexo IV). Crédito reduzido de CBS ao
+    //    comprador = fração PIS+COFINS embutida no DAS (proxy oficial enquanto
+    //    a CBS embutida no SN não é publicada).
     const das = r.das_total ?? receita * aliqEfetivaDAS;
-    const sn_atual_total = das + inss;
+    const sn_atual_credito_cbs = das * cbsFracaoDentroDAS;
+    const sn_atual_total = das + inssSN;
 
     // B) SN Híbrido 2027 — retira PIS/COFINS do DAS e recolhe CBS/IBS por fora
-    //    apenas sobre a parcela B2B (clientes Regime Normal), com crédito de
-    //    aquisições Regime Normal.
+    //    apenas sobre a parcela B2B, com crédito de aquisições Regime Normal.
     const das_reduzido = das * (1 - cbsFracaoDentroDAS);
     const cbs_debito = receita * mixB2B * totalReforma;
     const credito_recebido = aquisicoesRN * totalReforma;
     const cbs_liquido_pagar = Math.max(0, cbs_debito - credito_recebido);
-    const sn_hibrido_total = das_reduzido + cbs_liquido_pagar + inss;
+    const sn_hibrido_total = das_reduzido + cbs_liquido_pagar + inssSN;
 
-    // C) Lucro Presumido 2026
-    const lp_pis_cofins = receita * (LP_PIS + LP_COFINS);
+    // C) Lucro Presumido 2027 — PIS/COFINS extintos; CBS/IBS com crédito.
     const icms_pago =
       r.icms_apurado ??
       Math.max(0, receita * LP_ICMS_EFETIVO - aquisicoesRN * LP_ICMS_EFETIVO);
@@ -238,9 +240,6 @@ export function calcularAnaliseComparativa(
     const csll_devida = base_presumida * LP_CSLL;
     const lp_irpj_csll = irpj_base + irpj_adicional + csll_devida;
     const lp_inss = folha * INSS_PATRONAL;
-    const lp_2026_total = lp_pis_cofins + icms_pago + lp_irpj_csll + lp_inss;
-
-    // D) Lucro Presumido 2027 — PIS/COFINS extintos; CBS/IBS com crédito.
     const cbs_2027_debito = receita * totalReforma;
     const cbs_2027_credito = aquisicoesRN * totalReforma;
     const cbs_2027_liquida = Math.max(0, cbs_2027_debito - cbs_2027_credito);
@@ -251,17 +250,13 @@ export function calcularAnaliseComparativa(
       receita_bruta: receita,
       sn_atual_total,
       sn_atual_das: das,
-      sn_atual_inss: inss,
+      sn_atual_inss: inssSN,
+      sn_atual_credito_cbs,
       sn_hibrido_total,
       sn_hibrido_das_reduzido: das_reduzido,
       sn_hibrido_cbs_debito: cbs_debito,
       sn_hibrido_credito_recebido: credito_recebido,
-      sn_hibrido_inss: inss,
-      lp_2026_total,
-      lp_2026_pis_cofins: lp_pis_cofins,
-      lp_2026_icms: icms_pago,
-      lp_2026_irpj_csll: lp_irpj_csll,
-      lp_2026_inss: lp_inss,
+      sn_hibrido_inss: inssSN,
       lp_2027_total,
       lp_2027_cbs: cbs_2027_liquida,
       lp_2027_icms: icms_pago,
@@ -275,18 +270,17 @@ export function calcularAnaliseComparativa(
       receita_bruta: acc.receita_bruta + m.receita_bruta,
       sn_atual: acc.sn_atual + m.sn_atual_total,
       sn_hibrido: acc.sn_hibrido + m.sn_hibrido_total,
-      lp_2026: acc.lp_2026 + m.lp_2026_total,
       lp_2027: acc.lp_2027 + m.lp_2027_total,
     }),
-    { receita_bruta: 0, sn_atual: 0, sn_hibrido: 0, lp_2026: 0, lp_2027: 0 },
+    { receita_bruta: 0, sn_atual: 0, sn_hibrido: 0, lp_2027: 0 },
   );
 
   const carga_efetiva = {
     sn_atual: totais.receita_bruta > 0 ? totais.sn_atual / totais.receita_bruta : 0,
     sn_hibrido: totais.receita_bruta > 0 ? totais.sn_hibrido / totais.receita_bruta : 0,
-    lp_2026: totais.receita_bruta > 0 ? totais.lp_2026 / totais.receita_bruta : 0,
     lp_2027: totais.receita_bruta > 0 ? totais.lp_2027 / totais.receita_bruta : 0,
   };
+
 
   const opcoes2027 = [
     { k: "sn_atual" as const, v: totais.sn_atual },

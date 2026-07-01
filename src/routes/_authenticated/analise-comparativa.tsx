@@ -394,6 +394,7 @@ function AnaliseComparativaPage() {
                 sn_atual_total: a.sn_atual_total + m.sn_atual_total / n,
                 sn_atual_das: a.sn_atual_das + m.sn_atual_das / n,
                 sn_atual_inss: a.sn_atual_inss + m.sn_atual_inss / n,
+                sn_atual_credito_cbs: a.sn_atual_credito_cbs + m.sn_atual_credito_cbs / n,
                 sn_hibrido_total: a.sn_hibrido_total + m.sn_hibrido_total / n,
                 sn_hibrido_das_reduzido: a.sn_hibrido_das_reduzido + m.sn_hibrido_das_reduzido / n,
                 sn_hibrido_cbs_debito: a.sn_hibrido_cbs_debito + m.sn_hibrido_cbs_debito / n,
@@ -407,11 +408,13 @@ function AnaliseComparativaPage() {
               }),
               {
                 receita: 0, sn_atual_total: 0, sn_atual_das: 0, sn_atual_inss: 0,
+                sn_atual_credito_cbs: 0,
                 sn_hibrido_total: 0, sn_hibrido_das_reduzido: 0, sn_hibrido_cbs_debito: 0,
                 sn_hibrido_credito_recebido: 0, sn_hibrido_inss: 0,
                 lp_2027_total: 0, lp_2027_cbs: 0, lp_2027_icms: 0,
                 lp_2027_irpj_csll: 0, lp_2027_inss: 0,
               },
+
             );
             const aliqDAS = avg.receita > 0 ? avg.sn_atual_das / avg.receita : 0;
             const cbsHibridoLiquido = Math.max(
@@ -444,22 +447,39 @@ function AnaliseComparativaPage() {
                           { label: "Alíquota efetiva DAS", value: fmtPct(aliqDAS) },
                           { label: "DAS total", value: avg.sn_atual_das, tone: "highlight" },
                         ],
+                        note:
+                          anexo === "IV"
+                            ? "Anexo IV: INSS patronal recolhido em separado."
+                            : "CPP (INSS patronal) já incluída no DAS.",
                       },
+                      ...(anexo === "IV"
+                        ? [{
+                            title: "INSS patronal (Anexo IV)",
+                            rows: [{ label: "Sobre folha", value: avg.sn_atual_inss }],
+                          }]
+                        : []),
                       {
-                        title: "INSS patronal",
-                        rows: [{ label: "Sobre folha", value: avg.sn_atual_inss }],
-                      },
-                      {
-                        title: "Créditos aproveitados",
-                        rows: [{ label: "Regime unificado — sem crédito de entradas", value: "—", tone: "muted" }],
+                        title: "Crédito reduzido de CBS ao comprador",
+                        rows: [
+                          {
+                            label: "Fração PIS+COFINS embutida no DAS",
+                            value: fmtPct(avg.sn_atual_das > 0 ? avg.sn_atual_credito_cbs / avg.sn_atual_das : 0),
+                          },
+                          {
+                            label: "Crédito estimado gerado ao B2B",
+                            value: avg.sn_atual_credito_cbs,
+                            tone: "highlight",
+                          },
+                        ],
+                        note: "Proxy pelas alíquotas atuais de PIS/COFINS embutidas no SN — não há publicação formal da CBS reduzida do SN.",
                       },
                     ]}
                     totalLabel="Total de tributos no mês"
                     totalValue={avg.sn_atual_total}
                     credit={{
-                      label: "Crédito CBS ao comprador B2B",
-                      value: 0,
-                      sub: "DAS unificado não destaca CBS/IBS para o adquirente",
+                      label: "Crédito de CBS ao comprador B2B (reduzido)",
+                      value: avg.sn_atual_credito_cbs,
+                      sub: "Calculado pela fração PIS/COFINS do DAS (proxy oficial).",
                     }}
                   />
 
@@ -475,7 +495,7 @@ function AnaliseComparativaPage() {
                           { label: "Faturamento do mês", value: avg.receita },
                           { label: "DAS sem parcela CBS/IBS", value: avg.sn_hibrido_das_reduzido, tone: "highlight" },
                         ],
-                        note: "IRPJ, CSLL, CPP e ICMS permanecem no DAS",
+                        note: "IRPJ, CSLL, CPP e ICMS permanecem no DAS.",
                       },
                       {
                         title: "CBS/IBS apurados separadamente",
@@ -485,19 +505,22 @@ function AnaliseComparativaPage() {
                           { label: "CBS/IBS líquido a recolher", value: cbsHibridoLiquido, tone: "highlight" },
                         ],
                       },
-                      {
-                        title: "INSS patronal",
-                        rows: [{ label: "Sobre folha", value: avg.sn_hibrido_inss }],
-                      },
+                      ...(anexo === "IV"
+                        ? [{
+                            title: "INSS patronal (Anexo IV)",
+                            rows: [{ label: "Sobre folha", value: avg.sn_hibrido_inss }],
+                          }]
+                        : []),
                     ]}
                     totalLabel="Total de tributos no mês"
                     totalValue={avg.sn_hibrido_total}
                     credit={{
                       label: "Crédito CBS/IBS transferido ao comprador B2B",
                       value: avg.sn_hibrido_cbs_debito,
-                      sub: "Alíquota plena destacada na NF — vantagem competitiva B2B",
+                      sub: "Alíquota plena destacada na NF — vantagem competitiva B2B.",
                     }}
                   />
+
 
                   <CenarioBreakdownCard
                     variant="amber"
@@ -556,15 +579,16 @@ function AnaliseComparativaPage() {
                     {
                       title: "Crédito gerado ao comprador B2B",
                       rows: [
-                        { label: "SN Atual", value: 0, tone: "blue" },
+                        { label: "SN Atual", value: avg.sn_atual_credito_cbs, tone: "blue" },
                         { label: "SN Híbrido", value: avg.sn_hibrido_cbs_debito, tone: "green" },
                         { label: "LP 2027", value: avg.lp_2027_cbs > 0 ? avg.lp_2027_cbs : 0, tone: "amber" },
                       ],
                       footer: {
                         label: "Melhor crédito B2B",
-                        value: Math.max(avg.sn_hibrido_cbs_debito, avg.lp_2027_cbs, 0),
+                        value: Math.max(avg.sn_atual_credito_cbs, avg.sn_hibrido_cbs_debito, avg.lp_2027_cbs, 0),
                         tone: "green",
                       },
+
                     },
                     {
                       title: "Carga efetiva (% receita)",
