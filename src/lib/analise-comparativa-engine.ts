@@ -55,6 +55,9 @@ export interface CenarioMes {
   sn_atual_total: number;
   sn_atual_das: number;
   sn_atual_inss: number;
+  /** Crédito reduzido de CBS ao comprador B2B — proxy pela fração PIS+COFINS
+   *  embutida no DAS (não há publicação formal da CBS embutida em 2027). */
+  sn_atual_credito_cbs: number;
 
   // Cenário B — Simples Híbrido 2027
   sn_hibrido_total: number;
@@ -62,13 +65,6 @@ export interface CenarioMes {
   sn_hibrido_cbs_debito: number;
   sn_hibrido_credito_recebido: number;
   sn_hibrido_inss: number;
-
-  // Cenário C — Lucro Presumido 2026 (atual)
-  lp_2026_total: number;
-  lp_2026_pis_cofins: number;
-  lp_2026_icms: number;
-  lp_2026_irpj_csll: number;
-  lp_2026_inss: number;
 
   // Cenário D — Lucro Presumido 2027
   lp_2027_total: number;
@@ -84,19 +80,18 @@ export interface AnaliseComparativaResultado {
     receita_bruta: number;
     sn_atual: number;
     sn_hibrido: number;
-    lp_2026: number;
     lp_2027: number;
   };
   carga_efetiva: {
     sn_atual: number;
     sn_hibrido: number;
-    lp_2026: number;
     lp_2027: number;
   };
   melhor_cenario_2027: "sn_atual" | "sn_hibrido" | "lp_2027";
   recomendacao: string;
   alertas: string[];
 }
+
 
 // ─── Parâmetros LP (Comércio) — mantidos para preservar semântica da UI ────
 const LP_PRESUNCAO_COMERCIO = 0.08;
